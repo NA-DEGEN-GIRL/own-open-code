@@ -58,6 +58,14 @@ export const Options = Schema.Struct({
   allowedTools: lenient(AllowedTools),
   maxToolCalls: lenient(Schema.Int),
   parallelToolCalls: lenient(Schema.Boolean),
+  // OWN-PATCH(P-022) begin
+  /** Responses Lite: tools travel in an `additional_tools` input item (optionally with this id) instead of `tools`. */
+  responsesLite: lenient(Schema.Struct({ id: Schema.optional(Schema.String) })),
+  /** Sends `tool_choice: "auto"` explicitly when the request has tools and sets no other choice. */
+  toolChoiceAuto: lenient(Schema.Boolean),
+  /** A replayed `function_call` carries `status: "completed"`, the status Codex keeps from the server since 0.165. */
+  completedCalls: lenient(Schema.Boolean),
+  // OWN-PATCH(P-022) end
 })
 export type Options = typeof Options.Type
 

@@ -1,0 +1,14 @@
+/* Worktree conversations dock (03 §4.6.1): the background dock's rows (own-bj, background/dock.css) with a state word. */
+.own-wtc-state {
+  flex: none;
+  min-width: 3.5em;
+  color: var(--own-text-muted);
+  font-weight: 600;
+}
+.own-wtc-state[data-state="needs_user"],
+.own-wtc-state[data-state="blocked"] {
+  color: var(--own-text);
+}
+.own-wtc-where {
+  color: var(--own-text-faint);
+}

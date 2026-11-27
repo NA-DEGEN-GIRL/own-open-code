@@ -112,7 +112,16 @@ const OpenAIResponsesTools = Schema.Union([
   OpenResponses.CustomTool,
   OpenAIResponsesNamespace,
   OpenAIResponsesImageGenerationTool,
+  OpenResponses.HostedTool, // OWN-PATCH(P-023)
 ])
+
+// OWN-PATCH(P-023) begin
+/**
+ * A tool whose input schema carries `x-opencode-hosted: {type, ...}` is sent as that hosted tool definition; its calls
+ * come back as hosted items (`web_search_call`, …) the provider runs, read through `HOSTED_TOOLS` below.
+ */
+export const HOSTED_KEY = "x-opencode-hosted"
+// OWN-PATCH(P-023) end
 
 const OpenAIResponsesToolChoice = Schema.Union([
   OpenResponses.ToolChoice,
@@ -209,6 +218,10 @@ const lowerTool = Effect.fnUntraced(function* (
     if (Schema.is(OpenAIResponsesImageGenerationTool)(native)) return native
     return yield* ProviderShared.invalidRequest("OpenAI Responses image generation tool options are invalid")
   }
+  // OWN-PATCH(P-023) begin: a hosted tool definition passed through as is (e.g. `{type: "web_search", ...}`)
+  const hosted = tool.native === undefined ? tool.inputSchema[HOSTED_KEY] : undefined
+  if (ProviderShared.isRecord(hosted) && typeof hosted.type === "string") return hosted as OpenResponses.HostedTool
+  // OWN-PATCH(P-023) end
   const definition = custom.get(tool.name)
   if (definition) return OpenResponses.lowerCustomTool(tool, definition)
   return yield* OpenResponses.lowerTool(NAME, tool)
@@ -308,16 +321,34 @@ const fromRequest = Effect.fn("OpenAIResponses.fromRequest")(function* (request:
   const options = OpenResponsesOptions.resolve(request)
   const reasoning = Schema.decodeUnknownSync(ReasoningOptions)(request.providerOptions ?? {})
   const updates = resolveEffortUpdates(request, options.reasoningEffort)
+  // OWN-PATCH(P-022) begin
+  const lite = options.responsesLite !== undefined && request.tools.length > 0
+  const additional = lite
+    ? [
+        {
+          type: "additional_tools" as const,
+          ...(options.responsesLite?.id === undefined ? {} : { id: options.responsesLite.id }),
+          role: "developer" as const,
+          tools: yield* liteTools(request),
+        },
+      ]
+    : []
+  // OWN-PATCH(P-022) end
   const generation = OpenResponses.lowerGeneration(request, { ...options, reasoningEffort: updates.effort })
   const custom = OpenAIFreeform.tools(request)
   const layout = yield* lowerToolLayout(request, custom)
   const conversation = yield* OpenResponses.lowerConversation(updates.request, {
     ...adapter,
-    lowerToolChanges: toolChangeLowering(layout.head.length > 0, custom),
+    lowerToolChanges: toolChangeLowering(lite || layout.head.length > 0, custom), // OWN-PATCH(P-022)
   })
   return {
     model: conversation.model,
-    input: [...layout.head, ...conversation.input],
+    // OWN-PATCH(P-022) begin
+    input: [
+      ...(lite ? additional : layout.head),
+      ...(options.completedCalls ? completedCalls(conversation.input) : conversation.input),
+    ],
+    // OWN-PATCH(P-022) end
     ...generation,
     ...Cache.openAIRequestTTL(requestTTL(request)),
     ...(generation.reasoning || reasoning.reasoningMode || reasoning.reasoningContext
@@ -330,14 +361,42 @@ const fromRequest = Effect.fn("OpenAIResponses.fromRequest")(function* (request:
         }
       : {}),
     context_management: management?.map((edit) => ({ type: edit.type, compact_threshold: edit.compactThreshold })),
-    tools: layout.tools,
+    tools: lite ? undefined : layout.tools, // OWN-PATCH(P-022)
     tool_choice:
       request.tools.length === 0 && !addsTools(request)
         ? undefined
         : (OpenResponses.allowedToolChoice(options, custom) ??
-          (request.toolChoice ? yield* lowerToolChoice(request.toolChoice, request.tools, custom) : undefined)),
+          (request.toolChoice ? yield* lowerToolChoice(request.toolChoice, request.tools, custom) : undefined) ??
+          (options.toolChoiceAuto ? ("auto" as const) : undefined)), // OWN-PATCH(P-022)
   }
 })
+
+// OWN-PATCH(P-024) begin
+/** Tools carrying `x-opencode-namespace` go out in their native namespace (`OpenResponses.placeNamespaces`). */
+const placedFromRequest = (request: LLMRequest) => fromRequest(OpenResponses.placeNamespaces(request))
+// OWN-PATCH(P-024) end
+
+// OWN-PATCH(P-022) begin
+/** Responses Lite tools: top-level tools in the `functions` namespace, then the request's namespaces. */
+const liteTools = Effect.fnUntraced(function* (request: LLMRequest) {
+  const custom = OpenAIFreeform.tools(request)
+  const top = request.tools.filter((tool) => tool.type === "tool")
+  const namespaces = request.tools.filter((tool) => tool.type === "namespace")
+  return [
+    {
+      type: "namespace",
+      name: "functions",
+      description: "",
+      tools: yield* Effect.forEach(top, (tool) => lowerTool(tool, custom)),
+    },
+    ...(yield* Effect.forEach(namespaces, (tool) => lowerToolEntry(tool, custom))),
+  ]
+})
+
+/** Replayed function calls as Codex sends them: with the `completed` status the server gave each one. */
+const completedCalls = <Item extends { readonly type: string }>(input: ReadonlyArray<Item>) =>
+  input.map((item) => (item.type === "function_call" ? { ...item, status: "completed" as const } : item))
+// OWN-PATCH(P-022) end
 
 const checkpointBody = {
   schema: CheckpointBody,
@@ -354,7 +413,7 @@ const checkpointBody = {
       )
     if (overlay?.stream !== undefined && overlay.stream !== true)
       return yield* ProviderShared.invalidRequest("Trigger compaction requires a streamed response")
-    const native = yield* fromRequest(request)
+    const native = yield* placedFromRequest(request) // OWN-PATCH(P-024)
     return {
       ...native,
       input: [...native.input, { type: "compaction_trigger" as const }],
@@ -396,7 +455,7 @@ export const protocol = Protocol.make({
   id: ADAPTER,
   body: {
     schema: OpenAIResponsesBody,
-    from: fromRequest,
+    from: placedFromRequest, // OWN-PATCH(P-024)
   },
   stream: ResponsesHostedTools.stream(adapter, HOSTED_TOOLS, (state, event) => {
     if (event.type !== "response.reasoning_text.delta") return undefined

@@ -7,11 +7,31 @@ export function parse(content: string) {
   // every later parse of the same content replays it without throwing, so the
   // sanitize fallback below never runs. Upstream: jonschlinkert/gray-matter#166.
   try {
-    return matter(content, {})
+    // OWN-PATCH(P-036) begin
+    return yaml(content)
   } catch {
-    return matter(sanitize(content), {})
+    return yaml(sanitize(content))
+    // OWN-PATCH(P-036) end
   }
 }
+
+// OWN-PATCH(P-036) begin
+// gray-matter picks the engine from a language token after the opening `---`, and its default `javascript` engine
+// (`---js`) runs the block with eval() in this process. Frontmatter is YAML only: the script engines throw before
+// anything runs, and any other token fails like malformed YAML. `matter("")` returns without a language.
+const options = { engines: { javascript: refuse, coffee: refuse } }
+
+function yaml(content: string) {
+  const file = matter(content, options)
+  if (file.language && !["yaml", "yml"].includes(file.language.toLowerCase()))
+    throw new Error(`unsupported frontmatter language: ${file.language}`)
+  return file
+}
+
+function refuse(): never {
+  throw new Error("script frontmatter is not supported")
+}
+// OWN-PATCH(P-036) end
 
 export function parseOption(content: string) {
   try {

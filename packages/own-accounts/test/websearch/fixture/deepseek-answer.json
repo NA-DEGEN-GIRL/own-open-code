@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "title": "Bun v1.4 | Bun Blog",
+      "site_name": "Bun",
+      "site_icon": "https://bun.example.test/favicon.ico",
+      "authority": 3,
+      "rerank_score": 2.31,
+      "date": "2026-08-19T16:00:00+00:00",
+      "url": "https://bun.example.test/blog/bun-v1.4",
+      "summary": "Bun 1.4 adds zstd to fetch() and Bun.zstdCompress, a built-in image API and cron jobs.",
+      "snippet": "Bun 1.4 is here.",
+      "content": ""
+    },
+    {
+      "title": "",
+      "site_name": "GitHub",
+      "site_icon": "https://github.example.test/favicon.ico",
+      "authority": 2,
+      "rerank_score": 1.42,
+      "date": null,
+      "url": "https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0",
+      "summary": "",
+      "snippet": "Release notes of bun-v1.4.0.",
+      "content": ""
+    },
+    {
+      "title": "Bun v1.4 | Bun Blog (again)",
+      "site_name": "Bun",
+      "site_icon": null,
+      "authority": 3,
+      "rerank_score": 1.1,
+      "date": "2026-08-19T16:00:00+00:00",
+      "url": "https://bun.example.test/blog/bun-v1.4",
+      "summary": "duplicate",
+      "snippet": "duplicate",
+      "content": ""
+    },
+    {
+      "title": "not a web page",
+      "site_name": null,
+      "site_icon": null,
+      "authority": -1,
+      "rerank_score": 0.9,
+      "date": "yesterday",
+      "url": "javascript:alert(1)",
+      "summary": "never shown",
+      "snippet": "never shown",
+      "content": ""
+    },
+    {
+      "title": "윈도우 서비스와 환경 변수",
+      "site_name": "예시 블로그",
+      "site_icon": null,
+      "authority": 1,
+      "rerank_score": 0.8,
+      "date": "2026-10-13T16:00:00+00:00",
+      "url": "https://blog.example.test/windows-service-env",
+      "summary": "LONG",
+      "snippet": "짧은 발췌",
+      "content": ""
+    }
+  ]
+}

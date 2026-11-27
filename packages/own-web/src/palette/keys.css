@@ -1,0 +1,35 @@
+/* 설정 > 단축키 (palette/shortcut-settings.tsx): the key button and the red problem rows (03 §10). Tokens only. */
+
+/* A row's chords side by side, stacked when the column is narrow (375 px: `Ctrl+-` `Ctrl+NumpadSubtract` made the
+   shortcut table wider than the page, the 2026-10-18 layout audit). */
+.own-keys-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--own-text);
+  cursor: pointer;
+}
+.own-keys-button:hover {
+  background: var(--own-bg-hover);
+}
+.own-keys-button[data-capturing] {
+  border-color: var(--own-focus);
+  box-shadow: 0 0 0 1px var(--own-focus);
+}
+.own-keys-button:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+tr.own-keys-problem > td {
+  background: color-mix(in srgb, var(--own-danger) 8%, transparent);
+}
+tr.own-keys-problem > td:first-child {
+  box-shadow: inset 3px 0 0 var(--own-danger);
+}

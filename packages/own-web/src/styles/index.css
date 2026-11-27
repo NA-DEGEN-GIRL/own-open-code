@@ -1,0 +1,60 @@
+/*
+ * own-web stylesheet entry. Its own Tailwind root: utilities come only from own-web sources, themed with the own
+ * tokens (`bg-own-bg`, `text-own-muted`, …). The session-ui transcript brings its own Tailwind root with the
+ * @opencode/ui theme in its lazy chunk (see ARCHITECTURE.md "Styles"), so the first CSS stays small (PF5 tracking).
+ *
+ * own-web's utilities get their own last layer, `own-utilities`. The lazy roots (transcript, files, review) put the
+ * @opencode/ui utilities in `utilities` and load later; sharing that layer, their base classes (`flex-col`, `px-4`)
+ * came later in source order and beat own-web's tier variants (`tablet:flex-row`, `tablet:px-7`) once a conversation
+ * had loaded. Classes both roots generate resolve the same theme variables, so session-ui rows look the same.
+ */
+@layer theme, base, components, utilities, own-utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(own-utilities) source(none);
+@source "..";
+@source "../../index.html";
+
+@import "@opencode/ui/styles/tokens";
+@import "./tokens.css" layer(theme);
+@import "./base.css" layer(base);
+@import "./shell.css" layer(components);
+@import "./running-mark.css";
+@import "./activity-spinner.css";
+@import "./seps.css";
+
+@theme inline {
+  --font-sans: var(--own-font-sans);
+  --font-mono: var(--own-font-mono);
+
+  --color-own-bg: var(--own-bg);
+  --color-own-subtle: var(--own-bg-subtle);
+  --color-own-raised: var(--own-bg-raised);
+  --color-own-hover: var(--own-bg-hover);
+  --color-own-border: var(--own-border);
+  --color-own-border-strong: var(--own-border-strong);
+  --color-own-text: var(--own-text);
+  --color-own-muted: var(--own-text-muted);
+  --color-own-faint: var(--own-text-faint);
+  --color-own-accent: var(--own-accent);
+  --color-own-accent-text: var(--own-accent-text);
+  --color-own-accent-soft: var(--own-accent-soft);
+  --color-own-on-accent: var(--own-on-accent);
+  --color-own-border-input: var(--own-border-input);
+  --color-own-meter-track: var(--own-meter-track);
+  --color-own-meter-fill: var(--own-meter-fill);
+  --color-own-warn: var(--own-warn);
+  --color-own-danger: var(--own-danger);
+  --color-own-ok: var(--own-ok);
+
+  --radius-chip: var(--own-radius-chip);
+  --radius-card: var(--own-radius-card);
+  --radius-dialog: var(--own-radius-dialog);
+
+  /* 03 §4.2 tiers as Tailwind variants: `tablet:`, `compact:`, `desk:`, `wide:` (min-width). */
+  --breakpoint-tablet: 600px;
+  --breakpoint-compact: 1100px;
+  --breakpoint-desk: 1280px;
+  --breakpoint-wide: 1440px;
+}

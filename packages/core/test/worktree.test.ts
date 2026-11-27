@@ -778,6 +778,27 @@ describe("Worktree", () => {
     }),
   )
 
+  // OWN-PATCH(P-062) begin
+  it.live("keeps forceRequired from a plugin strategy's own error class", () =>
+    Effect.gen(function* () {
+      const input = yield* setup()
+      const worktrees = yield* fixtureWorktree()
+      const git = yield* WorktreeGit.make
+      yield* worktrees.transform((editor) =>
+        editor.add({
+          ...git,
+          id: Worktree.StrategyID.make("foreign"),
+          remove: () => Effect.fail(Object.assign(new Error("contains modified or untracked files"), { forceRequired: true })),
+        }),
+      )
+      const created = yield* worktrees.create({ directory: abs(path.join(input.root.path, "foreign")), name: "dirty" })
+      const error = yield* worktrees.remove({ directory: created.directory, force: false }).pipe(Effect.flip)
+      expect(error).toBeInstanceOf(Worktree.OperationError)
+      if (error instanceof Worktree.OperationError) expect(error.forceRequired).toBe(true)
+    }),
+  )
+  // OWN-PATCH(P-062) end
+
   it.live("rejects a source override belonging to another project", () =>
     Effect.gen(function* () {
       const input = yield* setup()

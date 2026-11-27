@@ -1,0 +1,494 @@
+/*
+ * Transcript stylesheet, loaded with the lazy transcript chunk (ARCHITECTURE.md "Styles", 03 §20.2 R5).
+ * 1. A second Tailwind root with the @opencode/ui theme for the session-ui rows (utilities generated from the ui
+ *    and session-ui sources only, not from packages/app, desktop, enterprise or storybook), plus the ui and
+ *    session-ui component styles.
+ * 2. own transcript components (rows, footer, markers) on the --own-* tokens (03 §13).
+ */
+@layer theme, base, components, utilities;
+
+@import "@opencode/ui/styles/tailwind";
+@import "@opencode/session-ui/styles";
+
+@source not "../../../app";
+@source not "../../../desktop";
+@source not "../../../enterprise";
+@source not "../../../storybook";
+
+@layer components {
+  .own-transcript-body {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .own-transcript-state {
+    margin: 0 auto;
+    width: 100%;
+    max-width: var(--own-content-max);
+    padding: 24px;
+    color: var(--own-text-faint);
+    font-size: 13px;
+  }
+
+  .own-transcript-header {
+    display: flex;
+    align-items: center;
+    max-width: var(--own-content-max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* 4.2: the conversation column is at most 760 px wide and centered; 24 px gutters (12 px on phones). */
+  .own-row {
+    max-width: calc(var(--own-content-max) + 48px);
+    margin: 0 auto;
+    padding: 0 24px;
+    contain: layout style;
+  }
+  .own-row[data-reverted],
+  .own-row[data-before-reset] {
+    opacity: 0.45;
+  }
+  .own-app[data-tier="phone"] .own-row,
+  .own-app[data-tier="phone"] .own-transcript-header {
+    padding: 0 12px;
+  }
+
+  .own-working {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 12px;
+    color: var(--own-text-muted);
+    font-size: 13px;
+    line-height: var(--line-height-compact, 16px);
+  }
+
+  /* Account chip grammar (03 P1). */
+  .own-dot {
+    display: inline-block;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--own-dot-color, var(--own-text-faint));
+    filter: var(--own-dot-filter);
+  }
+  .own-dot[data-empty] {
+    background: transparent;
+    border: 1px dashed var(--own-text-faint);
+  }
+  .own-account-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+  .own-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 1px 8px;
+    border: 1px solid var(--own-border);
+    border-radius: var(--own-radius-chip);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .own-chip[data-builtin] {
+    border-style: dashed;
+  }
+  .own-chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Transcript tags: not .own-tag, whose unlayered kit rules (limits/kit.css) would override these layered ones. */
+  .own-ttag {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 5px;
+    border: 1px solid var(--own-border);
+    border-radius: 4px;
+    font-size: 10.5px;
+    line-height: 15px;
+    color: var(--own-text-faint);
+    white-space: nowrap;
+  }
+  .own-ttag[data-kind="estimate"] {
+    border-style: dashed;
+    border-color: var(--own-text-faint);
+  }
+  .own-ttag[data-kind="warn"] {
+    border-color: var(--own-warn);
+    color: var(--own-warn);
+  }
+  .own-ttag[data-kind="measured"] {
+    border-color: transparent;
+    padding: 0;
+  }
+
+  /* Turn footer (4.5): one faint 12 px line, the step table on click. */
+  .own-turn-footer {
+    padding: 6px 0 2px;
+  }
+  /* 18.5 `변경 3개 · 리뷰 →` under the last turn's footer. */
+  .own-turn-review {
+    font-size: 12px;
+    line-height: 16px;
+    padding: 0 0 2px;
+  }
+  .own-turn-review:empty {
+    display: none;
+  }
+  /* Its parts are a styles/seps.css line (UX 2026-10-27). */
+  .own-foot {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 3px 6px;
+    margin-left: -6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--own-text-faint);
+    font-size: 12px;
+    line-height: 16px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .own-foot:hover {
+    background: var(--own-bg-hover);
+    color: var(--own-text-muted);
+  }
+  .own-steps {
+    margin: 6px 0 0;
+    border-collapse: collapse;
+    color: var(--own-text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .own-steps th,
+  .own-steps td {
+    padding: 3px 12px 3px 0;
+    text-align: right;
+    font-weight: 400;
+  }
+  .own-steps th {
+    color: var(--own-text-faint);
+    font-size: 11px;
+  }
+  .own-steps th:first-child,
+  .own-steps td:first-child {
+    text-align: left;
+  }
+
+  /* UI-only markers (4.5): a centered pill on a rule. */
+  .own-marker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+    color: var(--own-text-muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .own-marker::before,
+  .own-marker::after {
+    content: "";
+    flex: 1;
+    min-width: 12px;
+    height: 1px;
+    background: var(--own-border);
+  }
+  .own-marker-pill {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px 6px;
+    max-width: 86%;
+    padding: 3px 12px;
+    border: 1px solid var(--own-border);
+    border-radius: 14px;
+    background: var(--own-bg);
+    text-align: center;
+  }
+  .own-marker[data-kind="switch"] .own-marker-pill {
+    border-color: var(--own-accent);
+    background: var(--own-accent-soft);
+    color: var(--own-text);
+  }
+  .own-marker-fallback {
+    color: var(--own-warn);
+  }
+  .own-marker-uionly {
+    font-size: 10.5px;
+    color: var(--own-text-muted);
+  }
+  .own-marker-toggle {
+    border: 0;
+    background: transparent;
+    padding: 0 2px;
+    color: var(--own-text-faint);
+    font-size: 11.5px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .own-compaction-summary {
+    padding-bottom: 8px;
+  }
+
+  /* session-ui's quiet divider (upstream v2.3.1) is opened by own's `요약 보기` (compaction-marker.tsx expandQuiet). */
+  .own-compaction-summary [data-quiet] [data-slot="session-compaction-divider"] {
+    display: none;
+  }
+
+  /* 4.5: `이어서` under a stalled turn's error card or core's inactivity stop (core patch P-018). */
+  .own-turn-continue {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0 8px;
+    color: var(--own-text-muted);
+    font-size: 12.5px;
+  }
+
+  /* 4.5: `응답 본문 보기` under a failed turn's error card (upstream c14a1f5acf `error.response.body`). */
+  .own-error-body {
+    padding: 4px 0 8px;
+  }
+  .own-error-body-text {
+    margin: 6px 0 0;
+    max-height: 16rem;
+    overflow: auto;
+    padding: 8px 10px;
+    border: 1px solid var(--own-border);
+    border-radius: 8px;
+    background: var(--own-bg-raised);
+    color: var(--own-text-muted);
+    font-family: var(--own-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .own-error-body-text:focus-visible {
+    outline: 2px solid var(--own-accent);
+    outline-offset: 2px;
+  }
+
+  .own-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    color: var(--own-text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .own-breadcrumb-parent {
+    border: 0;
+    background: transparent;
+    padding: 2px 4px;
+    border-radius: 6px;
+    color: var(--own-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .own-breadcrumb-parent:hover {
+    background: var(--own-bg-hover);
+  }
+
+  @media (forced-colors: active) {
+    .own-dot,
+    .own-chip,
+    .own-marker-pill {
+      border: 1px solid CanvasText;
+    }
+  }
+}
+
+/*
+ * 4.5 대화 보기 (src/chat-view, view-filter.ts `hiddenMeta`): session-ui's message meta spans. `display: none` keeps
+ * them out of the tab order and the accessibility tree. A pending steer keeps its `끼워 넣기 대기` meta (a state, not
+ * meta information); the answer's meta line joins agent, model and duration, so either toggle hides it. Since upstream
+ * v2.2.5 (589c62db60) a prompt shows no time of its own (it moved into the message's menu), so neither `time` nor
+ * `stamp` has a prompt time to hide; `날짜·시각` adds own's line above the prompt (`.own-clock`).
+ */
+.own-transcript-body[data-hide~="model"]
+  [data-component="user-message"]:not([data-pending])
+  [data-slot="user-message-meta"],
+.own-transcript-body[data-hide~="model"]
+  [data-component="user-message"]:not([data-pending])
+  [data-slot="user-message-meta-sep"],
+.own-transcript-body[data-hide~="time"] [data-slot="user-message-meta-sep"],
+.own-transcript-body[data-hide~="model"] [data-slot="text-part-meta"],
+.own-transcript-body[data-hide~="time"] [data-slot="text-part-meta"] {
+  display: none;
+}
+
+/*
+ * One speed per answer (US6-20): own's turn footer shows it (`42 t/s`, hidden by 대화 보기's 속도), so session-ui's
+ * per-answer speed on the meta line (upstream v2.2.6, 5a750e64a2, on hover) never shows in own-web. Three attributes
+ * outrank session-ui's `[data-component="text-part"] [data-slot="text-part-meta-speed"]` in its hover media query.
+ */
+.own-transcript-body [data-component="text-part"] [data-slot="text-part-meta-speed"] {
+  display: none;
+}
+
+/* 4.5 `날짜·시각` (UC 2026-10-18): a prompt's date and time, on its own line above the bubble. */
+.own-clock {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 03 §4.2.2 / 05 §13.1-4: on touch screens session-ui's message actions (a prompt's menu, 복사) and the turn footer
+   (its steps toggle) are 44 px targets too. A prompt's menu button sits in its bubble's first line since upstream
+   v2.2.6 (ae0fde771d), which keeps 20 px for it: the target reaches 12 px past that place instead of pushing the
+   text. */
+@media (pointer: coarse) {
+  .own-transcript-body [data-component="icon-button-v2"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .own-transcript-body
+    [data-slot="user-message-text"]
+    > [data-slot="user-message-menu"]
+    [data-component="icon-button-v2"] {
+    margin: -12px;
+  }
+  .own-transcript-body .own-foot {
+    min-height: 44px;
+  }
+  /* S23 pass (2026-11-19): `최신 메시지로` was 32×28, and a tool row of a folded group (session-ui's collapsible
+     trigger, `업데이트`, a shell run) 28 px tall. The rows take 40 px, not 44: a tool-heavy turn holds dozens of them,
+     read far more often than tapped. */
+  .own-transcript [data-testid="transcript-jump-latest"] {
+    width: 44px;
+    height: 44px;
+  }
+  .own-transcript-body [data-slot="collapsible-trigger"] {
+    min-height: 40px;
+  }
+}
+
+/* The phone's turn footer (S23 pass, 2026-11-19): one line, the numbers a glance needs: the account's dot, 입력 (with
+   the cache share), 출력, a known cost, the speed and the time. The account's name, the model, the first token, the
+   date, the estimate tag and an unknown cost wait for the tap, which shows the whole line wrapped and the step table
+   (the button's name always reads the whole line). A first step that rewrote the cache tints 입력 in the caution
+   colour; its tag (`첫 단계 캐시 재작성`, `계정이 바뀌어서 캐시가 비었어요`) is on the opened line. At 384 px it wrapped to
+   two or three lines. The speed and the time give way first, each to an ellipsis. */
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"],
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps {
+  width: 100%;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in {
+  flex-wrap: nowrap;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in > * {
+  flex-shrink: 0;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in > :is([data-slot="speed"], [data-slot="time"]) {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in > [data-slot="time"] {
+  flex-shrink: 2;
+}
+/* The dot alone, with a little room before 입력 instead of a separator. */
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in > .own-account-name + [data-slot="input"]::before,
+.own-app[data-tier="phone"]
+  .own-foot[aria-expanded="false"]
+  .own-seps-in
+  > .own-account-name
+  + [data-slot="model"]
+  + [data-slot="input"]::before {
+  content: "";
+  width: 6px;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-account-name > bdi,
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"]
+  .own-seps-in
+  > :is([data-slot="model"], [data-slot="first-token"], [data-slot="clock"], [data-slot="cost"][data-unit="unknown"]),
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] .own-seps-in > :has(> [data-testid="footer-rewrite"]),
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"] [data-slot="cost"] > .own-ttag {
+  display: none;
+}
+.own-app[data-tier="phone"] .own-foot[aria-expanded="false"]:has([data-testid="footer-rewrite"]) [data-slot="input"] {
+  color: var(--own-warn);
+}
+
+/* Touch screens (MUX 2026-11-06): with no hover, session-ui's code copy button is always shown, drawn over the
+   first line of code (`'wa[⧉]ll'`). It gets the block's own background, so the line goes under it instead of
+   through it, and a line that ends there scrolls clear of it.
+   The button sits in the block's top right corner with a 4 px strip of background on its left only (under the top
+   border): as a 44 px touch target with a 4 px ring all round it covered the block's border at the top, the right
+   and, on a one-line block, the bottom (visual polish, 2026-11-20). */
+@media (hover: none) {
+  /* v2.4.1: session-ui places a toolbar holding the button (its faded background is replaced by the chip below). */
+  .own-transcript-body [data-slot="markdown-code-toolbar"] {
+    top: 0;
+    inset-inline-end: 0;
+  }
+  .own-transcript-body [data-slot="markdown-code-toolbar"]::before {
+    display: none;
+  }
+  .own-transcript-body [data-slot="markdown-copy-button"] {
+    /* Over the block's corner, drawing that corner's border itself: inset by session-ui's 0.5 px border, the code
+       showed through the sub-pixel gap at the right. */
+    border: 0.5px solid var(--v2-border-border-base);
+    border-inline-start: 0;
+    border-bottom: 0;
+    border-radius: 0 6px 0 6px;
+    background: var(--color-background-stronger);
+    box-shadow: -4px 1px 0 var(--color-background-stronger);
+  }
+  .own-transcript-body [data-code-kind="shell"] > [data-slot="markdown-code-toolbar"] > [data-slot="markdown-copy-button"] {
+    border-color: var(--markdown-shell-code-border);
+    background: var(--markdown-shell-code-background);
+    box-shadow: -4px 1px 0 var(--markdown-shell-code-background);
+  }
+  .own-transcript-body [data-component="markdown-code"] > pre {
+    padding-inline-end: 44px;
+  }
+}
+
+/*
+ * A streaming answer's blocks while it streams (vendor/session-ui/markdown.tsx `createStreamView`, src/markdown/): inside one
+ * `display: contents` wrapper, so a new block does not make Blink restyle the whole answer (upstream's
+ * `> [data-markdown-block]:last-child > *:last-child` in session-ui markdown.css). These are upstream's margins and
+ * wrapping for that wrapper, keyed by the attributes the view keeps on the first and the last block.
+ */
+[data-markdown-stream] > [data-markdown-first] > *:first-child {
+  margin-top: 0;
+}
+[data-markdown-stream] > [data-markdown-last] > *:last-child {
+  margin-bottom: 0;
+}
+/* Pretty wrapping would move settled words as each token arrives (upstream's rule for the growing block). */
+[data-component="markdown"][data-streaming] > [data-markdown-stream] > [data-markdown-last] {
+  text-wrap-style: auto;
+}
+
+/* Korean in the user's own bubble breaks between words like everywhere else (base.css `keep-all`; MUX 2026-11-06:
+   session-ui's `break-word` split `게\n임` on a phone). A token longer than the line still breaks anywhere. */
+.own-transcript-body [data-slot="user-message-text"] {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

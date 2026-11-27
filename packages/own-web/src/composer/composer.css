@@ -1,0 +1,855 @@
+/*
+ * Composer (03 §4.6, §13.4): min height 96 px, auto height up to 40 % of the viewport, dock rows above it, the
+ * toolbar with the "모델 @ 계정" button and the context ring. `own-cp-` prefix; tokens only. The textarea keeps its
+ * size changes to `height` (set on the next frame), so typing never triggers other layout (R6, R7).
+ */
+
+.own-cp {
+  flex: none;
+  padding: 0 12px 12px;
+}
+@media (min-width: 600px) {
+  .own-cp {
+    padding: 0 24px 16px;
+  }
+}
+.own-cp-inner {
+  max-width: var(--own-content-max);
+  margin: 0 auto;
+}
+
+.own-cp-box {
+  container: own-cp / inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--own-composer-min-h);
+  border: 1px solid var(--own-border-strong);
+  border-radius: 14px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-raised);
+}
+.own-cp-box:focus-within {
+  border-color: var(--own-text-faint);
+}
+.own-cp-box[data-shell] {
+  border-color: var(--own-warn);
+  border-style: dashed;
+}
+.own-cp-box[data-child] {
+  background: var(--own-bg-subtle);
+}
+
+.own-cp-text {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 52px;
+  max-height: 40vh;
+  padding: 12px 14px 6px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--own-text);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.own-cp-text::placeholder {
+  color: var(--own-text-faint);
+}
+
+/*
+ * One toolbar line on a desktop-wide composer (03 §4.2; the 2026-10-10 review found 프리셋 on a second line at 1280 px):
+ * compact spacing, and the two labels that can be long — `모델 @ 계정` and the preset's name — start from nothing
+ * (`flex: 1 1 0`) and grow back to their full text, so the line wraps only once their minimums no longer fit (a
+ * narrow window), and then shows them in full again. The spacer is an auto margin, so it takes only what is left.
+ */
+.own-cp-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 6px 8px 8px;
+  min-width: 0;
+}
+.own-cp-grow {
+  flex: none;
+  margin-left: auto;
+}
+/* The new-conversation screen: where (folder, 작업 위치) on the first line, who and how on the second. */
+.own-cp-break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+.own-cp-tool,
+.own-cp-switch {
+  display: inline-flex;
+  align-items: center;
+  /* A 44 px touch target is wider than `✦` or `⋯`: the mark in its middle, not at its left (visual polish). `safe`:
+     content wider than its box overflows at its end, never back over the tool before it (composer-row). */
+  justify-content: safe center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-cp-tool:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+.own-cp-tool:disabled,
+.own-cp-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* 02 §4.8: a speed that falls short of the choice (refused, cooling) or was served at Standard: the grey badge. */
+.own-cp-tool[data-dim] {
+  color: var(--own-text-faint);
+}
+.own-cp-switch {
+  flex: 3 1 0;
+  min-width: 190px;
+  max-width: max-content;
+  border-color: var(--own-border);
+  color: var(--own-text);
+}
+.own-cp-switch:hover {
+  border-color: var(--own-border-strong);
+}
+.own-cp-switch-warn {
+  border-style: dashed;
+  border-color: var(--own-warn);
+}
+.own-cp-tool-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* `모델 @ 계정` (UX 2026-10-26): the model gives way first (down to 2.5em, then an ellipsis), the account keeps its name
+   up to about 14em; only past both does the label clip. A label without an account is one model part. */
+.own-cp-switch-label {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: pre;
+}
+.own-cp-switch-label > [data-part="model"] {
+  flex: 0 1 auto;
+  min-width: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-cp-switch-label > [data-part="account"] {
+  flex-shrink: 0;
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-cp-preset-wrap {
+  flex: 1 1 0;
+  min-width: 96px;
+  max-width: max-content;
+}
+.own-cp-preset-wrap > .own-cp-tool {
+  min-width: 0;
+  max-width: 100%;
+}
+/* The microphone keeps its size on every toolbar (composer-row, 2026-11-22): on the one-line toolbar with voice input
+   on, a full line shrank its wrapper (`min-width: 0`) below the 28 px outlined button, which was drawn over the left
+   border of `모델 @ 계정`. While it records or works the bar may still give way (below 600 px it takes its own line). */
+.own-cp-bar > .own-vc:is([data-phase="idle"], [data-phase="starting"]) {
+  flex: none;
+}
+.own-cp-switch-alert {
+  color: var(--own-danger);
+  font-weight: 800;
+}
+.own-cp-caret {
+  font-size: 10px;
+  color: var(--own-text-faint);
+}
+
+.own-cp-variant-wrap,
+.own-cp-meter-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 07 §2.9, UC 2026-10-18: Claude's ultra switch and its `켤 때 강도도 xhigh로` box read as one control. */
+.own-cp-ultra-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.own-cp-ultra-group[data-claude] {
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+}
+.own-cp-ultra-preview {
+  color: var(--own-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+/* As wide as its longest item (2026-10-18: the speed menu took its button's width and broke `Fast · 한도 ×2.5` in
+   two), within the window; an item is one line and ellipsizes only when the window has no more room. */
+.own-cp-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: max-content;
+  min-width: 132px;
+  max-width: calc(100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+}
+.own-cp-menu-item {
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.own-cp-menu-item:hover,
+.own-cp-menu-item:focus-visible {
+  background: var(--own-bg-hover);
+}
+.own-cp-menu-item[aria-checked="true"] {
+  font-weight: 650;
+  color: var(--own-accent-text);
+}
+/* 2026-10-10: a refused or cooling speed stays in the menu, disabled, with its note as the tooltip. */
+.own-cp-menu-item:disabled {
+  color: var(--own-text-faint);
+  cursor: not-allowed;
+}
+.own-cp-menu-item:disabled:hover {
+  background: none;
+}
+/* 07 §2.9 (2026-10-10): the ultra switch's `ⓘ` and its card (what ultra does, the caps, a link to 설정 > 프리셋). */
+.own-cp-tool.own-cp-info {
+  padding: 0 3px;
+  font-size: 12px;
+}
+.own-cp-tool.own-cp-more {
+  display: none;
+}
+.own-cp-menu.own-cp-card {
+  width: 300px;
+  gap: 6px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--own-text);
+}
+.own-cp-card p {
+  margin: 0;
+}
+.own-cp-link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--own-accent-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-cp-link:hover {
+  text-decoration: underline;
+}
+/* The effort menu's ultra row (07 §2.9): a mode, not a level, set apart by a line and explained under its name. */
+.own-cp-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--own-border);
+}
+.own-cp-menu-item.own-cp-menu-rich {
+  height: auto;
+  min-height: 30px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.own-cp-menu-note {
+  max-width: 260px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--own-text-faint);
+  white-space: normal;
+}
+
+.own-cp-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--own-text);
+  color: var(--own-bg);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-cp-send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.own-cp-stop {
+  background: var(--own-danger);
+  color: var(--own-on-danger);
+}
+/* 4.6 보내는 키 (EM 2026-10-18): `▾` attached to 전송 opens the send-key menu; touch screens send with the button only. */
+.own-cp-send-group {
+  display: inline-flex;
+  flex: none;
+}
+.own-cp-send-group > .own-cp-send {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: 10px;
+}
+.own-cp-send-key-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.own-cp-send.own-cp-send-key {
+  min-width: 0;
+  /* WCAG 2.2 target size: 24 px wide. */
+  width: 24px;
+  padding: 0;
+  justify-content: center;
+  border-left: 1px solid color-mix(in srgb, var(--own-bg) 45%, transparent);
+  border-radius: 0 9px 9px 0;
+  font-size: 10px;
+}
+/* One window at every density (binding-button). It gives way last, after the model's name (UX 2026-10-26: at 1024 px
+   and 자세히 two bars were drawn over `모델 @ 계정`), and is clipped inside the button rather than drawn over the caret. */
+.own-cp-switch .own-glance {
+  flex: 0 0.01 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.own-cp-menu.own-cp-send-key-menu {
+  left: auto;
+  right: 0;
+  min-width: 300px;
+}
+.own-cp-send-key-menu .own-cp-menu-note {
+  max-width: none;
+}
+.own-cp-send-key-head {
+  padding: 4px 10px 2px;
+  font-size: 11.5px;
+  color: var(--own-text-faint);
+}
+@media (pointer: coarse) {
+  .own-cp-send-key-wrap {
+    display: none;
+  }
+  .own-cp-send-group > .own-cp-send {
+    padding-right: 12px;
+    border-radius: 9px;
+  }
+}
+.own-cp-hint {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--own-text-faint);
+}
+.own-cp-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-cp-link:hover {
+  text-decoration: underline;
+}
+/* New-session screen: the browser tool note under the box (18.15). */
+.own-cp-note {
+  padding: 6px 4px 0;
+}
+.own-cp-note:empty {
+  display: none;
+}
+.own-cp-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--own-border-strong);
+  background: var(--own-bg);
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-cp-btn:hover {
+  background: var(--own-bg-hover);
+}
+.own-cp-btn-primary {
+  background: var(--own-accent);
+  border-color: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-cp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- context ring (4.4, 5.8.3) ---- */
+
+.own-cp-meter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+/* The tokens in the context beside the ring (UX 2026-10-26): muted, in the caution color from 85 % of the point. */
+.own-cp-meter-num {
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+  white-space: nowrap;
+}
+.own-cp-meter[data-tone="warn"] .own-cp-meter-num,
+.own-cp-meter[data-tone="over"] .own-cp-meter-num {
+  color: var(--own-warn);
+}
+.own-cp-meter:hover {
+  background: var(--own-bg-hover);
+}
+.own-cp-ring-track {
+  fill: none;
+  stroke: var(--own-meter-track);
+  stroke-width: 3;
+}
+/* Without the router's numbers: a plain track in the unknown meter's colour (UX 2026-10-26: no dashed ring; the hover
+   text says why. UX 2026-10-27: a meter token, not the faint text colour, which drew it nearly as a full fill). */
+.own-cp-meter[data-mode="fallback"] .own-cp-ring-track {
+  stroke: var(--own-meter-unknown);
+}
+.own-cp-ring-fill {
+  fill: none;
+  stroke: var(--own-meter-fill);
+  stroke-width: 3;
+}
+.own-cp-meter[data-tone="warn"] .own-cp-ring-fill,
+.own-cp-meter[data-tone="over"] .own-cp-ring-fill {
+  stroke: var(--own-warn);
+}
+.own-cp-ring-mark {
+  stroke: var(--own-text-faint);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.own-cp-ring-mark[data-strong] {
+  stroke: var(--own-text-muted);
+  stroke-width: 2;
+}
+.own-cp-meter-alert {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--own-danger);
+}
+.own-cp-meter-due {
+  font-size: 11.5px;
+  color: var(--own-warn);
+  white-space: nowrap;
+}
+.own-cp-pop {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  width: min(340px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  font-size: 12.5px;
+}
+.own-cp-pop-title {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.own-cp-pop-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 0 0 8px;
+  color: var(--own-text-muted);
+}
+.own-cp-pop-facts dd {
+  margin: 0;
+  text-align: right;
+}
+.own-cp-pop-warn {
+  margin: 0 0 8px;
+  color: var(--own-warn);
+}
+.own-cp-pop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.own-cp-pop-note {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--own-text-muted);
+}
+
+/* ---- queue dock (18.9) ---- */
+
+.own-cp-dock {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  font-size: 12.5px;
+}
+.own-cp-dock-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.own-cp-dock-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--own-text-faint);
+}
+.own-cp-dock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 3px 0;
+}
+.own-cp-badge {
+  flex: none;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--own-radius-chip);
+  border: 1px solid var(--own-accent-text);
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+  font-size: 11px;
+  cursor: pointer;
+}
+.own-cp-badge[data-delivery="queue"] {
+  border-color: var(--own-border-strong);
+  background: none;
+  color: var(--own-text-muted);
+}
+.own-cp-badge[data-delivery="held"] {
+  border-style: dashed;
+  cursor: default;
+}
+.own-cp-dock-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-cp-x {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.own-cp-x:hover {
+  background: var(--own-bg-hover);
+}
+
+/*
+ * A narrow composer (03 §4.6) folds its tools in two steps, by the composer's own width, not the window's, so `전송`
+ * never wraps onto a line of its own and `⋯` opens what folded on the lines below (the switcher's sheet also has the
+ * effort and the speed):
+ *   - below 720 px (a desktop with the sidebar and the work panel open: about 700 px at 1440, 680 at 1366): the
+ *     switcher button shrinks, 울트라, 속도, the subagent badge and the tokens beside the context ring fold; 추론 강도
+ *     and 프리셋, changed most often, stay, and the new-conversation screen keeps its second line for them;
+ *   - below 600 px (a phone, a narrow window, 1280 with the panel): 추론 강도 and 프리셋 fold too, `✦ 스킬` keeps its
+ *     mark only and the toolbar is one line (2026-10-18: the model button was down to `G…` on a phone).
+ * The limit in `모델 @ 계정` folds by the room the toolbar actually has (./limit-fit.ts, `data-fold` on the bar, UX
+ * 2026-10-27), down to the ring, which always stays; the new-conversation screen's two-row toolbar never folds it.
+ */
+/* From 720 to 800 px (the composer is at most 760 px: 1024 or 1440 with the work panel closed) every tool is still on
+   the line and their minimums left 1 px: the button may narrow to 150 px (UX 2026-10-26), and the limit there is
+   usually the ring alone (./limit-fit.ts). */
+@container own-cp (min-width: 720px) and (max-width: 799px) {
+  .own-cp-switch {
+    min-width: 150px;
+  }
+}
+/* ./limit-fit.ts: from step 2 the tokens beside the context ring give their room, at step 3 the ring stands alone (its
+   value stays in the glance's spoken text). A balance has no ring and keeps its amount. */
+.own-cp-bar:is([data-fold="2"], [data-fold="3"]) .own-cp-meter-num,
+.own-cp-bar[data-fold="3"] .own-cp-switch .own-glance-ring + .own-glance-value {
+  display: none;
+}
+@container own-cp (max-width: 719px) {
+  .own-cp-variant-wrap:not(.own-cp-effort-wrap, .own-cp-preset-wrap),
+  .own-cp-meter-due,
+  .own-cp-meter-num {
+    display: none;
+  }
+  .own-cp-tool.own-cp-more {
+    display: inline-flex;
+  }
+  .own-cp-bar:not([data-new]) {
+    flex-wrap: nowrap;
+  }
+  .own-cp-switch {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+  /* On one line the preset's name starts from its whole text, as `모델 @ 계정` does, and both give way together only
+     once the line is full; from a zero basis it stayed at its 96 px minimum (`프리셋: 평…`) on every full line. */
+  .own-cp-bar:not([data-new], [data-more]) .own-cp-preset-wrap {
+    flex: 0 1 auto;
+  }
+  .own-cp-bar[data-more] {
+    flex-wrap: wrap;
+  }
+  .own-cp-bar[data-more] .own-cp-variant-wrap {
+    display: inline-flex;
+  }
+}
+/* A touch screen folds as below 720 px up to 800 px (Fold8 pass, 2026-11-20): with every tool at 44 px the 760 px
+   composer of an unfolded Galaxy Z Fold8 on its side had `GP… @ ChatGPT` and `프리셋:…` on its line. */
+@media (pointer: coarse) {
+  @container own-cp (max-width: 799px) {
+    .own-cp-variant-wrap:not(.own-cp-effort-wrap, .own-cp-preset-wrap),
+    .own-cp-meter-due,
+    .own-cp-meter-num {
+      display: none;
+    }
+    .own-cp-tool.own-cp-more {
+      display: inline-flex;
+    }
+    .own-cp-bar:not([data-new]) {
+      flex-wrap: nowrap;
+    }
+    .own-cp-switch {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .own-cp-bar:not([data-new], [data-more]) .own-cp-preset-wrap {
+      flex: 0 1 auto;
+    }
+    .own-cp-bar[data-more] {
+      flex-wrap: wrap;
+    }
+    .own-cp-bar[data-more] .own-cp-variant-wrap {
+      display: inline-flex;
+    }
+  }
+}
+/* English labels are longer (`Speed: Standard`), so at 760 px, the composer's width with the work panel closed, `Send`
+   had a line of its own: the same fold there. */
+@container own-cp (min-width: 720px) and (max-width: 799px) {
+  :lang(en) .own-cp-variant-wrap:not(.own-cp-effort-wrap, .own-cp-preset-wrap),
+  :lang(en) .own-cp-meter-due,
+  :lang(en) .own-cp-meter-num {
+    display: none;
+  }
+  :lang(en) .own-cp-tool.own-cp-more {
+    display: inline-flex;
+  }
+  .own-cp-bar:lang(en):not([data-new]) {
+    flex-wrap: nowrap;
+  }
+  .own-cp-bar:lang(en)[data-more] {
+    flex-wrap: wrap;
+  }
+  .own-cp-bar:lang(en)[data-more] .own-cp-variant-wrap {
+    display: inline-flex;
+  }
+}
+@container own-cp (max-width: 599px) {
+  /* A phone (UX 2026-10-26): the account alone, shortened last; the model is in the header pill and still read out
+     here (visually hidden, not removed), and the caret makes room. A label without an account keeps its text. */
+  .own-cp-switch-label:has(> [data-part="account"]) > :is([data-part="model"], [data-part="sep"]) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .own-cp-switch-label > [data-part="account"] {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  /* The account's name needs the room more than its dot and the caret (both in the header pill above). */
+  .own-cp-switch:has(> .own-cp-switch-label > [data-part="account"]) {
+    padding: 0 4px;
+  }
+  .own-cp-switch:has(> .own-cp-switch-label > [data-part="account"]) > .own-sw-dot,
+  .own-cp-switch > .own-cp-caret {
+    display: none;
+  }
+  .own-cp-effort-wrap,
+  .own-cp-preset-wrap,
+  .own-cp-break,
+  .own-cp-tool-text {
+    display: none;
+  }
+  /* `전송` and `중단` without their ↵ and ■ (UX 2026-10-27): the limit's ring, which always stays, takes that room, and
+     `ChatGPT 01` keeps its last characters on a 375 px phone. */
+  .own-cp-send > [aria-hidden="true"] {
+    display: none;
+  }
+  /* 2 px between the tools: six of them give `ChatGPT 01` its last pixels on a 375 px phone (UX 2026-10-26). */
+  .own-cp-bar {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+  .own-cp-bar[data-more] {
+    flex-wrap: wrap;
+  }
+  /* `⋯` open (MUX 2026-11-06): the folded tools get a line of their own under the main one, so the first line keeps
+     the switcher, `⋯`, the ring and `전송` where they were (they had wrapped to a third line, `전송` at its left). */
+  .own-cp-bar[data-more]::after {
+    content: "";
+    order: 4;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .own-cp-bar[data-more] > .own-cp-variant-wrap {
+    order: 5;
+  }
+  /* Opened, the button shows its limit bar and grew past the line; from a zero basis it fills what is left of the
+     first line instead of pushing `전송` onto the next (a wrap counts the basis, not the minimum). */
+  .own-cp-bar[data-more] > .own-cp-switch {
+    flex: 1 1 0;
+    max-width: max-content;
+  }
+  /* The microphone keeps its size (S23 pass, 2026-11-19): its wrapper shrank to nothing in the one-line toolbar, the
+     44 px button stayed, and `모델 @ 계정` was drawn over it. While it records or works, its bar takes a line of its
+     own under the tools. */
+  .own-cp-bar > .own-vc {
+    flex: none;
+  }
+  .own-cp-bar:has(> .own-vc:not([data-phase="idle"], [data-phase="starting"])) {
+    flex-wrap: wrap;
+  }
+  .own-cp-bar > .own-vc:not([data-phase="idle"], [data-phase="starting"]) {
+    order: 6;
+    flex: 1 1 100%;
+  }
+  /* The new-conversation screen keeps where (folder, 작업 위치) on its first line and who on the second: on one line
+     the folder took the room and the account was down to `C…`. */
+  .own-cp-bar[data-new] {
+    flex-wrap: wrap;
+  }
+  .own-cp-bar[data-new] > .own-cp-break {
+    display: block;
+  }
+}
+
+/* At thumb size the attach button and the microphone draw no box of their own, like `✦` and `⋯` beside them: two
+   44 px outlined boxes among plain marks read as a different kind of control (S23 pass below 600 px; every touch
+   screen since the visual polish, as the unfolded Galaxy Z Fold8's 760 px composer still drew them). */
+@media (pointer: coarse) {
+  .own-cp-bar > .own-at-add,
+  .own-cp-bar > .own-vc .own-vc-mic {
+    border-color: transparent;
+    background: none;
+  }
+}
+/* From 720 to 800 px every tool is on one line with 1 px to spare (above); the microphone (voice input on) took more,
+   and `전송` went to a line of its own at 1366 px. With it the toolbar folds as below 720 px (visual polish,
+   2026-11-20). */
+@container own-cp (min-width: 720px) and (max-width: 799px) {
+  .own-cp-bar:has(> .own-vc)
+    :is(.own-cp-variant-wrap:not(.own-cp-effort-wrap, .own-cp-preset-wrap), .own-cp-meter-due, .own-cp-meter-num) {
+    display: none;
+  }
+  .own-cp-bar:has(> .own-vc) .own-cp-tool.own-cp-more {
+    display: inline-flex;
+  }
+  .own-cp-bar:has(> .own-vc):not([data-new]) {
+    flex-wrap: nowrap;
+  }
+  .own-cp-bar:has(> .own-vc) .own-cp-switch {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .own-cp-bar:has(> .own-vc):not([data-new], [data-more]) .own-cp-preset-wrap {
+    flex: 0 1 auto;
+  }
+  .own-cp-bar[data-more]:has(> .own-vc) {
+    flex-wrap: wrap;
+  }
+  .own-cp-bar[data-more]:has(> .own-vc) .own-cp-variant-wrap {
+    display: inline-flex;
+  }
+}
+
+/* The phone's conversation (S23 pass, 2026-11-19), and an unfolded foldable's (`data-handheld`, Fold8 pass, so folding
+   and unfolding keep the control where it was): the header's `모델 @ 계정` is its one model control (the same sheet),
+   so the toolbar keeps `+`, `✦`, the microphone, `⋯`, the context ring and `전송` at thumb size. The new-conversation
+   screen has no pill and keeps its button; so does a conversation the router has no binding for (`data-pill`). */
+.own-app[data-handheld] .own-cp-bar[data-pill] > .own-cp-switch {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .own-cp-ring-track,
+  .own-cp-ring-fill,
+  .own-cp-ring-mark {
+    stroke: CanvasText;
+  }
+}

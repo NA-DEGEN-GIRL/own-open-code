@@ -1,0 +1,90 @@
+// own-open-code global config (01 §4, §5.1, §13; FORK.md §8.4).
+//
+// Location: %USERPROFILE%\.config\own-open-code\opencode.jsonc  — the launcher sets OPENCODE_CONFIG_DIR to that
+// directory. Never copy this into %USERPROFILE%\.config\opencode (the upstream install's config).
+// `own config init` writes a comment-free version of this file on first run, listing only plugin directories that
+// exist; replace <OWN_HOME> below with %LOCALAPPDATA%\own-open-code written with forward slashes, e.g.
+// C:/Users/you/AppData/Local/own-open-code, and <version> with the installed version (app\current.json), e.g.
+// 2.0.18-own.3. Paths may also be file:// URLs; relative ./ paths resolve against this file's directory.
+// The own plugin entries below are managed: own install/update/rollback (and the first start after one) point every
+// <OWN_HOME>/app/<any version or "current">/plugins/own-* and .../plugins/claude-auth entry (and the former
+// <OWN_HOME>/thirdparty/claude-auth line, launcher 0.6.0) at the installed version and leave everything else in this
+// file (other entries, comments, formatting) as it is. There is no app\current junction (launcher 0.4.0).
+{
+  // Auto-update off (01 §5.5). The launcher also sets OPENCODE_DISABLE_AUTOUPDATE=1; this covers a raw exe.
+  "update": "disable",
+
+  // No session sharing (01 §13).
+  "share": "disabled",
+
+  // Plugin order is activation order and hook order (01 §4, 02 §8.2, 06 §2.6, 09 §5.1, 10 H0):
+  //   [own.accounts, own.remote (SSH hosts, phone gateway), own.team (team mode, 06),
+  //    heymaaz.claude-auth-v2 (the third-party Claude subscription plugin, shipped with the app, patched and always
+  //    on; it sends nothing until a Claude account is connected), own.telemetry,
+  //    own.computer-use (Windows desktop control; off in every session until turned on, 01 §10.2),
+  //    own.import (read-only Codex and Claude Code conversations, 09),
+  //    own.harness (per-session harness: OpenCode 기본 or Codex 방식, 10-codex-harness.md),
+  //    own.omo (oh-my-opencode on OpenCode 2, the `omo (원본)` harness, 15-omo-port.md),
+  //    own.creator (creator mode and own's declarative extensions, 17-creator.md)]
+  // own.team sits before the Claude plugin, so a change of that line never reloads it (a config change reloads only
+  // the plugins after the first changed entry). Computer use comes after the other request-path plugins:
+  // its agent transform runs after own-accounts' agents exist. own.import has no hooks, so adding it reloads no other
+  // plugin. own.harness is last: it has no hooks yet (adding it reloads no other plugin), and its later request hooks
+  // (10 H1) must transform the request after every other own plugin's. Remote (SSH host) installs do not carry it yet.
+  // Each entry is a plugin DIRECTORY (a file path is rejected by upstream). Plugins set here are not subject to
+  // the npm update check. An update that brings a new own bundle adds its entry after the one before it.
+  "plugins": [
+    "<OWN_HOME>/app/<version>/plugins/own-accounts",
+    "<OWN_HOME>/app/<version>/plugins/own-remote",
+    "<OWN_HOME>/app/<version>/plugins/own-team",
+    // The Claude subscription plugin (02 §8.2). Its account list and login state stay in <OWN_HOME>/thirdparty/claude-auth;
+    // a config line naming that folder (the former in-app install) is pointed here by the launcher.
+    "<OWN_HOME>/app/<version>/plugins/claude-auth",
+    "<OWN_HOME>/app/<version>/plugins/own-telemetry",
+    "<OWN_HOME>/app/<version>/plugins/own-computer-use",
+    "<OWN_HOME>/app/<version>/plugins/own-import",
+    "<OWN_HOME>/app/<version>/plugins/own-harness",
+    // oh-my-opencode on OpenCode 2 (own/docs/15): after own.harness, so its request hooks run on what own.harness
+    // built, and only in sessions that run the `omo` harness. `{"enabled": false}` as its options turns it off.
+    "<OWN_HOME>/app/<version>/plugins/own-omo",
+    // Creator mode and the extensions it makes (own/docs/17): last, so its compaction and retry additions follow
+    // own.harness'. `{"enabled": false}` as its options turns it off.
+    "<OWN_HOME>/app/<version>/plugins/own-creator"
+  ],
+  // Development (channel "local", 01 §5.4 / 02 §2.3) points the plugins at a separate home instead:
+  // { "package": "<repo>/packages/own-accounts", "options": { "home": "C:/Users/you/AppData/Local/own-open-code-dev" } }
+
+  // Ordered rules; the LAST matching rule wins (packages/core/src/permission.ts). Resources are absolute paths with
+  // forward slashes and `*` wildcards (case-insensitive on Windows). These denials are defense in depth only: a shell
+  // command can still read the files (01 §13).
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+
+    // own vault (DPAPI blobs, .prev, refresh leases) — production and dev homes
+    { "action": "read", "resource": "*/own-open-code/vault/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/own-open-code/vault/*", "effect": "deny" },
+    { "action": "read", "resource": "*/own-open-code-dev/vault/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/own-open-code-dev/vault/*", "effect": "deny" },
+
+    // service database (sessions, KV, and the third-party Claude slot's plaintext OAuth credential)
+    { "action": "read", "resource": "*/opencode-own.db*", "effect": "deny" },
+    { "action": "edit", "resource": "*/opencode-own.db*", "effect": "deny" },
+
+    // registration file and both service config files (contain the local server password)
+    { "action": "read", "resource": "*/opencode/service-own.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/opencode/service-own.json", "effect": "deny" },
+    { "action": "read", "resource": "*/own-open-code/service-own.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/own-open-code/service-own.json", "effect": "deny" },
+
+    // third-party credential sources: Claude Code, Codex CLI, and codex-multi-provider profiles (linked imports)
+    { "action": "read", "resource": "*/.claude/.credentials.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/.claude/.credentials.json", "effect": "deny" },
+    { "action": "read", "resource": "*/.codex/auth.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/.codex/auth.json", "effect": "deny" },
+    { "action": "read", "resource": "*/codex-multi-provider/work/control-center/profiles/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/codex-multi-provider/work/control-center/profiles/*", "effect": "deny" }
+  ]
+
+  // Do NOT declare own slots under "providers": config providers create same-named key integrations and can inherit
+  // claude-auth's cost=[] through canonical clones (01 §8.2). own-accounts registers slots via provider.transform.
+}

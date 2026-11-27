@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+    <title>Workspace harness</title>
+  </head>
+  <body>
+    <!-- Dev-server only (never part of the build): the projects, mcp and policy modules with the real data layer and
+         providers, without the shell wiring the integrator adds, so their e2e does not depend on other modules. -->
+    <div id="root"></div>
+    <script type="module" src="./harness.tsx"></script>
+  </body>
+</html>

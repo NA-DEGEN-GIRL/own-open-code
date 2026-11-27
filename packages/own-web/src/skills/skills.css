@@ -1,0 +1,633 @@
+/* Skills button and popover (03 §19.6). own tokens only (13.2); both color schemes come from the tokens. */
+.own-sk-pop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(460px, 60vh);
+  padding: 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 12.5px;
+}
+.own-sk-search {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+}
+.own-sk-search:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-sk-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+.own-sk-option {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  contain: content;
+}
+.own-sk-option[aria-selected="true"] {
+  background: var(--own-accent-soft);
+}
+/* An option and its `끄기` (SG): the option takes the line, the button keeps its size. */
+.own-sk-optrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.own-sk-optrow > .own-sk-option {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.own-sk-grow {
+  flex: 1 1 auto;
+}
+.own-sk-icon {
+  flex: none;
+  color: var(--own-accent-text);
+}
+.own-sk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.own-sk-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.own-sk-name {
+  font-weight: 600;
+}
+.own-sk-id {
+  color: var(--own-text-muted);
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+}
+.own-sk-tag {
+  padding: 0 6px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  color: var(--own-text-muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+.own-sk-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
+}
+.own-sk-state {
+  margin: 4px 2px;
+  color: var(--own-text-muted);
+}
+.own-sk-state[data-tone="danger"] {
+  color: var(--own-danger);
+}
+.own-sk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.own-sk-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-sk-btn[data-primary] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-sk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.own-sk-btn:focus-visible,
+.own-sk-link:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}
+.own-sk-block {
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+}
+.own-sk-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font: inherit;
+  cursor: pointer;
+}
+.own-sk-note,
+.own-sk-keys {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.own-sk-keys {
+  color: var(--own-text-faint);
+}
+/* A touch screen has no Enter, Ctrl+Enter or Esc to name (visual polish, 2026-11-20). */
+@media (pointer: coarse) {
+  .own-sk-keys {
+    display: none;
+  }
+}
+/* Tabs and the 가져오기 view (03 §19.6.1). */
+.own-sk-pop[data-view="import"] {
+  width: min(600px, calc(100vw - 24px));
+  max-height: min(680px, 78vh);
+}
+.own-sk-tabs {
+  display: flex;
+  gap: 4px;
+}
+.own-sk-tab {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.own-sk-tab[aria-selected="true"] {
+  border-color: var(--own-border);
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+}
+.own-sk-tab:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-sk-imp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* 설정 > 스킬 shows the same view as part of its page, which scrolls (2026-11-03): no height bound there, so the view
+   never had anything to scroll, yet its `contain` still ended the wheel's scroll chain at it. Over its search box and
+   skill cards, most of the page with a few tools' skills, the wheel moved nothing; only the gutter beside the column
+   scrolled. Embedded, it is plain content. Its preview keeps its own bounded scroll box. */
+.own-sk-imp[data-embedded] {
+  overflow-y: visible;
+  overscroll-behavior: auto;
+}
+.own-sk-imp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.own-sk-imp-title {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.own-sk-imp-body,
+.own-sk-imp-group,
+.own-sk-imp-url,
+.own-sk-imp-preview,
+.own-sk-imp-updates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.own-sk-imp-url,
+.own-sk-imp-updates {
+  padding: 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+}
+.own-sk-imp-group-title {
+  margin: 4px 2px 0;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.own-sk-imp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-sk-imp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  contain: content;
+}
+.own-sk-imp-path {
+  overflow: hidden;
+  color: var(--own-text-faint);
+  font-family: var(--own-font-mono);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-sk-imp-files .own-sk-imp-path {
+  white-space: pre;
+}
+.own-sk-imp-files summary {
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.own-sk-imp-note {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.own-sk-imp-problem {
+  color: var(--own-danger);
+  font-size: 11.5px;
+}
+.own-sk-imp-warn {
+  margin: 0;
+  color: var(--own-warn);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.own-sk-imp-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px;
+  border: 1px solid var(--own-warn);
+  border-radius: 8px;
+}
+.own-sk-imp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+}
+.own-sk-imp-grow {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.own-sk-imp-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.own-sk-tag[data-tone="danger"] {
+  border-color: var(--own-danger);
+  color: var(--own-danger);
+}
+.own-sk-tag[data-tone="warn"] {
+  border-color: var(--own-warn);
+  color: var(--own-warn);
+}
+/* SK2 (2026-10-24): the places looked in, search and filters, merged rows, links, 상세 보기. */
+.own-sk-tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.own-sk-manage {
+  margin-left: auto;
+  font-size: 11.5px;
+}
+.own-sk-imp-places {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+.own-sk-imp-places-title {
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.own-sk-imp-place-list {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-sk-imp-place {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0 6px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  font-size: 11px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.own-sk-imp-place-count,
+.own-sk-imp-meta,
+.own-sk-detail-meta {
+  color: var(--own-text-muted);
+  font-size: 11px;
+}
+.own-sk-imp-place-state {
+  color: var(--own-warn);
+}
+.own-sk-imp-place[data-state="missing"] .own-sk-imp-place-state,
+.own-sk-imp-place[data-state="unreadable"] .own-sk-imp-place-state,
+.own-sk-imp-place[data-state="path_denied"] .own-sk-imp-place-state {
+  color: var(--own-text-muted);
+}
+.own-sk-imp-tools,
+.own-sk-imp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.own-sk-imp-source {
+  flex: 0 1 220px;
+  min-width: 0;
+  max-width: 100%;
+}
+/* `가져올 스킬을 쓸 곳` (SG): the label and its select on one line, wrapping on a narrow popover. */
+.own-sk-imp-target {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+.own-sk-imp-target > span {
+  flex: none;
+  white-space: nowrap;
+}
+.own-sk-imp-target > select {
+  min-width: 120px;
+}
+/* The popover's `끄기` and the group of skills switched off in this project (SG). */
+.own-sk-off-btn {
+  flex: none;
+  align-self: center;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-sk-off-btn:hover {
+  color: var(--own-text);
+  background: var(--own-bg-hover);
+}
+.own-sk-off-btn:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-sk-off {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+.own-sk-off summary {
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+.own-sk-off-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.own-sk-chip {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.own-sk-chip[aria-pressed="true"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+}
+.own-sk-chip:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-sk-imp-builtins {
+  font-size: 11.5px;
+}
+.own-sk-imp-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.own-sk-imp-link .own-sk-imp-path {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.own-sk-imp-place-rows,
+.own-sk-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.own-sk-imp-detail,
+.own-sk-detail,
+.own-sk-detail-part {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.own-sk-detail {
+  gap: 10px;
+  font-size: 12.5px;
+}
+.own-sk-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.own-sk-detail-desc {
+  color: var(--own-text-muted);
+  line-height: 1.45;
+}
+.own-sk-detail-path,
+.own-sk-detail-hash {
+  color: var(--own-text-faint);
+  font-family: var(--own-font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.own-sk-detail-files li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.own-sk-detail-front {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: 2px 10px;
+  margin: 0;
+}
+.own-sk-detail-front dt {
+  color: var(--own-text-muted);
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.own-sk-detail-front dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.own-sk-detail-body {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+/* A body that could not be formatted (SK2 2026-10-25): its text as it is, wrapped, scrolled within the detail. */
+.own-sk-detail-raw {
+  min-width: 0;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.own-sk-detail-body :is(h1, h2, h3, h4, h5, h6) {
+  margin: 10px 0 4px;
+  font-size: 13.5px;
+}
+.own-sk-detail-body :is(p, ul, ol, blockquote, table) {
+  margin: 4px 0;
+}
+.own-sk-detail-body pre {
+  max-width: 100%;
+  margin: 6px 0;
+  padding: 6px 8px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--own-bg);
+  font-size: 11.5px;
+}
+.own-sk-detail-body code {
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+}
+.own-sk-detail-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.own-sk-detail-body :is(th, td) {
+  padding: 2px 6px;
+  border: 1px solid var(--own-border);
+}
+.own-sk-detail-body img {
+  max-width: 100%;
+}
+.own-sk-detail-body a {
+  color: var(--own-accent-text);
+}
+.own-sk-detail-img {
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+}
+@media (pointer: coarse) {
+  .own-sk-option {
+    min-height: 44px;
+  }
+  .own-sk-chip {
+    height: 44px;
+  }
+  .own-sk-tab {
+    height: 44px;
+  }
+  .own-sk-btn {
+    height: 44px;
+  }
+}
+@media (forced-colors: active) {
+  .own-sk-option[aria-selected="true"] {
+    outline: 1px solid Highlight;
+  }
+}

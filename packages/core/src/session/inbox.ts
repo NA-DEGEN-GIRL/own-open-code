@@ -1,6 +1,8 @@
 export * as SessionInbox from "./inbox.js"
 
-import { and, asc, eq, or } from "drizzle-orm"
+// OWN-PATCH(P-035) begin: gt, ne, sql
+import { and, asc, eq, gt, ne, or, sql } from "drizzle-orm"
+// OWN-PATCH(P-035) end
 import { Context, DateTime, Effect, Layer, Schema } from "effect"
 import { makeGlobalNode } from "@opencode/util/effect/app-node"
 import {
@@ -14,6 +16,10 @@ import {
   MediaUserPayload,
   Move,
   MovePayload,
+  // OWN-PATCH(P-035) begin
+  Reset,
+  ResetPayload,
+  // OWN-PATCH(P-035) end
   Synthetic,
   SyntheticPayload,
   User,
@@ -43,6 +49,10 @@ export {
   MediaUserPayload,
   Move,
   MovePayload,
+  // OWN-PATCH(P-035) begin
+  Reset,
+  ResetPayload,
+  // OWN-PATCH(P-035) end
   Synthetic,
   SyntheticPayload,
   User,
@@ -66,6 +76,10 @@ const decodeCompaction = Schema.decodeUnknownSync(CompactionPayload)
 const encodeCompaction = Schema.encodeSync(CompactionPayload)
 const decodeMove = Schema.decodeUnknownSync(MovePayload)
 const encodeMove = Schema.encodeSync(MovePayload)
+// OWN-PATCH(P-035) begin
+const decodeReset = Schema.decodeUnknownSync(ResetPayload)
+const encodeReset = Schema.encodeSync(ResetPayload)
+// OWN-PATCH(P-035) end
 const inboxLocks = KeyedMutex.makeUnsafe<SessionSchema.ID>()
 type PendingRef = { readonly id: SessionMessage.ID; readonly sessionID: SessionSchema.ID }
 
@@ -98,6 +112,10 @@ const fromRow = (row: typeof SessionInboxTable.$inferSelect): Info => {
     })
   if (row.type === "move")
     return Move.make({ ...base, type: "move", payload: decodeMove(row.payload), delivery: row.delivery })
+  // OWN-PATCH(P-035) begin
+  if (row.type === "reset")
+    return Reset.make({ ...base, type: "reset", payload: decodeReset(row.payload), delivery: row.delivery })
+  // OWN-PATCH(P-035) end
   if (row.type === "user")
     return User.make({
       ...base,
@@ -183,7 +201,9 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     const existing =
       (yield* find(db, request.id)) ?? (yield* promotedFromMessage(db, request.sessionID, request.id, request.delivery))
     if (existing === undefined) return undefined
-    if (existing.type === "compaction" || !matches(existing, request))
+    // OWN-PATCH(P-035) begin: like compaction, a reset owns its admission (`admitReset`)
+    if (existing.type === "compaction" || existing.type === "reset" || !matches(existing, request))
+      // OWN-PATCH(P-035) end
       return yield* new LifecycleConflict({ id: request.id })
     return existing
   })
@@ -249,6 +269,35 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     )
   })
 
+  // OWN-PATCH(P-035) begin
+  /**
+   * A context reset is always queued: it delivers at an idle boundary, after the running turn. A second request while
+   * one is pending returns the pending item; reusing a delivered ID, or another item's, conflicts.
+   */
+  const admitReset = Effect.fn("SessionInbox.admitReset")(function* (input: PendingRef) {
+    return yield* serialized(
+      input.sessionID,
+      Effect.gen(function* () {
+        const exact = yield* find(db, input.id)
+        if (exact) {
+          if (exact.type === "reset" && exact.sessionID === input.sessionID) return exact
+          return yield* new LifecycleConflict({ id: input.id })
+        }
+        const message = yield* db
+          .select({ id: SessionMessageTable.id })
+          .from(SessionMessageTable)
+          .where(eq(SessionMessageTable.id, input.id))
+          .get()
+          .pipe(Effect.orDie)
+        if (message) return yield* new LifecycleConflict({ id: input.id })
+        const pending = (yield* list(db, input.sessionID)).find((item) => item.type === "reset")
+        if (pending) return pending
+        return yield* admit({ ...input, item: { type: "reset", payload: {}, delivery: Delivery.make("queue") } })
+      }),
+    )
+  })
+  // OWN-PATCH(P-035) end
+
   const cancel = Effect.fn("SessionInbox.cancel")((input: PendingRef) =>
     publishMutation(
       input,
@@ -286,6 +335,9 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     reconcile,
     admit,
     admitCompaction,
+    // OWN-PATCH(P-035) begin
+    admitReset,
+    // OWN-PATCH(P-035) end
     cancel,
     steer,
     queue,
@@ -320,7 +372,11 @@ export const projectAdmitted = Effect.fn("SessionInbox.projectAdmitted")(functio
         ? encodeSynthetic(request.item.payload)
         : request.item.type === "compaction"
           ? encodeCompaction(request.item.payload)
-          : encodeMove(request.item.payload)
+          : // OWN-PATCH(P-035) begin
+            request.item.type === "reset"
+            ? encodeReset(request.item.payload)
+            : // OWN-PATCH(P-035) end
+              encodeMove(request.item.payload)
   const stored = yield* db
     .insert(SessionInboxTable)
     .values({
@@ -367,7 +423,9 @@ export const projectDelivered = Effect.fn("SessionInbox.projectDelivered")(funct
 export type Delivered =
   | { readonly id: SessionMessage.ID; readonly type: "user"; readonly payload: SessionStored.UserPayload }
   | { readonly id: SessionMessage.ID; readonly type: "synthetic"; readonly payload: SyntheticPayload }
-  | { readonly id: SessionMessage.ID; readonly type: "compaction" | "move" }
+  // OWN-PATCH(P-035) begin: a context reset
+  | { readonly id: SessionMessage.ID; readonly type: "compaction" | "move" | "reset" }
+  // OWN-PATCH(P-035) end
 
 const delivered = (row: typeof SessionInboxTable.$inferSelect): Delivered => {
   if (row.type === "user") return { id: row.id, type: "user", payload: decodeStoredUser(row.payload) }
@@ -407,6 +465,9 @@ const projectDelivery = Effect.fn("SessionInbox.projectDelivery")(function* (
         eq(SessionInboxTable.id, input.id),
         eq(SessionInboxTable.session_id, input.sessionID),
         eq(SessionInboxTable.delivery, input.from),
+        // OWN-PATCH(P-035) begin: a reset stays queued; it never steers into a running turn
+        ne(SessionInboxTable.type, "reset"),
+        // OWN-PATCH(P-035) end
       ),
     )
     .returning({ id: SessionInboxTable.id })
@@ -471,17 +532,32 @@ export const nextPromotable = Effect.fn("SessionInbox.nextPromotable")(function*
   db: DatabaseService,
   sessionID: SessionSchema.ID,
   promotable: Promotable,
+  // OWN-PATCH(P-035) begin
+  options?: {
+    /** Queued prompts stay parked at this boundary (a stop, a steer-scoped drain): none of them holds a waiting reset. */
+    readonly parked?: boolean
+    /** A boundary inside a running turn: its background notices cross a waiting reset (`pendingSteers`). */
+    readonly turn?: boolean
+  },
 ) {
-  const steer = (yield* pendingSteers(db, sessionID))[0]
+  // Passive input never comes next on its own.
+  const steer = (yield* pendingSteers(db, sessionID, options?.turn === true)).find((row) => !passive(row))
   if (steer) return promotion(steer)
   if (promotable !== "input") return undefined
-  const queued = yield* firstQueued(db, sessionID)
+  const queued = yield* firstQueued(db, sessionID, options?.parked === true)
+  // OWN-PATCH(P-035) end
   return queued ? promotion(queued) : undefined
 })
 
 /** What a boundary decides on: prompts are promoted by id, so only a move's payload is read. */
 export type Promotion =
-  | { readonly id: SessionMessage.ID; readonly type: "user" | "synthetic" | "compaction"; readonly delivery: Delivery }
+  | {
+      readonly id: SessionMessage.ID
+      // OWN-PATCH(P-035) begin
+      readonly type: "user" | "synthetic" | "compaction" | "reset"
+      // OWN-PATCH(P-035) end
+      readonly delivery: Delivery
+    }
   | {
       readonly id: SessionMessage.ID
       readonly type: "move"
@@ -511,6 +587,10 @@ export const has = Effect.fn("SessionInbox.has")(function* (
         scope === "input"
           ? or(eq(SessionInboxTable.delivery, "steer"), eq(SessionInboxTable.delivery, "queue"))
           : eq(SessionInboxTable.delivery, scope),
+        // OWN-PATCH(P-035) begin: passive input (a notice before a reset) never starts work on its own, so the idle
+        // hook's check (upstream v2.2.1) does not keep a drain going for it
+        sql`json_extract(${SessionInboxTable.payload}, '$.beforeReset') is null`,
+        // OWN-PATCH(P-035) end
       ),
     )
     .limit(1)
@@ -569,21 +649,34 @@ export const promote = Effect.fn("SessionInbox.promote")(function* (
   bus: Bus.Interface,
   sessionID: SessionSchema.ID,
   scope: Promotable,
+  // OWN-PATCH(P-035) begin: a boundary inside a running turn (`nextPromotable`)
+  options?: { readonly turn?: boolean },
+  // OWN-PATCH(P-035) end
 ) {
   return yield* serialized(
     sessionID,
     Effect.gen(function* () {
-      const steers = yield* pendingSteers(db, sessionID)
-      if (steers.length > 0 || scope === "steer") {
-        if (steers.length > 0 && isControl(steers[0])) return undefined
-        return yield* publish(db, bus, sessionID, beforeControl(steers))
+      // OWN-PATCH(P-035) begin: passive steers ride with other input; alone they are nothing to promote
+      const turn = options?.turn === true
+      const steers = yield* pendingSteers(db, sessionID, turn)
+      if (steers.some((row) => !passive(row)) || scope === "steer") {
+        const batch = beforeControl(steers)
+        if (!batch.some((row) => !passive(row))) return batch.length === steers.length ? 0 : undefined
+        return yield* publish(db, bus, sessionID, batch)
       }
 
-      const queued = yield* firstQueued(db, sessionID)
+      const queued = yield* firstQueued(db, sessionID, false)
       if (!queued) return 0
-      if (isControl(queued)) return undefined
-      const promoted = yield* publish(db, bus, sessionID, [queued])
-      return promoted + (yield* publish(db, bus, sessionID, beforeControl(yield* pendingSteers(db, sessionID))))
+      if (isControl(queued) || queued.type === "reset") return undefined
+      // The passive steers waiting before the barrier ride with it, in enqueue order.
+      const promoted = yield* publish(
+        db,
+        bus,
+        sessionID,
+        [...steers, queued].toSorted((a, b) => a.enqueued_seq - b.enqueued_seq),
+      )
+      return promoted + (yield* publish(db, bus, sessionID, beforeControl(yield* pendingSteers(db, sessionID, turn))))
+      // OWN-PATCH(P-035) end
     }),
   )
 })
@@ -595,26 +688,35 @@ const beforeControl = (rows: Array<typeof SessionInboxTable.$inferSelect>) => {
   return control === -1 ? rows : rows.slice(0, control)
 }
 
-const firstQueued = (db: DatabaseService, sessionID: SessionSchema.ID) =>
+// OWN-PATCH(P-035) begin: `turn`, a boundary inside a running turn
+const pendingSteers = (db: DatabaseService, sessionID: SessionSchema.ID, turn = false) =>
+  // OWN-PATCH(P-035) end
   db
     .select()
     .from(SessionInboxTable)
-    .where(and(eq(SessionInboxTable.session_id, sessionID), eq(SessionInboxTable.delivery, "queue")))
-    .orderBy(asc(SessionInboxTable.enqueued_seq))
-    .limit(1)
-    .get()
-    .pipe(Effect.orDie)
-
-const pendingSteers = (db: DatabaseService, sessionID: SessionSchema.ID) =>
-  db
-    .select()
-    .from(SessionInboxTable)
-    .where(and(eq(SessionInboxTable.session_id, sessionID), eq(SessionInboxTable.delivery, "steer")))
+    .where(
+      and(
+        eq(SessionInboxTable.session_id, sessionID),
+        // OWN-PATCH(P-035) begin: a passive item rides like a steer whatever its delivery
+        or(eq(SessionInboxTable.delivery, "steer"), eq(SessionInboxTable.type, "reset"), passiveRow),
+        // OWN-PATCH(P-035) end
+      ),
+    )
     .orderBy(asc(SessionInboxTable.enqueued_seq))
     .all()
     .pipe(
       Effect.orDie,
-      Effect.map((rows) => {
+      Effect.map((pending) => {
+        // OWN-PATCH(P-035) begin: a pending context reset (always queued) is a barrier. Input admitted after it
+        // delivers after it, at every boundary, so it starts the new context instead of joining the old one. A
+        // background notice belongs to the turn still running, though (`ofTurn`): at that turn's boundaries it crosses
+        // the barrier as if there were no reset; once the turn ended, the reset's delivery makes it passive.
+        const barrier = pending.findIndex((row) => row.type === "reset")
+        const rows =
+          barrier === -1
+            ? pending
+            : [...pending.slice(0, barrier), ...(turn ? pending.slice(barrier + 1).filter(ofTurn) : [])]
+        // OWN-PATCH(P-035) end
         // A move changes the context's Location: never pull compaction across it.
         // Within that boundary, compact before promoting even earlier steers so
         // their text stays verbatim after the checkpoint, not inside its summary.
@@ -623,3 +725,118 @@ const pendingSteers = (db: DatabaseService, sessionID: SessionSchema.ID) =>
         return rows
       }),
     )
+
+// OWN-PATCH(P-035) begin
+/** The line a passive notice's message starts with, written at delivery (11 §7.2). */
+export const BEFORE_RESET = "(This background task started before the context was reset.)"
+
+/**
+ * A passive synthetic (a background notice of work started before a context reset that still waits or applies, 11
+ * §7.2: its pending row names that reset, `beforeReset`) never promotes on its own: it delivers only in the same
+ * promotion as other input, in enqueue order. A boundary with only passive input pending is idle.
+ */
+const passive = (row: typeof SessionInboxTable.$inferSelect) =>
+  row.type === "synthetic" && "beforeReset" in row.payload && typeof row.payload.beforeReset === "string"
+const passiveRow = sql`json_extract(${SessionInboxTable.payload}, '$.beforeReset') is not null`
+/** A background notice (`payload.background`) steered into the running turn, not passive. */
+const ofTurn = (row: typeof SessionInboxTable.$inferSelect) =>
+  row.type === "synthetic" &&
+  row.delivery === "steer" &&
+  "background" in row.payload &&
+  row.payload.background === true &&
+  !passive(row)
+
+/**
+ * A reset that no longer applies (cancelled while it waited, or undone) releases the notices it held passive: they
+ * become ordinary, unless a reset admitted before them still waits, which they then precede. Projection data, so
+ * replay derives it again from the cancel or undo event.
+ */
+export const projectReleased = Effect.fn("SessionInbox.projectReleased")(function* (
+  db: DatabaseService,
+  input: { readonly sessionID: SessionSchema.ID; readonly resetID: SessionMessage.ID },
+) {
+  const held = and(
+    eq(SessionInboxTable.session_id, input.sessionID),
+    sql`json_extract(${SessionInboxTable.payload}, '$.beforeReset') = ${input.resetID}`,
+  )
+  const waiting = yield* db
+    .select({ id: SessionInboxTable.id, seq: SessionInboxTable.enqueued_seq })
+    .from(SessionInboxTable)
+    .where(and(eq(SessionInboxTable.session_id, input.sessionID), eq(SessionInboxTable.type, "reset")))
+    .get()
+    .pipe(Effect.orDie)
+  if (waiting)
+    yield* db
+      .update(SessionInboxTable)
+      .set({ payload: sql`json_set(${SessionInboxTable.payload}, '$.beforeReset', ${waiting.id})` })
+      .where(and(held, gt(SessionInboxTable.enqueued_seq, waiting.seq)))
+      .run()
+      .pipe(Effect.orDie)
+  yield* db
+    .update(SessionInboxTable)
+    .set({ payload: sql`json_remove(${SessionInboxTable.payload}, '$.beforeReset')` })
+    .where(held)
+    .run()
+    .pipe(Effect.orDie)
+})
+
+/**
+ * A reset delivers once the turn it waited for has ended (at its end, a stop, an idle reset, a restart): the background
+ * notices still pending, admitted before it was requested or while it waited, report work of the context it ends, so
+ * they now precede it, passive (those naming an earlier reset keep it). Input a user typed stays ordinary. Projection
+ * data of the reset's delivery, so replay derives it again, and a cancel or undo of that reset releases them
+ * (`projectReleased`).
+ */
+export const projectOvertaken = Effect.fn("SessionInbox.projectOvertaken")(function* (
+  db: DatabaseService,
+  input: { readonly sessionID: SessionSchema.ID; readonly resetID: SessionMessage.ID },
+) {
+  yield* db
+    .update(SessionInboxTable)
+    .set({ payload: sql`json_set(${SessionInboxTable.payload}, '$.beforeReset', ${input.resetID})` })
+    .where(
+      and(
+        eq(SessionInboxTable.session_id, input.sessionID),
+        eq(SessionInboxTable.type, "synthetic"),
+        sql`json_extract(${SessionInboxTable.payload}, '$.background') = 1`,
+        sql`json_extract(${SessionInboxTable.payload}, '$.beforeReset') is null`,
+      ),
+    )
+    .run()
+    .pipe(Effect.orDie)
+})
+
+/**
+ * Delivers a pending context reset; callers hold the inbox lock. A pending compaction, admitted before the reset (which
+ * overtook it: a stop, an idle reset, a parked queue) or behind it, would summarize the emptied context: it is settled
+ * as not needed, cancelled with the reset's delivery, so no failed compaction appears (11 §7.2).
+ */
+export const deliverReset = Effect.fn("SessionInbox.deliverReset")(function* (
+  db: DatabaseService,
+  bus: Bus.Interface,
+  sessionID: SessionSchema.ID,
+  resetID: SessionMessage.ID,
+) {
+  const settled = (yield* list(db, sessionID)).flatMap((item) =>
+    item.type === "compaction" ? [[SessionEvent.InboxCancelled, { sessionID, inboxID: item.id }] as const] : [],
+  )
+  // One transaction: no reader sees the reset applied while a compaction it settles still waits.
+  yield* bus.publishAll([[SessionEvent.InboxDelivered, { sessionID, inboxID: resetID }], ...settled])
+})
+
+/** The first queued item that is not passive; where queued prompts stay parked, a waiting reset comes before them. */
+const firstQueued = (db: DatabaseService, sessionID: SessionSchema.ID, parked: boolean) =>
+  db
+    .select()
+    .from(SessionInboxTable)
+    .where(and(eq(SessionInboxTable.session_id, sessionID), eq(SessionInboxTable.delivery, "queue")))
+    .orderBy(asc(SessionInboxTable.enqueued_seq))
+    .all()
+    .pipe(
+      Effect.orDie,
+      Effect.map((rows) => {
+        const queued = rows.filter((row) => !passive(row))
+        return (parked ? queued.find((row) => row.type === "reset") : undefined) ?? queued[0]
+      }),
+    )
+// OWN-PATCH(P-035) end

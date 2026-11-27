@@ -61,7 +61,11 @@ describe("shell", () => {
       "-NoProfile",
       "-NonInteractive",
       "-Command",
-      "Write-Output hi",
+      // OWN-PATCH(P-015) begin
+      (process.platform === "win32"
+        ? "try{[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$OutputEncoding=[Text.UTF8Encoding]::new($false)}catch{}; "
+        : "") + "Write-Output hi",
+      // OWN-PATCH(P-015) end
     ])
   })
 

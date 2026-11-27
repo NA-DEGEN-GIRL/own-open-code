@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "files": {
+    "test/unit/vendor.test.ts": 44111,
+    "test/unit/isolation.test.ts": 7761,
+    "test/unit/config.test.ts": 4080,
+    "test/unit/client.test.ts": 3324,
+    "test/unit/notices.test.ts": 2888,
+    "test/unit/team.test.ts": 2345,
+    "test/unit/tools.test.ts": 2097,
+    "test/unit/hooks.test.ts": 1879,
+    "test/unit/view.test.ts": 1878,
+    "test/unit/events.test.ts": 1833,
+    "test/unit/commands.test.ts": 1119,
+    "test/unit/names.test.ts": 195
+  }
+}

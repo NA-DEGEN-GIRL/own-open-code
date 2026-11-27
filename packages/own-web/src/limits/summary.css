@@ -1,0 +1,124 @@
+/*
+ * The limits summary (03 §7.2, ./summary.tsx): a folded line of the tightest windows that unfolds in place. The values
+ * take the bars' tones (warning, danger; ./windows `tone`); the reset and the separators are faint. Lazy with its
+ * screens. Its lines separate their parts with styles/seps.css `.own-seps`.
+ */
+.own-lsum {
+  min-width: 0;
+}
+
+.own-lsum-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% + 12px);
+  min-width: 0;
+  margin: -3px -6px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-lsum-head:hover {
+  background: var(--own-bg-hover);
+  box-shadow: inset 0 0 0 1px var(--own-border);
+}
+
+.own-lsum-head:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+/* A chevron right after the last group (folded) or after `한도 접기` (unfolded), so it stays with the text when the line
+   wraps: down folded, up unfolded. */
+.own-lsum:not([data-open]) .own-lsum-head .own-lsum-group:last-child::after,
+.own-lsum-hide::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 7px;
+  border-right: 1.5px solid var(--own-text-faint);
+  border-bottom: 1.5px solid var(--own-text-faint);
+  transform: translateY(-3px) rotate(45deg);
+}
+
+.own-lsum-hide::after {
+  transform: translateY(0) rotate(-135deg);
+}
+
+/* Unfolded: the tightest value, then a faint `한도 접기` (UX 2026-10-26). */
+.own-lsum-hide {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--own-text-faint);
+  white-space: nowrap;
+}
+
+.own-lsum-line {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--own-text-muted);
+}
+
+/* A window and its reset never part across lines. */
+.own-lsum-group {
+  white-space: nowrap;
+}
+
+.own-lsum-part {
+  font-variant-numeric: tabular-nums;
+}
+
+.own-lsum-part[data-role="window"] {
+  color: var(--own-text);
+}
+
+.own-lsum-part[data-role="reset"],
+.own-lsum-part[data-role="unknown"] {
+  color: var(--own-text-faint);
+}
+
+.own-lsum-part[data-tone="warn"] {
+  color: var(--own-warn);
+}
+
+.own-lsum-part[data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+.own-lsum-body {
+  margin-top: 8px;
+}
+
+/* Every bar starts and ends at the same place: the rows share the label and value columns (subgrid), and the reset and
+   the tag sit on the line below (a model week such as `주간 · Fable` is longer than `5시간`; a reset with its clock time
+   is longer than one without). A label wider than 40 % of the row wraps. */
+.own-lsum-body > .own-meters {
+  display: grid;
+  grid-template-columns: fit-content(40%) minmax(40px, 1fr) max-content;
+  column-gap: 8px;
+  row-gap: 7px;
+}
+
+.own-lsum-body .own-mrow {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.own-lsum-body .own-mrow > .own-mrow-label {
+  white-space: normal;
+}
+
+@media (forced-colors: active) {
+  .own-lsum-head .own-lsum-group:last-child::after,
+  .own-lsum-hide::after {
+    border-color: CanvasText;
+  }
+}

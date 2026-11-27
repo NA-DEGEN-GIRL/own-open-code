@@ -218,8 +218,14 @@ const layer = Layer.effect(
           if (session.buffer.length <= BUFFER_LIMIT) return
           session.buffer = session.buffer.slice(session.buffer.length - BUFFER_LIMIT)
         }),
-        proc.onExit(({ exitCode }) => {
+        // OWN-PATCH(P-033) begin
+        proc.onExit((event) => {
           if (session.info.status === "exited") return
+          // A Windows exit code is a 32-bit DWORD; bun-pty and node-pty report one from 0x80000000 up (NTSTATUS
+          // 0xC0000005) as a negative number, which Info and pty.exited (NonNegativeInt) reject. Keep the unsigned
+          // value Windows reports; POSIX codes (0-255) are unchanged.
+          const exitCode = event.exitCode >>> 0
+          // OWN-PATCH(P-033) end
           session.info.status = "exited"
           session.info.exitCode = exitCode
           notifyEnd(session, { exitCode })

@@ -19,6 +19,10 @@ export interface SyntheticSession<E = never> {
     readonly text: string
     readonly description?: string
     readonly metadata?: SessionSchema.Metadata
+    // OWN-PATCH(P-035) begin
+    readonly background?: boolean
+    readonly startedAt?: number
+    // OWN-PATCH(P-035) end
   }) => Effect.Effect<unknown, E>
 }
 
@@ -59,6 +63,9 @@ export const deliver = Effect.fnUntraced(function* <E>(
   jobs: Pick<Job.Interface, "completeBackground">,
   input: Pick<Job.Info, "status" | "output" | "error" | "notificationID"> & {
     recovery: Extract<Job.Recovery, { kind: "subagent" }>
+    // OWN-PATCH(P-035) begin: when the job started (a context reset since makes its notice passive)
+    started_at?: number
+    // OWN-PATCH(P-035) end
   },
 ) {
   if (input.status === "running") return
@@ -75,6 +82,10 @@ export const deliver = Effect.fnUntraced(function* <E>(
   yield* sessions.synthetic({
     ...(input.notificationID ? { id: input.notificationID } : {}),
     sessionID: recovery.parentSessionID,
+    // OWN-PATCH(P-035) begin: background work; a recovered job's start is unknown
+    background: true,
+    ...(input.started_at === undefined ? {} : { startedAt: input.started_at }),
+    // OWN-PATCH(P-035) end
     description: recovery.description,
     text: BackgroundResult.render(
       `kind="subagent" sessionID="${recovery.childSessionID}" state="${state}" description="${recovery.description}"`,

@@ -1,0 +1,15 @@
+/* A speed's mark (speed-mark.tsx) in front of its name, in the text's color: the composer's button and menu, the
+   switcher's 속도 strip, the cost dialog's title. Inline, so a label beside it keeps its ellipsis. */
+.own-speed-mark {
+  display: inline-flex;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.own-speed-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.own-cp-tool > .own-speed-mark {
+  margin-right: 0;
+}

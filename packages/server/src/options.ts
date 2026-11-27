@@ -35,6 +35,10 @@ export const ServerOptions = Schema.Struct({
     Schema.Struct({
       directory: Schema.optional(Schema.String),
       project: Schema.optional(Schema.Boolean),
+      // OWN-PATCH(P-058) begin
+      /** Project instruction-file discovery (AGENTS.md) when it differs from `project`; defaults to `project`. */
+      instructions: Schema.optional(Schema.Boolean),
+      // OWN-PATCH(P-058) end
       claude: Schema.optional(Schema.Boolean),
       file: Schema.optional(Schema.String),
       content: Schema.optional(Schema.String),

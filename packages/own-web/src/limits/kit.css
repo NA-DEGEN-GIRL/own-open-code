@@ -1,0 +1,745 @@
+/*
+ * Accounts · limits · settings kit (03 §7.2 bars, §7.3 tags, §7.4 cache marks, §13 tokens). Loaded with the lazy
+ * accounts/limits/settings chunks, never with the first CSS. Class names keep the `own-` prefix; `.own-meter` and
+ * `.own-chip` also get the forced-colors border from base.css (11장).
+ */
+
+/* ---- bars (7.2) ---- */
+.own-meter {
+  position: relative;
+  display: block;
+  height: 6px;
+  min-width: 24px;
+  border-radius: 3px;
+  background: var(--own-meter-track);
+  overflow: hidden;
+}
+
+.own-meter[data-size="mini"] {
+  height: 4px;
+}
+
+.own-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--own-meter-fill);
+}
+
+.own-meter[data-tone="warn"] > span {
+  background: var(--own-warn);
+}
+
+.own-meter[data-tone="danger"] > span {
+  background: var(--own-danger);
+}
+
+/* Estimates only: hatched fill; a reset estimate starts at 0 % and still shows the pattern on the track. */
+/* A 1 px outline in the fill color keeps the bar's extent readable between the stripes. */
+.own-meter[data-hatched] > span {
+  background: repeating-linear-gradient(135deg, var(--own-meter-fill) 0 3px, transparent 3px 6px);
+  box-shadow: inset 0 0 0 1px var(--own-meter-fill);
+  opacity: 0.85;
+}
+
+.own-meter[data-hatched][data-tone="warn"] > span {
+  background: repeating-linear-gradient(135deg, var(--own-warn) 0 3px, transparent 3px 6px);
+  box-shadow: inset 0 0 0 1px var(--own-warn);
+}
+
+.own-meter[data-hatched][data-tone="danger"] > span {
+  background: repeating-linear-gradient(135deg, var(--own-danger) 0 3px, transparent 3px 6px);
+  box-shadow: inset 0 0 0 1px var(--own-danger);
+}
+
+/* The stripes are drawn in a faint fill color: in the track color they vanish on the track itself. */
+.own-meter[data-hatched][data-empty] {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--own-meter-fill) 45%, transparent) 0 3px,
+    var(--own-meter-track) 3px 6px
+  );
+}
+
+/* Stale: faded, never hatched; still 3:1 against the track. */
+.own-meter[data-faded] > span {
+  opacity: 0.75;
+}
+
+.own-mrow {
+  display: grid;
+  grid-template-columns: minmax(40px, auto) minmax(40px, 1fr) minmax(40px, auto);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 1px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.own-mrow > .own-mrow-label {
+  color: var(--own-text-muted);
+  white-space: nowrap;
+}
+
+.own-mrow > .own-mrow-value {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.own-mrow > .own-mrow-meta {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 11.5px;
+  color: var(--own-text-faint);
+}
+
+/* A window known only by its state (`허용`/`주의`/`차단`) and the Claude billing or reason note, in the bars' tones. */
+.own-mrow :is(.own-mrow-state, .own-mrow-note)[data-tone="warn"] {
+  color: var(--own-warn);
+}
+
+.own-mrow :is(.own-mrow-state, .own-mrow-note)[data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+.own-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Context bar with auto-compaction ticks (5.8.3). */
+.own-ctxbar {
+  position: relative;
+  height: 8px;
+  margin: 6px 0 4px;
+  border-radius: 4px;
+  /* The track up to the auto-compaction point, like an empty glance bar; past it the hatched .own-ctxbar-over
+     (UX 2026-10-26). */
+  background: linear-gradient(
+    to right,
+    var(--own-meter-track) var(--own-ctxbar-trigger, 100%),
+    transparent var(--own-ctxbar-trigger, 100%)
+  );
+}
+
+.own-ctxbar > .own-ctxbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--own-meter-fill);
+}
+
+/* Anything in the context shows as a solid segment, however small next to a 1M window. */
+.own-ctxbar > .own-ctxbar-fill[data-some] {
+  min-width: 2px;
+}
+
+.own-ctxbar > .own-ctxbar-fill[data-tone="warn"] {
+  background: var(--own-warn);
+}
+
+/* Beyond the trigger the space is only used after a compaction: hatched in the track's color, never as light as a
+   fill (2026-10-26: the washed raised background read as half full in the light theme). */
+.own-ctxbar > .own-ctxbar-over {
+  position: absolute;
+  inset: 0 0 0 auto;
+  border-radius: 0 4px 4px 0;
+  background: repeating-linear-gradient(135deg, var(--own-meter-track) 0 3px, transparent 3px 6px);
+}
+
+.own-ctxbar > .own-ctxbar-tick {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--own-text-muted);
+}
+
+.own-ctxbar > .own-ctxbar-tick[data-kind="slot"] {
+  opacity: 0.45;
+}
+
+.own-ctxbar > .own-ctxbar-tick[data-kind="session"] {
+  background: var(--own-text);
+}
+
+/* ---- tags (7.3) and badges ---- */
+.own-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border: 1px solid var(--own-border);
+  border-radius: 5px;
+  color: var(--own-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.own-tag[data-tone="plain"] {
+  border-color: transparent;
+  padding: 0;
+  color: var(--own-text-faint);
+}
+
+/* The dashes are what tells an estimate apart from the plain tags, so they get a visible color. */
+.own-tag[data-tone="dashed"] {
+  border-style: dashed;
+  border-color: var(--own-text-faint);
+}
+
+.own-tag[data-tone="warn"] {
+  border-color: var(--own-warn);
+  color: var(--own-warn);
+}
+
+.own-tag[data-tone="danger"] {
+  border-color: var(--own-danger);
+  color: var(--own-danger);
+  font-weight: 600;
+}
+
+.own-tag[data-tone="ok"] {
+  border-color: var(--own-ok);
+  color: var(--own-ok);
+}
+
+.own-tag[data-tone="accent"] {
+  border-color: var(--own-accent-text);
+  color: var(--own-accent-text);
+  font-weight: 600;
+}
+
+.own-tag[data-tone="soft"] {
+  border-color: transparent;
+  background: var(--own-bg-hover);
+}
+
+.own-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  filter: var(--own-dot-filter);
+}
+
+.own-cache {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* 7.4: one small dot in the state's color beside `캐시 따뜻함`; cold and unknown stay faint. */
+.own-cache-dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--own-text-faint);
+}
+
+.own-cache[data-state="warm"] > .own-cache-dot {
+  background: var(--own-accent-text);
+}
+
+.own-cache[data-state="cooling"] > .own-cache-dot {
+  background: var(--own-warn);
+}
+
+.own-provider-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--own-text);
+}
+
+/* ---- buttons, links, inputs ---- */
+.own-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.own-btn[data-variant="primary"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+
+.own-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--own-accent);
+  filter: brightness(1.06);
+}
+
+.own-btn[data-variant="danger"] {
+  color: var(--own-danger);
+}
+
+.own-btn[data-variant="ghost"] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.own-btn[data-size="sm"] {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.own-link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--own-accent-text);
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.own-link:hover {
+  text-decoration: underline;
+}
+
+.own-input {
+  height: 32px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  font-size: 13px;
+}
+
+.own-input:focus {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -1px;
+}
+
+.own-input[aria-invalid="true"] {
+  border-color: var(--own-danger);
+}
+
+.own-input.own-mono,
+.own-mono {
+  font-family: var(--own-font-mono);
+}
+
+.own-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.own-field > .own-field-label {
+  color: var(--own-text-muted);
+  font-weight: 550;
+}
+
+.own-field > .own-field-hint {
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+
+.own-field > .own-field-error {
+  color: var(--own-danger);
+  font-size: 11.5px;
+}
+
+.own-seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+}
+
+.own-seg > button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.own-seg > button + button {
+  border-left: 1px solid var(--own-border);
+}
+
+.own-seg > button[aria-checked="true"],
+.own-seg > button[aria-pressed="true"] {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+  font-weight: 600;
+}
+
+.own-seg > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- notices ---- */
+.own-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.own-notice[data-tone="warn"] {
+  border-color: var(--own-warn);
+  background: color-mix(in srgb, var(--own-warn) 10%, var(--own-bg));
+}
+
+.own-notice[data-tone="danger"] {
+  border-color: var(--own-danger);
+  background: color-mix(in srgb, var(--own-danger) 10%, var(--own-bg));
+}
+
+.own-notice[data-tone="ok"] {
+  border-color: var(--own-ok);
+  background: color-mix(in srgb, var(--own-ok) 10%, var(--own-bg));
+}
+
+/* ---- dialog (native <dialog>, top layer) ---- */
+.own-dialog {
+  /* Preflight zeroes margins; a modal dialog centers itself with auto margins in the top layer. */
+  margin: auto;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(86vh, 860px);
+  padding: 0;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-dialog[data-size="wide"] {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.own-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.own-dialog::backdrop {
+  background: var(--own-scrim);
+}
+
+.own-dialog > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px 8px;
+}
+
+.own-dialog > header > h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 650;
+}
+
+.own-dialog > .own-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 20px 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.own-dialog > footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--own-border);
+}
+
+@media (max-width: 599px) {
+  .own-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+/* ---- menu (popover API, top layer) ---- */
+.own-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-width: 200px;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 4px;
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-menu > [role="menuitem"],
+.own-menu > [role="menuitemcheckbox"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-menu > [role="menuitem"]:hover,
+.own-menu > [role="menuitem"]:focus-visible,
+.own-menu > [role="menuitemcheckbox"]:hover,
+.own-menu > [role="menuitemcheckbox"]:focus-visible {
+  background: var(--own-bg-hover);
+  outline: none;
+}
+
+/* The hover tint alone is about 1.1:1 on the menu: keyboard focus also gets the ring, inside the item. */
+.own-menu > [role="menuitem"]:focus-visible,
+.own-menu > [role="menuitemcheckbox"]:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -2px;
+}
+
+.own-menu > [data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+.own-menu > hr {
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--own-border);
+}
+
+/* ---- cards and sections ---- */
+.own-acard {
+  padding: 12px 14px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+}
+
+.own-acard + .own-acard {
+  margin-top: 8px;
+}
+
+.own-acard[data-attention] {
+  border-color: var(--own-warn);
+}
+
+.own-psec {
+  margin-top: 22px;
+}
+
+.own-psec > .own-psec-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--own-border);
+}
+
+.own-psec > .own-psec-head > h2,
+.own-psec > .own-psec-head > h3 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+}
+
+.own-sect {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 4px 6px;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+/* Panel account rows (4.7.1). */
+.own-arow {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.own-arow:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-arow[data-current] {
+  border-color: var(--own-border);
+  background: var(--own-bg-raised);
+}
+
+/* The usage note wraps under the row before the account's name gives way (2026-10-18 layout audit: `! 이전 앱 갱신
+   대기` cut `ChatGPT 01` to `ChatGP…` in the work panel). */
+.own-arow > .own-arow-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-arow-more {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--own-border);
+  color: var(--own-text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.own-kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Sparkline (5.5). */
+.own-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 34px;
+}
+
+.own-spark > span {
+  flex: 1;
+  min-height: 2px;
+  border-radius: 1px;
+  background: var(--own-meter-fill);
+  opacity: 0.55;
+}
+
+.own-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.own-tbl th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--own-border);
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.own-tbl td {
+  padding: 8px;
+  border-bottom: 1px solid var(--own-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.own-tbl .own-r {
+  text-align: right;
+}
+
+.own-spinner {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--own-border-strong);
+  border-top-color: var(--own-accent-text);
+  border-radius: 50%;
+  animation: own-spin 0.8s linear infinite;
+}
+
+@keyframes own-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-spinner {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .own-tag,
+  .own-ctxbar {
+    border: 1px solid CanvasText;
+  }
+}

@@ -1,0 +1,495 @@
+/*
+ * 설정 > 에이전트 방식 (10 §3.11, prompt-page.tsx). Texts keep their line breaks and wrap inside the page, so a phone
+ * never scrolls sideways; long ones scroll inside their box.
+ */
+.own-prompts-intro,
+.own-prompts-note {
+  margin: 6px 2px;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+/* The 에이전트 방식 tabs' four long names on a phone: the choices wrap to a second row rather than break a name. */
+.own-prompts .own-seg {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.own-prompts .own-seg > button {
+  flex: 1 0 auto;
+  white-space: nowrap;
+}
+
+.own-prompts-select {
+  width: auto;
+  max-width: 100%;
+  min-width: 200px;
+}
+
+.own-prompts-body[data-loading] {
+  opacity: 0.6;
+}
+
+.own-prompts-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+
+.own-prompts-search > .own-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.own-prompts-found {
+  flex-shrink: 0;
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-prompts-part {
+  margin: 6px 0;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+}
+
+.own-prompts-part > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.own-prompts-part-name {
+  font-weight: 600;
+}
+
+.own-prompts-count,
+.own-prompts-tool-line {
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-prompts-tool-line {
+  min-width: 0;
+  flex: 1 1 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-prompts-text {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid var(--own-border);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.own-prompts-text mark {
+  background: var(--own-accent-soft);
+  color: inherit;
+  outline: 1px solid var(--own-accent-text);
+}
+
+.own-prompts-others > summary {
+  margin: 10px 2px 4px;
+  cursor: pointer;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+
+.own-prompts-change {
+  margin: 10px 0 14px;
+}
+
+.own-prompts-change > h3 {
+  margin: 0 2px 2px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* 하위 에이전트: a child's first message stands alone, framed like a part; the facts are short muted lines. */
+.own-prompts-subhead {
+  margin: 14px 2px 4px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.own-prompts-box {
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+}
+
+.own-prompts-facts {
+  margin: 4px 2px 8px;
+  padding-left: 18px;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.own-prompts-facts > li + li {
+  margin-top: 4px;
+}
+
+.own-prompts-change > p {
+  margin: 0 2px 6px;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.own-prompts-diff {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.own-prompts-diff > div {
+  min-width: 0;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.own-prompts-diff > div > span {
+  display: block;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.own-prompts-diff > [data-side="before"] > span {
+  color: var(--own-danger);
+}
+
+.own-prompts-diff > [data-side="after"] > span {
+  color: var(--own-ok);
+}
+
+.own-prompts-diff .own-prompts-text {
+  max-height: 240px;
+}
+
+.own-prompts-start {
+  margin: 8px 0;
+}
+
+.own-prompts-editor {
+  display: block;
+  height: auto;
+  min-height: 240px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+}
+
+.own-prompts-editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 2px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-prompts-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.own-prompts-variant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.own-prompts-compare-toggle[aria-pressed="true"] {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+}
+
+/*
+ * 비교 (prompt-compare-view.tsx): a changed run's two sides in two columns, one above the other when the column is
+ * narrow (a phone, a narrow window, the settings page beside the sidebar). Each side scrolls on its own when long.
+ */
+.own-pcmp {
+  container: own-pcmp / inline-size;
+}
+
+.own-pcmp-row {
+  margin: 8px 0;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+  overflow: hidden;
+}
+
+.own-pcmp-row > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.own-pcmp-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+
+.own-pcmp-names {
+  margin: 0;
+  padding: 0 10px 8px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.own-pcmp-body,
+.own-pcmp-whole {
+  border-top: 1px solid var(--own-border);
+}
+
+.own-pcmp-text {
+  margin: 0;
+  padding: 6px 10px;
+  max-height: 420px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.own-pcmp-same > .own-pcmp-text {
+  max-height: none;
+  color: var(--own-text-muted);
+}
+
+.own-pcmp-fold {
+  display: block;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  border-block: 1px dashed var(--own-border);
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-pcmp-fold:hover {
+  color: var(--own-text);
+}
+
+.own-pcmp-hunk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-block: 1px solid var(--own-border);
+}
+
+.own-pcmp-hunk + .own-pcmp-hunk {
+  border-top: 0;
+}
+
+.own-pcmp-side {
+  min-width: 0;
+}
+
+.own-pcmp-side[data-side="left"] {
+  border-right: 1px solid var(--own-border);
+  background: color-mix(in srgb, var(--own-danger) 5%, transparent);
+}
+
+.own-pcmp-side[data-side="right"] {
+  background: color-mix(in srgb, var(--own-ok) 5%, transparent);
+}
+
+.own-pcmp-label {
+  display: block;
+  padding: 4px 10px 0;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.own-pcmp-side[data-side="left"] > .own-pcmp-label {
+  color: var(--own-danger);
+}
+
+.own-pcmp-side[data-side="right"] > .own-pcmp-label {
+  color: var(--own-ok);
+}
+
+/* A side's line that is there but empty still takes a line. */
+.own-pcmp-side > .own-pcmp-text {
+  min-height: 30px;
+}
+
+/*
+ * Marks: a tint, and not by colour alone (WCAG 1.4.1) a line through what the left side lost and a line under what the
+ * right side gained. Screen readers hear where a mark starts and ends from `data-sr`/`data-sr-end`, generated content
+ * that is not drawn and not copied with the text.
+ */
+.own-pcmp-text del,
+.own-pcmp-text ins {
+  border-radius: 2px;
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-decoration-skip-ink: none;
+}
+
+.own-pcmp-text del {
+  background: color-mix(in srgb, var(--own-danger) 24%, transparent);
+  text-decoration-line: line-through;
+  text-decoration-color: var(--own-danger);
+}
+
+.own-pcmp-text ins {
+  background: color-mix(in srgb, var(--own-ok) 24%, transparent);
+  text-decoration-line: underline;
+  text-decoration-color: var(--own-ok);
+  text-underline-offset: 2px;
+}
+
+.own-pcmp-text del::before,
+.own-pcmp-text ins::before,
+.own-pcmp-text del::after,
+.own-pcmp-text ins::after {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.own-pcmp-text del::before,
+.own-pcmp-text ins::before {
+  content: attr(data-sr) " ";
+}
+
+.own-pcmp-text del::after,
+.own-pcmp-text ins::after {
+  content: " " attr(data-sr-end);
+}
+
+/*
+ * Whitespace a mark would hide (⏎ · → ␍ ⍽ □ ⁞, prompt-compare.ts `inks`): the glyphs in the text's own colour, each
+ * run boxed so that a single one is not missed. Only the glyph is boxed (an inline block, which the mark's strike or
+ * underline does not cross either): a line break after it stays outside, so the box never reaches into the next line.
+ * The glyph is not selectable, and the real character beside it, not drawn, is what copying a selection gives; screen
+ * readers hear the run's name from `data-sr`.
+ */
+.own-pcmp-text [data-space] {
+  text-decoration-line: none;
+}
+
+.own-pcmp-glyph {
+  display: inline-block;
+  padding: 0 2px;
+  outline: 1px dashed currentColor;
+  outline-offset: -1px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.own-pcmp-ws::before,
+.own-pcmp-real {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: pre;
+}
+
+.own-pcmp-ws::before {
+  content: attr(data-sr) " ";
+}
+
+.own-pcmp-empty {
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--own-text-faint);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.own-pcmp-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 4px 10px;
+  border-top: 1px solid var(--own-border);
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  line-height: 17px;
+}
+
+.own-pcmp-row > .own-pcmp-note:first-child {
+  border-top: 0;
+}
+
+.own-pcmp-note > b {
+  color: var(--own-text);
+  font-weight: 650;
+}
+
+.own-pcmp-more {
+  padding: 0;
+  font-size: inherit;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
+@container own-pcmp (max-width: 560px) {
+  .own-pcmp-hunk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .own-pcmp-side[data-side="left"] {
+    border-right: 0;
+    border-bottom: 1px solid var(--own-border);
+  }
+}
+
+.own-pcmp-chip {
+  color: var(--own-text-faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.own-pcmp-chip + .own-pcmp-chip::before {
+  content: "· ";
+}
+
+.own-pcmp-group {
+  padding: 0 8px 2px;
+  border-top: 1px solid var(--own-border);
+}

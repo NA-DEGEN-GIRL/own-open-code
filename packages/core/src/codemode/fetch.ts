@@ -10,13 +10,15 @@ import { CodeModeExecution } from "./execution.js"
 
 const TIMEOUT_MS = 30_000
 
+// OWN-PATCH(P-049) begin
 type Init = {
   readonly method?: string
-  readonly headers?: Record<string, string> | Array<[string, string]>
+  readonly headers: Array<[string, string]>
   readonly body?: string | Uint8Array<ArrayBuffer> | URLSearchParams
 }
 
-const fetch = (input: string | URL, init: Init = {}) =>
+const fetch = (input: string | URL, options?: unknown) =>
+  // OWN-PATCH(P-049) end
   Effect.gen(function* () {
     // Rules match the URL as written. The fragment is never sent, and would keep a rule for the exact URL from
     // matching.
@@ -27,6 +29,11 @@ const fetch = (input: string | URL, init: Init = {}) =>
     // Rules match the URL, so `https://user@evil.com` would slip past a rule for `https://evil.com/*`.
     if (parsed?.username || parsed?.password)
       return yield* Effect.fail(new TypeError("fetch cannot be used with credentials in the URL."))
+    // OWN-PATCH(P-049) begin
+    // Read once: the approval shows exactly what is sent.
+    const init = normalise(options)
+    if (init instanceof TypeError) return yield* Effect.fail(init)
+    // OWN-PATCH(P-049) end
     if (parsed?.protocol === "opencode:") return yield* fetchOpencode(url, init)
     const execution = yield* CodeModeExecution.Service
     const permission = yield* Permission.Service
@@ -49,11 +56,13 @@ const fetch = (input: string | URL, init: Init = {}) =>
         ),
       )
     // Redirects are followed here so each new URL meets the same deny rules as the webfetch tool's hops.
-    const check = (next: string) =>
+    // OWN-PATCH(P-049) begin
+    const check = (next: string, request: Init) =>
       permission.assertNotDenied({
         action: "webfetch",
         resources: [next],
-        metadata: { ...display([next, init]), redirectedFrom: url },
+        metadata: { ...display([next, request]), redirectedFrom: url },
+        // OWN-PATCH(P-049) end
         sessionID: execution.sessionID,
         agent: execution.agent,
         source,
@@ -63,7 +72,16 @@ const fetch = (input: string | URL, init: Init = {}) =>
     let request = init
     for (let redirects = 0; ; redirects++) {
       const response = yield* Effect.tryPromise({
-        try: () => globalThis.fetch(target, { ...request, redirect: "manual", signal }),
+        // OWN-PATCH(P-049) begin
+        try: () =>
+          globalThis.fetch(target, {
+            method: request.method,
+            headers: request.headers,
+            body: request.body,
+            redirect: "manual",
+            signal,
+          }),
+        // OWN-PATCH(P-049) end
         catch: (error) => error,
       })
       const location = response.headers.get("location")
@@ -78,8 +96,10 @@ const fetch = (input: string | URL, init: Init = {}) =>
       if (next.username || next.password)
         return yield* Effect.fail(new Error("fetch cannot follow a redirect with credentials in the URL."))
       next.hash = ""
-      yield* check(next.href)
+      // OWN-PATCH(P-049) begin
       request = redirected(request, response.status, target, next)
+      yield* check(next.href, request)
+      // OWN-PATCH(P-049) end
       target = next.href
     }
   })
@@ -133,7 +153,100 @@ export const extension = Extension.make({ name: "fetch", globals: { fetch: Exten
 
 /** What to show for a fetch call: its method and URL. */
 export const display = (args: ReadonlyArray<unknown>) => {
-  const [input, init] = args
-  const method = isRecord(init) && typeof init.method === "string" ? init.method.toUpperCase() : "GET"
-  return { method, url: String(input) }
+  const [input, options] = args
+  // OWN-PATCH(P-049) begin
+  // The approval also names the headers it sends (an `Authorization` stands out) and the body's size, read from the
+  // same normalised options fetch sends.
+  const init = normalise(options)
+  if (init instanceof TypeError) return { method: "GET", url: String(input) }
+  const method = init.method ?? "GET"
+  const headers = init.headers.map((entry) => entry[0])
+  const body =
+    typeof init.body === "string" || init.body instanceof URLSearchParams
+      ? new TextEncoder().encode(String(init.body)).byteLength
+      : init.body?.byteLength
+  return {
+    method,
+    url: String(input),
+    ...(headers.length > 0 ? { headers } : {}),
+    ...(body === undefined ? {} : { bodyBytes: body }),
+  }
+  // OWN-PATCH(P-049) end
 }
+
+// OWN-PATCH(P-049) begin
+// Only method, headers and body reach Bun's fetch: its `proxy`, `unix` and `tls` would send an approved URL elsewhere.
+// Each is read once into the one value both the approval and the request use, so neither sees what the other does not
+// (a method array Bun turns into a string, a Map of headers the approval could not list). Returns the error to fail with.
+const normalise = (options: unknown): Init | TypeError => {
+  if (options === undefined) return { headers: [] }
+  if (!isRecord(options)) return new TypeError("fetch options must be an object.")
+  const unknown = Object.keys(options).filter((key) => !["method", "headers", "body"].includes(key))
+  if (unknown.length > 0)
+    return new TypeError(
+      `fetch does not support the option ${unknown.join(", ")}: only method, headers and body are allowed.`,
+    )
+  const method = options.method
+  if (method !== undefined && typeof method !== "string") return new TypeError("fetch's method must be a string.")
+  if (method !== undefined && FORBIDDEN_METHODS.has(method.toUpperCase()))
+    return new TypeError(`fetch does not support the method ${method}.`)
+  const body = options.body
+  if (
+    !(body === undefined || typeof body === "string" || body instanceof Uint8Array || body instanceof URLSearchParams)
+  )
+    return new TypeError("fetch's body must be a string, a Uint8Array or URLSearchParams.")
+  const headers = readHeaders(options.headers)
+  if (headers instanceof TypeError) return headers
+  return {
+    method: method?.toUpperCase(),
+    headers: headers.filter((entry) => !forbiddenHeader(entry[0], entry[1])),
+    body: body instanceof Uint8Array ? new Uint8Array(body) : body,
+  }
+}
+
+// Objects, Headers, Maps and arrays of pairs, as the Headers constructor takes them.
+const readHeaders = (headers: unknown) => {
+  try {
+    return Array.from(new Headers(headers as ConstructorParameters<typeof Headers>[0]))
+  } catch (error) {
+    return new TypeError(`fetch's headers are not valid: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+// The Fetch standard's forbidden methods and request headers (fetch.spec.whatwg.org, "forbidden request-header"): a
+// browser never lets a page set them, and here they could route an approved URL elsewhere (`Host`, `Proxy-*`) or
+// smuggle a second request (`Content-Length`, `Transfer-Encoding`).
+const FORBIDDEN_METHODS = new Set(["CONNECT", "TRACE", "TRACK"])
+const FORBIDDEN_HEADERS = new Set([
+  "accept-charset",
+  "accept-encoding",
+  "access-control-request-headers",
+  "access-control-request-method",
+  "connection",
+  "content-length",
+  "cookie",
+  "cookie2",
+  "date",
+  "dnt",
+  "expect",
+  "host",
+  "keep-alive",
+  "origin",
+  "referer",
+  "set-cookie",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+  "via",
+])
+const METHOD_OVERRIDES = new Set(["x-http-method", "x-http-method-override", "x-method-override"])
+
+const forbiddenHeader = (name: string, value: string) => {
+  const lower = name.toLowerCase()
+  if (FORBIDDEN_HEADERS.has(lower) || lower.startsWith("proxy-") || lower.startsWith("sec-")) return true
+  return (
+    METHOD_OVERRIDES.has(lower) && value.split(",").some((item) => FORBIDDEN_METHODS.has(item.trim().toUpperCase()))
+  )
+}
+// OWN-PATCH(P-049) end

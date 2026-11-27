@@ -11,7 +11,17 @@ import { Database } from "../database/database.js"
 import { Instance } from "../instance/service.js"
 import { ShellResult } from "../shell/result.js"
 import type { Skill } from "../skill.js"
-import { BusyError, CompactionConflictError, InboxConflictError, NotFoundError, PromptConflictError } from "./error.js"
+import {
+  BusyError,
+  CompactionConflictError,
+  InboxConflictError,
+  NotFoundError,
+  PromptConflictError,
+  // OWN-PATCH(P-035) begin
+  MessageNotFoundError,
+  ResetConflictError,
+  // OWN-PATCH(P-035) end
+} from "./error.js"
 import { SessionEvent } from "./event.js"
 import { SessionExecution } from "./execution.js"
 import { SessionInbox } from "./inbox.js"
@@ -22,6 +32,11 @@ import { SessionShell } from "./shell.js"
 import { SessionSkill } from "./skill.js"
 import { SessionSchema } from "./schema.js"
 import { SessionStore } from "./store.js"
+// OWN-PATCH(P-035) begin
+import { and, eq } from "drizzle-orm"
+import { SessionHistory } from "./history.js"
+import { SessionMessageTable } from "./sql.js"
+// OWN-PATCH(P-035) end
 import { SessionSynthetic } from "./synthetic.js"
 
 type PromptRequest = SessionPrompt.Input & {
@@ -276,6 +291,89 @@ export const make = Effect.fn("Session.make")(function* () {
     yield* execution.wake(sessionID)
     return admitted
   })
+  // OWN-PATCH(P-035) begin
+  /**
+   * Admits a context reset. While the Session is idle it delivers at once, ahead of whatever input is still pending
+   * (prompts parked by a stop, notices admitted without resuming): that input stays pending and starts the new context.
+   * While a turn runs it waits for the turn (and input queued before it); its wake leaves parked queued prompts parked.
+   * Either way it starts no model call of its own. Checking and delivering under the inbox lock keeps a starting drain
+   * from loading history in between.
+   */
+  const reset = Effect.fn("Session.reset")(function* (sessionID: SessionSchema.ID, input: { id?: SessionMessage.ID }) {
+    const session = yield* get(sessionID)
+    const resetID = input.id ?? SessionMessage.ID.create()
+    // A subagent's context belongs to the task its parent gave it.
+    if (session.parentID) return yield* new ResetConflictError({ sessionID, resetID, reason: "subagent" })
+    if (session.revert) yield* SessionRevert.commit(bus, session)
+    const admitted = yield* admission
+      .admitReset({ id: resetID, sessionID })
+      .pipe(
+        Effect.catchTag(
+          "SessionInbox.LifecycleConflict",
+          () => new ResetConflictError({ sessionID, resetID, reason: "id" }),
+        ),
+      )
+    const delivered = yield* SessionInbox.serialized(
+      sessionID,
+      Effect.gen(function* () {
+        if (yield* execution.isActive(sessionID)) return false
+        if (!(yield* admission.list(sessionID)).some((item) => item.id === admitted.id)) return true
+        yield* SessionInbox.deliverReset(database.db, bus, sessionID, admitted.id)
+        return true
+      }),
+    )
+    if (!delivered) yield* execution.wake(sessionID, "steer")
+    return admitted
+  }, Effect.uninterruptible)
+  /**
+   * Cancels a pending reset, or undoes a delivered one while it is the newest boundary (last in, first out): its marker
+   * stays and history starts at the boundary before it again. Undo needs an idle Session without a staged revert;
+   * checking and publishing under the inbox lock keeps a starting drain from loading history in between.
+   */
+  const undoReset = Effect.fn("Session.undoReset")(function* (sessionID: SessionSchema.ID, resetID: SessionMessage.ID) {
+    yield* get(sessionID)
+    const pending = (yield* admission.list(sessionID)).find((item) => item.id === resetID)
+    // A cancel wakes nothing, also through the queue dock's `✕` (`cancelInbox`): the notices a pending reset holds
+    // passive keep the `resume` they were admitted with. Named at admission (`notice`, no execution active), a wake its
+    // caller asked for went to a drain that applies the reset first or, after this cancel, delivers it; one admitted
+    // without a wake (or moved here by an undo, then admitted without one) waits for the next input, as without a reset.
+    if (pending?.type === "reset") {
+      const cancelled = yield* admission.cancel({ sessionID, id: resetID }).pipe(Effect.option)
+      if (cancelled._tag === "Some") return
+    }
+    // The undo makes the notices the reset held passive ordinary (the projection releases them). Their wakes went to
+    // drains that found them passive, so they wake the restored context as an ordinary notice would.
+    const held = (yield* admission.list(sessionID)).flatMap((item) =>
+      item.type === "synthetic" && item.payload.beforeReset === resetID ? [item.id] : [],
+    )
+    yield* SessionInbox.serialized(
+      sessionID,
+      Effect.gen(function* () {
+        if (yield* execution.isActive(sessionID)) return yield* new BusyError({ sessionID })
+        if ((yield* get(sessionID)).revert)
+          return yield* new ResetConflictError({ sessionID, resetID, reason: "revert" })
+        const row = yield* database.db
+          .select()
+          .from(SessionMessageTable)
+          .where(and(eq(SessionMessageTable.session_id, sessionID), eq(SessionMessageTable.id, resetID)))
+          .get()
+          .pipe(Effect.orDie)
+        const marker = row ? yield* SessionHistory.decodeMessageRow(row).pipe(Effect.orDie) : undefined
+        if (!row || marker?.type !== "compaction" || marker.status !== "completed" || marker.reason !== "reset")
+          return yield* new MessageNotFoundError({ sessionID, messageID: resetID })
+        if (marker.undone) return yield* new ResetConflictError({ sessionID, resetID, reason: "undone" })
+        const newest = yield* SessionHistory.latestCompaction(database.db, sessionID, "latest")
+        if (newest?.seq !== row.seq) return yield* new ResetConflictError({ sessionID, resetID, reason: "superseded" })
+        yield* bus.publish(SessionEvent.Reset.Undone, { sessionID, messageID: resetID })
+      }),
+    )
+    if (held.length === 0) return
+    const released = (yield* admission.list(sessionID)).some(
+      (item) => held.includes(item.id) && item.type === "synthetic" && item.payload.beforeReset === undefined,
+    )
+    if (released && !(yield* store.get(sessionID))?.revert) yield* execution.wake(sessionID)
+  })
+  // OWN-PATCH(P-035) end
   const wait = Effect.fn("Session.wait")(function* (sessionID: SessionSchema.ID) {
     yield* get(sessionID)
     yield* execution.awaitIdle(sessionID)
@@ -284,7 +382,12 @@ export const make = Effect.fn("Session.make")(function* () {
     yield* get(sessionID)
     yield* execution.resume(sessionID)
   })
-  const admitSynthetic = SessionSynthetic.make(store, admission, execution.wake)
+  // OWN-PATCH(P-035) begin: background notices follow a context reset (SessionSynthetic `resets`)
+  const admitSynthetic = SessionSynthetic.make(store, admission, execution.wake, {
+    db: database.db,
+    isActive: execution.isActive,
+  })
+  // OWN-PATCH(P-035) end
   const synthetic = (sessionID: SessionSchema.ID, input: Omit<Parameters<typeof admitSynthetic>[0], "sessionID">) =>
     admitSynthetic({ ...input, sessionID })
   const interrupt = Effect.fn("Session.interrupt")(
@@ -331,10 +434,16 @@ export const make = Effect.fn("Session.make")(function* () {
     switchModel,
     inbox,
     prompt,
+    // OWN-PATCH(P-035) begin
     synthetic,
+    // OWN-PATCH(P-035) end
     shell,
     skill,
     compact,
+    // OWN-PATCH(P-035) begin
+    reset,
+    undoReset,
+    // OWN-PATCH(P-035) end
     wait,
     resume,
     interrupt,
@@ -361,6 +470,10 @@ export const make = Effect.fn("Session.make")(function* () {
     const shell = operations.shell.bind(undefined, sessionID)
     const skill = operations.skill.bind(undefined, sessionID)
     const compact = operations.compact.bind(undefined, sessionID)
+    // OWN-PATCH(P-035) begin
+    const reset = operations.reset.bind(undefined, sessionID)
+    const undoReset = operations.undoReset.bind(undefined, sessionID)
+    // OWN-PATCH(P-035) end
     const wait = operations.wait.bind(undefined, sessionID)
     const resume = operations.resume.bind(undefined, sessionID)
     const interrupt = operations.interrupt.bind(undefined, sessionID)
@@ -390,6 +503,10 @@ export const make = Effect.fn("Session.make")(function* () {
       shell,
       skill,
       compact,
+      // OWN-PATCH(P-035) begin
+      reset,
+      undoReset,
+      // OWN-PATCH(P-035) end
       wait,
       resume,
       interrupt,

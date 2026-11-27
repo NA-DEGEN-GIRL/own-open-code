@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node", "electron", "bun"]
+  },
+  // Not inherited through `extends`: app's sources resolve its own `@/` paths only in app's declaration build.
+  "references": [{ "path": "../app" }],
+  // src/env.d.ts: the build constants, for the main modules test/helpers/shell-start.ts starts.
+  "include": ["test", "scripts", "electron-builder.config.ts", "src/env.d.ts"]
+}

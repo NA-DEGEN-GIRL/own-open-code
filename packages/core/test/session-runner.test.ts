@@ -7092,6 +7092,84 @@ describe("SessionRunnerLLM", () => {
     ])
   })
 
+  // OWN-PATCH(P-018) begin
+  // The provider stream watchdog (`@opencode/ai` route client) fails a stalled stream with a retryable read timeout.
+  const stalled = () =>
+    new AIError({
+      reason: new TransportError({
+        message: "A tool call input made no progress for 120 seconds",
+        transport: "http",
+        operation: "read",
+        code: "Timeout",
+      }),
+    })
+
+  scenario(
+    "P-018: continues a step stalled inside tool-call arguments without running the partial call",
+    function* (s) {
+      yield* s.admit("Patch the file")
+      yield* s.llm.push(
+        TestLLM.failAfter(
+          stalled(),
+          LLMEvent.stepStart({ index: 0 }),
+          LLMEvent.toolInputStart({ id: "call-stalled", name: "echo" }),
+          LLMEvent.toolInputDelta({ id: "call-stalled", name: "echo", text: '{"text":"half-wri' }),
+        ),
+      )
+      yield* s.llm.push(TestLLM.text("Done", "after-stall"))
+      const scheduled = yield* subscribeRetries(s)
+      const run = yield* s.resume.pipe(Effect.forkChild)
+      yield* Queue.take(scheduled)
+      yield* TestClock.adjust(RETRY_GAPS_MAX[0]!)
+      yield* Fiber.join(run)
+
+      expect(s.requests).toHaveLength(2)
+      expect(s.executions).toEqual([])
+      // Upstream retries a stream that failed after output with the same request (#60674): the retry reuses the first
+      // request whole (prompt cache) and the partial call stays out of it.
+      expect(s.requests[1]?.messages).toEqual(s.requests[0]?.messages)
+      expect(yield* s.context).toMatchObject([
+        Expected.user("Patch the file"),
+        {
+          type: "assistant",
+          finish: "error",
+          error: { type: "provider.transport", message: "A tool call input made no progress for 120 seconds" },
+          content: [
+            {
+              type: "tool",
+              id: "call-stalled",
+              executed: false,
+              // Settled with the stream's failure before the input-incomplete sweep, so the model reads why.
+              state: { status: "error", input: {}, error: { type: "provider.transport" } },
+            },
+          ],
+        },
+        // Upstream retries a stream that failed after output without a continuation notice (#60674).
+        Expected.assistant({ finish: "stop" }, [Expected.text("Done")]),
+      ])
+    },
+  )
+
+  scenario("P-018: stops after three timed-out retries with a visible error", function* (s) {
+    yield* s.admit("Stall every attempt")
+    yield* s.llm.push(...Array.from({ length: 5 }, () => Stream.fail(stalled())))
+    const scheduled = yield* subscribeRetries(s)
+    const run = yield* s.resume.pipe(Effect.flip, Effect.forkChild)
+    for (const gap of RETRY_GAPS_MAX.slice(0, 3)) {
+      yield* Queue.take(scheduled)
+      yield* TestClock.adjust(gap)
+    }
+    const error = yield* Fiber.join(run)
+
+    expect(error).toBeInstanceOf(AIError)
+    expect(s.requests).toHaveLength(4)
+    expect(yield* s.context).toMatchObject([
+      Expected.user("Stall every attempt"),
+      { type: "assistant", finish: "error", error: { type: "provider.transport" } },
+    ])
+  })
+  // OWN-PATCH(P-018) end
+
   for (const finish of ["tool-calls", "length"] as const) {
     scenario(`continues malformed local tool input with a bounded excerpt (${finish})`, function* (s) {
       const marker = "raw-malformed-marker"

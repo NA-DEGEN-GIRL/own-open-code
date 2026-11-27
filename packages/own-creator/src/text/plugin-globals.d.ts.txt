@@ -1,0 +1,13 @@
+// own-plugin-env.d.ts: the few globals a creator code plugin may use (own/docs/17 §12.3). own writes this file into
+// every C3 version for the staging typecheck; nothing else of Bun, Node or the browser is declared, so code that
+// reaches for the disk, the network or the process does not typecheck.
+
+declare const console: {
+  log(...values: unknown[]): void
+  warn(...values: unknown[]): void
+  error(...values: unknown[]): void
+}
+declare function setTimeout(run: () => void, ms?: number): unknown
+declare function clearTimeout(handle: unknown): void
+declare function queueMicrotask(run: () => void): void
+declare function structuredClone<T>(value: T): T

@@ -1,0 +1,50 @@
+{
+  "repository": "https://github.com/openai/codex",
+  "license": "Apache-2.0",
+  "commit": "ccf9be8cc458bd6b8336fe84d68d8893f2691a5e",
+  "date": "2026-11-19T15:07:36-08:00",
+  "cli": "0.171.0",
+  "tracked": {
+    "catalog": [
+      "codex-rs/models-manager/models.json",
+      "codex-rs/models-manager/prompt.md"
+    ],
+    "request": [
+      "codex-rs/core/src/client.rs",
+      "codex-rs/core/src/client_common.rs",
+      "codex-rs/core/src/session",
+      "codex-rs/core/src/context",
+      "codex-rs/context-fragments"
+    ],
+    "tools": [
+      "codex-rs/core/src/tools",
+      "codex-rs/core/src/unified_exec",
+      "codex-rs/core/assets/tools"
+    ],
+    "apply_patch": [
+      "codex-rs/apply-patch"
+    ],
+    "truncation": [
+      "codex-rs/utils/string/src/truncate.rs"
+    ],
+    "code_mode": [
+      "codex-rs/code-mode",
+      "codex-rs/core/src/tools/code_mode"
+    ],
+    "compaction": [
+      "codex-rs/prompts/templates/compact",
+      "codex-rs/core/src/compact.rs",
+      "codex-rs/core/src/compact_remote_v2.rs"
+    ]
+  },
+  "release": "rust-v0.171.0",
+  "cliIntegrity": {
+    "@openai/codex": "sha512-1IOFzL2Xg86tLdw6kDo3GoKbkQENgQi7TI6rlEvN132R7ngSw7SNOIQoTcnKzSZZ8kf9N9GynCweSoaFbqk2Eg==",
+    "@openai/codex-darwin-arm64": "sha512-hIYTkRUpuYpkVfTq4cpby0PXqhAVcIgE7f6FoyY1lt2RyARj3GXS1Can/dIYUBItVhXzhb98HYHZNzCX74QRlQ==",
+    "@openai/codex-darwin-x64": "sha512-pwN5uNEKx/mZjwBEf/6CKq6SJMfJS5kruV3sJQAk7ebIPvC58Ote3CicIxETDZtjLj35rNv3PLPd7mHCg6hGPw==",
+    "@openai/codex-linux-arm64": "sha512-9z17t4bbUJ9UCIb49O4PoA+ki+45q3rd8nZ8PeH6sYnlKkBld/Xpo/OS3h3Ti954+foshX4o7k5TCU8N7zzqQA==",
+    "@openai/codex-linux-x64": "sha512-l66NZkQgdk2C3pbcfULDz42yEUB581MVA6I+Y43Wp4OIqEy73HCdmZ0GTjeAHY2ycuH4N00d9VsLrwT1jxshTw==",
+    "@openai/codex-win32-arm64": "sha512-kkavDHtAkkNaYtO7eBw4IdBbE/PsWP+Ezp9JXcr/mBu/Cc7EevzFVIVC3sZYvWsF9xuvyjIUv9CKeN0LU0+N9Q==",
+    "@openai/codex-win32-x64": "sha512-HKWBK25tLQxdEg6svw0CrBf+v0bQhRyF8EBVdNqeRxErqpfFa/dfSar6r3sJt6tyPqozOtgz2BH8B2G3n/+gnQ=="
+  }
+}

@@ -1,0 +1,732 @@
+/*
+ * Requests (03 §18.1, §18.2, §18.8): the docks above the composer, the approval-mode menu and the settings page.
+ * Loaded with the lazy dock/menu/settings chunks only. `own-rq-` (dock), `own-am-` (menu), `own-as-` (settings);
+ * own tokens only. The docks are session-ui `DockPrompt` frames; when the transcript chunk has loaded the session-ui
+ * stylesheet (layered), these unlayered rules set every property it sets on the frame, so the dock looks the same
+ * with or without it.
+ */
+
+/* Text on the accent fill (primary buttons): the shared on-accent token, light on the saturated v2 accent. */
+.own-rq,
+.own-am,
+.own-as-section {
+  --own-rq-on-accent: var(--own-on-accent);
+}
+
+.own-rq {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--own-text);
+}
+
+/* ---- the DockPrompt frame ---- */
+.own-rq [data-component="dock-prompt"] {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  max-height: min(60vh, 560px);
+  border: 1px solid var(--own-border-strong);
+  border-radius: 14px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-raised);
+  overflow: hidden;
+  /* session-ui's question frame sets its own sans font (3ec856b6c2); own's docks keep own's (Pretendard). */
+  font-family: var(--own-font-sans);
+}
+.own-rq [data-component="dock-prompt"][data-kind="permission"] {
+  border-color: color-mix(in srgb, var(--own-warn) 55%, var(--own-border-strong));
+}
+.own-rq [data-component="dock-prompt"]:focus-visible,
+.own-rq [data-component="dock-prompt"]:focus-within {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-rq [data-dock-surface] {
+  position: static;
+  z-index: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.own-rq [data-slot$="-body"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px 14px 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.own-rq [data-slot$="-header"] {
+  display: block;
+  padding: 0;
+}
+.own-rq [data-slot$="-content"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.own-rq [data-slot$="-footer"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--own-border);
+  background: var(--own-bg-raised);
+}
+
+/* ---- header ---- */
+.own-rq-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.own-rq-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--own-warn) 16%, var(--own-bg-raised));
+  /* On its own warn tint the mark leans toward the text color to keep 4.5:1 (darker in light, lighter in dark). */
+  color: color-mix(in srgb, var(--own-warn) 85%, var(--own-text));
+  font-size: 12px;
+  font-weight: 700;
+}
+.own-rq-mark[data-kind="question"] {
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+}
+.own-rq-headtext {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.own-rq-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.own-rq-origin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+
+/* ---- body ---- */
+.own-rq-code,
+.own-rq-diff {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.own-rq-code[data-folded] {
+  max-height: calc(1.55em * 4 + 16px);
+  overflow: hidden;
+}
+.own-rq-diff {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre;
+  overflow-wrap: normal;
+  content-visibility: auto;
+}
+.own-rq-diff > span {
+  display: block;
+}
+.own-rq-diff [data-line="add"] {
+  color: var(--own-ok);
+}
+.own-rq-diff [data-line="del"] {
+  color: var(--own-danger);
+}
+.own-rq-diff [data-line="hunk"] {
+  color: var(--own-text-faint);
+}
+.own-rq-url {
+  font-family: var(--own-font-mono);
+  font-size: 13.5px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.own-rq-files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-rq-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.own-rq-path {
+  min-width: 0;
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.own-rq-stat {
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+.own-rq-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--own-text-muted);
+}
+.own-rq-warn {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--own-warn);
+}
+.own-rq-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-rq-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- footer ---- */
+.own-rq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.own-rq-actions > .own-rq-grow {
+  flex: 1;
+  min-width: 0;
+}
+.own-rq-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-rq-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-rq-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.own-rq-btn:focus-visible,
+.own-rq-link:focus-visible,
+.own-rq-option:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-rq-btn[data-variant="primary"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-rq-on-accent);
+}
+.own-rq-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--own-accent);
+  filter: brightness(1.06);
+}
+.own-rq-btn[data-variant="ghost"] {
+  border-color: transparent;
+  background: transparent;
+}
+.own-rq-btn[data-variant="danger"] {
+  color: var(--own-danger);
+}
+.own-rq-kbd {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.65;
+}
+/* Faded, the hint drops below 4.5:1 on the accent fill. */
+.own-rq-btn[data-variant="primary"] .own-rq-kbd {
+  opacity: 1;
+}
+.own-rq-scope {
+  margin: 0;
+  text-align: right;
+  font-size: 12px;
+  color: var(--own-text-muted);
+  overflow-wrap: anywhere;
+}
+.own-rq-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.own-rq-input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+}
+.own-rq-input:focus {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 0;
+}
+textarea.own-rq-input {
+  height: auto;
+  min-height: 32px;
+  padding: 6px 10px;
+  resize: vertical;
+}
+
+/* ---- "다른 요청 n개" ---- */
+.own-rq-more {
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+  background: var(--own-bg-raised);
+}
+.own-rq-more-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 0;
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.own-rq-more-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 4px 4px;
+  list-style: none;
+}
+.own-rq-more-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.own-rq-more-row:hover {
+  background: var(--own-bg-hover);
+}
+.own-rq-ellipsis {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- form fields ---- */
+.own-rq-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.own-rq-field + .own-rq-field {
+  margin-top: 8px;
+}
+.own-rq-field-title {
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.own-rq-field-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.own-rq-required {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--own-danger);
+}
+.own-rq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.own-rq-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.own-rq-option:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-rq-option[data-picked] {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-soft);
+}
+.own-rq-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.own-rq-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  /* Checked boxes are filled with the accent text color (3:1 on the dock in both schemes), so the mark is --own-bg. */
+  color: var(--own-bg);
+}
+.own-rq-check[data-type="radio"] {
+  border-radius: 50%;
+}
+.own-rq-option[data-picked] .own-rq-check {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-text);
+}
+.own-rq-option-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.own-rq-option-desc {
+  font-size: 12px;
+  color: var(--own-text-muted);
+  overflow-wrap: anywhere;
+}
+.own-rq-problem {
+  margin: 0;
+  font-size: 12px;
+  color: var(--own-danger);
+}
+.own-rq-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.own-rq-choices > .own-rq-btn {
+  justify-content: flex-start;
+  height: auto;
+  min-height: 34px;
+  padding: 6px 12px;
+  white-space: normal;
+  text-align: left;
+}
+
+/* ---- approval menu (popover) ---- */
+.own-am {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(340px, calc(100vw - 24px));
+  padding: 6px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  font-size: 13px;
+  color: var(--own-text);
+}
+.own-am[data-placed="false"] {
+  visibility: hidden;
+}
+.own-am-title {
+  margin: 0;
+  padding: 6px 8px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--own-text-muted);
+}
+.own-am-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--own-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.own-am-item:hover:not(:disabled),
+.own-am-item:focus-visible {
+  background: var(--own-bg-hover);
+  outline: none;
+}
+.own-am-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.own-am-item[aria-checked="true"] .own-rq-check {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-text);
+}
+.own-am-item[data-mode="full"] .own-am-name {
+  color: var(--own-warn);
+}
+.own-am-name {
+  font-weight: 600;
+}
+.own-am-note {
+  margin: 0;
+  padding: 2px 8px 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--own-text-muted);
+}
+.own-am-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--own-warn) 55%, var(--own-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--own-warn) 7%, var(--own-bg-raised));
+}
+
+/* ---- settings > 승인·권한 ---- */
+.own-as-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--own-border);
+}
+.own-as-section h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.own-as-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.own-as-mode {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.own-as-mode[aria-checked="true"] {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-soft);
+}
+.own-as-mode[data-mode="full"][aria-checked="true"] {
+  border-color: var(--own-warn);
+}
+.own-as-rules {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-as-rule {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr) minmax(90px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--own-border);
+  font-size: 13px;
+  contain: content;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40px;
+}
+.own-as-rule[data-head] {
+  min-height: 28px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--own-text-faint);
+  content-visibility: visible;
+}
+.own-as-mono {
+  min-width: 0;
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+/* 에이전트가 못 여는 파일·폴더 (PP): the user's paths, the suggestions and the built-in list. */
+.own-as-sub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.own-as-path {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--own-border);
+}
+.own-as-resolved {
+  display: block;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-as-builtin > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 32px;
+  line-height: 32px;
+}
+.own-as-group h4 {
+  margin: 10px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--own-text-faint);
+}
+.own-as-builtin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--own-border);
+  font-size: 12.5px;
+}
+.own-as-builtin-row > .own-as-mono {
+  white-space: pre-line;
+}
+@media (max-width: 599px) {
+  .own-as-builtin-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .own-as-rule {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .own-as-rule > :nth-child(3) {
+    display: none;
+  }
+  .own-as-rule > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* Phones (MUX 2026-11-06): approval and question answers sized for a thumb. On a touch screen every answer is a 44 px
+   target and the keyboard hints (`Enter`, `Esc`) go; on a phone's width the answers share the row(s) evenly, so
+   `허용`, `항상 허용` and `거절` are wide buttons at the bottom of the card instead of a cluster at the right. */
+@media (pointer: coarse) {
+  .own-rq-btn {
+    min-height: 44px;
+  }
+  .own-rq-kbd {
+    display: none;
+  }
+}
+@media (max-width: 599px) {
+  .own-rq-actions > .own-rq-btn {
+    flex: 1 1 auto;
+  }
+  .own-rq-actions > .own-rq-grow {
+    flex-basis: 100%;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    // Like packages/desktop: no Bun types in the shell's program. Bun's `fetch` type (with `preconnect`) rejects
+    // upstream's plugin host (v2.2), which main reaches through desktop.ts. Tests and scripts: tsconfig.test.json.
+    "types": ["vite/client", "node", "electron"]
+  },
+  // Like packages/desktop: the upstream main modules this package imports reach @opencode/app exports, which are
+  // checked through app's declaration build.
+  "references": [{ "path": "../app" }],
+  // electron.vite.config.ts stays out like upstream's own (packages/desktop/tsconfig.json covers src only): it imports
+  // upstream's config, which does not type-check under strict settings since v2.2 (its async config widens literals,
+  // script/beta-visual.ts). The build runs it, and test/overrides.test.ts reads its substitutions. The packaging
+  // config reaches upstream's Bun scripts (script/utils.ts imports "bun"), so tsconfig.test.json checks it.
+  "include": ["src", "build"]
+}

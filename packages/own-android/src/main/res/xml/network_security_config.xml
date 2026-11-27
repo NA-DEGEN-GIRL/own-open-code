@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AA1 (08-app-access.md §3.4): no certificate authority vouches for a PC's app host. <pcKey>.ownpc.internal has an
+  empty trust-anchor set, so no chain ever validates there, not even one from a system or user CA. Every app-host
+  certificate then reaches PcActivity's onReceivedSslError, which proceeds only when it matches the stored pin. Native
+  requests (PinnedHttps) use their own pin-only trust manager. Cleartext stays off everywhere: with this file present,
+  android:usesCleartextTraffic is ignored.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">ownpc.internal</domain>
+        <trust-anchors />
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,38 @@
+own.harness `dsh` harness (packages/own-harness/src/dsh/)
+
+The dsh harness ports text and code from DeepSeek Harness:
+
+  deepseek-ai/deepseek-harness (https://github.com/deepseek-ai/deepseek-harness)
+  Copyright (c) 2026 DeepSeek
+  Licensed under the MIT License; the license text is in LICENSE next to this file.
+
+Ported at commit 687f282e8625c6b8d11ff58211a90524be2e4317 (dsh-v0.2.1-rc.2, release dsh 0.2.1-rc.2). The files read
+are listed with their SHA-256 (LF line endings) in source.json. The system prompt sections and their order, the
+runtime-context, workspace-instruction, skill-catalog and time messages, the tool descriptions, parameter schemas,
+argument checks, result and error texts, output limits, the read-before-write guard, the shell executors' environment
+and UTF-8 handling, the repeat-call reminder, the request-series reasons and the balance-before-rate-limit reading come
+from those files; they are marked "Ported from deepseek-ai/deepseek-harness" in src/dsh/ and test/unit/dsh/.
+
+Three fixes of the later upstream f3803c96974ad4a94195fb97e5c637e9c2a3afe3 (dsh-v0.2.2-alpha.2) are ported on top,
+with the pin unchanged: a leading `~` in a file path names the home folder (fs-local `expandHomePrefix`, ae0dfd1003 and
+32004176bf), `glob` prunes unrelated folders when the pattern's folders are plain names (ef284800b9, e8bdbbe823,
+b1c8c9bbbc, f9ef03834a) and `grep` takes an empty `include` as no filter (080a2c60b3, 4e4badb8f3). The files read
+for them are listed under "backports" in source.json, and the code and tests cite "upstream f3803c9697".
+
+The write-failure texts of the later upstream 66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db (dsh-v0.2.2-rc.1) are ported
+the same way: a write or edit the operating system refuses reads `cannot write "<path>": permission denied`, any other
+failure it reports `cannot write "<path>": <its message>` (fsio `writeIoError`, 9b154c04a6 and 8f798da97d; tests
+7fab3cf976). Their files are the second entry under "backports" in source.json, and the code and tests cite
+"upstream 66491b05e3". No system prompt section, tool description or schema changed with either backport.
+
+One deviation is recorded: since dsh-v0.2.2-alpha.3 upstream ships its fs-observation-policy disabled (fe5450b152,
+14d3e53c19; upgrade guide docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off), so dsh's write and edit
+no longer need a prior read. own keeps the read-before-write guard in every variant, the reference variant included,
+because it keeps own's parallel team agents and the user's own concurrent edits from being overwritten unseen
+(decision DH-16, own/docs/13-dsh-harness.md section 3.5). The guard and its texts are dsh's own from the pin.
+
+snapshots/ holds dsh's own snapshot files (system prompts, tool schemas, and message texts extracted from snapshot
+session logs) that the tests compare against.
+
+Nothing of dsh's DeepSeek adapter wire extensions or telemetry is ported: no `dsh_session_log` or other dsh-specific
+request fields, and no session-log or OpenTelemetry upload.

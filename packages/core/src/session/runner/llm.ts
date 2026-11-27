@@ -71,7 +71,9 @@ const layer = Layer.effect(
       if (!force && !continuing && !stepped) {
         const pending = yield* SessionInbox.nextPromotable(db, sessionID, "input")
         if (!pending) return DrainResult.Complete()
-        const control = pending.type === "compaction" || pending.type === "move"
+        // OWN-PATCH(P-035) begin
+        const control = pending.type === "compaction" || pending.type === "move" || pending.type === "reset"
+        // OWN-PATCH(P-035) end
         if (promotable === "steer" && pending.delivery === "queue" && !control) return DrainResult.Complete()
       }
       yield* plugins.awaitActivation
@@ -90,6 +92,10 @@ const layer = Layer.effect(
                   stepped: !continuing && stepped ? true : undefined,
                 })
               }
+              // OWN-PATCH(P-035) begin: a boundary inside a running turn (after a step, or a forced continuation): its
+              // background notices cross a waiting reset, which delivers once the turn ends
+              const turn = !entering || continuing || force
+              // OWN-PATCH(P-035) end
               // Location entry and idle boundaries allow queued controls, not necessarily queued prompts.
               const pending = yield* SessionInbox.serialized(
                 sessionID,
@@ -98,12 +104,21 @@ const layer = Layer.effect(
                     db,
                     sessionID,
                     entering || !continuing ? "input" : "steer",
+                    // OWN-PATCH(P-035) begin
+                    { turn },
+                    // OWN-PATCH(P-035) end
                   )
                   if (next?.type === "compaction")
                     yield* bus.publishAll([
                       [SessionEvent.InboxDelivered, { sessionID, inboxID: next.id }],
                       [SessionEvent.Compaction.Started, { sessionID, reason: "manual", inputID: next.id }],
                     ])
+                  // OWN-PATCH(P-035) begin: a reset delivers between turns only: never inside a continued turn, and a
+                  // forced resume (restart recovery) first finishes the turn it continues. A steer-scoped drain ends at
+                  // a queued prompt before it (upstream); the execution settles that case (SessionExecution).
+                  if (next?.type === "reset" && !continuing && !force)
+                    yield* SessionInbox.deliverReset(db, bus, sessionID, next.id)
+                  // OWN-PATCH(P-035) end
                   if (next?.type === "move")
                     yield* restore(
                       Effect.gen(function* () {
@@ -126,6 +141,9 @@ const layer = Layer.effect(
                   continuation: continuing ? { step } : undefined,
                   stepped: !continuing && stepped ? true : undefined,
                 })
+              // OWN-PATCH(P-035) begin: what was admitted after the reset starts the new context, in this drain's scope
+              if (pending?.type === "reset" && !continuing && !force) continue
+              // OWN-PATCH(P-035) end
               if (pending?.type === "compaction") {
                 const compacted = yield* restore(
                   Effect.gen(function* () {
@@ -195,7 +213,11 @@ const layer = Layer.effect(
                     db,
                     bus,
                     sessionID,
-                    entering && !continuing ? promotable : "steer",
+                    // OWN-PATCH(P-035) begin: the forced step before a pending reset takes only the steers before it
+                    // (and the background notices of the turn it continues)
+                    entering && !continuing && pending?.type !== "reset" ? promotable : "steer",
+                    { turn },
+                    // OWN-PATCH(P-035) end
                   )
                   // A control admitted during context preparation owns this boundary.
                   if (promoted === undefined) return undefined
@@ -250,7 +272,9 @@ const layer = Layer.effect(
         // Reuse boundary preparation once; retries refresh context without delivering more input.
         const loaded = initial ?? (yield* prepareContext(sessionID).pipe(Effect.flatMap(context.load)))
         initial = undefined
-        const estimate = SessionCompaction.estimatePrompt(loaded)
+        // OWN-PATCH(P-017) begin
+        const estimate = SessionCompaction.estimatePrompt(loaded, yield* SessionCompaction.sharesMeasuredPrompt(db, loaded))
+        // OWN-PATCH(P-017) end
         const compacted = yield* compaction.compact({ reason: "auto", context: loaded, estimate })
         if (compacted.status === "failed") return yield* new StepFailedError({ error: compacted.error })
         if (compacted.status === "completed") {
@@ -406,7 +430,9 @@ const layer = Layer.effect(
         .pipe(Effect.orDie)
       for (const row of rows) {
         const message = yield* SessionHistory.decodeMessageRow(row)
-        if (message.type !== "compaction") continue
+        // OWN-PATCH(P-035) begin: only running rows, whose reason is never `reset`
+        if (message.type !== "compaction" || message.status !== "running") continue
+        // OWN-PATCH(P-035) end
         yield* bus.publish(SessionEvent.Compaction.Failed, {
           sessionID,
           reason: message.reason,

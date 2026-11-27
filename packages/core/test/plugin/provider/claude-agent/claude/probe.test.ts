@@ -88,7 +88,10 @@ describe("compatibility and login", () => {
   test("only 2.1.248 or later is compatible", () => {
     expect(ClaudeProbe.versionError("2.1.248")).toBeUndefined()
     expect(ClaudeProbe.versionError("2.1.247")?.message).toContain("claude update")
-    expect(ClaudeProbe.versionError(undefined)?.message).toContain("claude update")
+    // OWN-PATCH(P-051) begin
+    // own: an unknown version no longer blocks (own-version.test.ts).
+    expect(ClaudeProbe.versionError(undefined)).toBeUndefined()
+    // OWN-PATCH(P-051) end
   })
 
   test("only a missing credential counts as logged out", () => {

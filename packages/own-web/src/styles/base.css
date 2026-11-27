@@ -1,0 +1,150 @@
+/* Base typography and accessibility defaults (03 §11, §13.3). */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* The viewport takes the overscroll setting from the root element, not the body: without it a sideways drag that
+   ran out of a code block went back a page in a phone's browser (the swipe pass, 2026-11-20). */
+html {
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--own-bg-subtle);
+  color: var(--own-text);
+  font-family: var(--own-font-sans);
+  font-size: 14px;
+  line-height: 1.4;
+  /* Korean breaks between words, not inside one (the 2026-10-18 layout audit: `그대\n로라`, `압축\n까지` in the
+     menus' descriptions); a word longer than its line still breaks. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* An opened select's list draws each option in the option's own colors. Without these an option takes the select's:
+   the inherited text (light in the dark theme) and, for a select left transparent by Tailwind's preflight, a light
+   list behind it, so a select without a background of its own was unreadable in the dark theme (IS, 2026-11-08). */
+option,
+optgroup {
+  background-color: var(--own-bg);
+  color: var(--own-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.own-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.own-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Mark icons drawn by the stylesheet (visual polish, 2026-11-20): `⋯`, `✦`, `+` and `×` were text glyphs whose
+   fallback fonts (a symbol font on Windows, Noto on Android) put the ink off the box's centre: `⋯` sat on the math axis
+   and `＋` 2 px low, and the font's side bearings moved both. A fixed 16 px box with the drawing as a mask centres the
+   same everywhere, strokes match shell/icons.tsx (24 px grid, 1.6 wide), and costs no script bytes (PF5). The colour
+   is the text's. */
+.own-ico {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: var(--own-ico) center / contain no-repeat;
+}
+.own-ico-more {
+  --own-ico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'><path d='M5.5 12h.01M12 12h.01M18.5 12h.01'/></svg>");
+}
+.own-ico-spark {
+  --own-ico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 4Q13 11 20 12Q13 13 12 20Q11 13 4 12Q11 11 12 4Z'/></svg>");
+}
+.own-ico-plus {
+  --own-ico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M12 5v14M5 12h14'/></svg>");
+}
+.own-ico-x {
+  --own-ico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg>");
+}
+@media (forced-colors: active) {
+  .own-ico {
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
+}
+
+/* 4.2.2: coarse pointers get 44 px targets. Besides `.own-target`, own-web's shared controls (icon buttons, kit
+   buttons, segmented choices, the running-on pill, the composer's tools) grow on touch screens (05 §13.1-4, checked at
+   375 px by e2e/gateway), and so do the items of session-ui's menus, which open outside own's containers: a prompt's
+   menu holds 이 지점으로 복원 and a pending steer's actions since upstream v2.2.6 (ae0fde771d; e2e/mobile). */
+@media (pointer: coarse) {
+  [data-component="menu-v2-item"],
+  .own-target,
+  .own-icon-button,
+  .own-btn,
+  .own-seg > [role="radio"],
+  .own-sw-pill,
+  .own-at-add,
+  .own-cp-tool,
+  .own-cp-switch,
+  .own-cp-send,
+  .own-workspace-tabs .own-tab,
+  .own-workspace-note-toggle,
+  [data-testid="project-select"],
+  [data-testid="worktree-select"],
+  [data-testid="git-status-chip"] {
+    /* Important: module stylesheets are unlayered and set their own (smaller) minimums. */
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  /* The items of own's menus (the conversation `⋯`, a list row's `⋯`, 대화 보기, the composer's menus): 30 px rows were
+     a thumb's half on the S23 Ultra (2026-11-19). Height only: an item is as wide as its menu. */
+  [role="menu"] :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]) {
+    min-height: 44px !important;
+  }
+}
+
+/* Transitions end at once (0s, not 0.01ms): with a duration every property transitions (`transition-property` is
+   `all`), and an inherited one such as `visibility` then reached each level a frame after its parent, so the switcher,
+   shown after it is placed, could not take the focus on its first open (the 2026-10-18 layout audit). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .own-chip,
+  .own-meter {
+    border: 1px solid CanvasText;
+  }
+}

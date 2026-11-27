@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/team",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: team mode plugin (own.team): areas, code-only worktrees, main requests (06)",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --parallel=6 --timeout=30000 --path-ignore-patterns='test/e2e/**' --timings=test/timings.json",
+    "test:quick": "\"$npm_execpath\" test --changed=main --parallel=6 --timeout=30000 --path-ignore-patterns='test/e2e/**'",
+    "test:e2e": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --parallel=3 --timeout=900000 test/e2e",
+    "test:e2e:full": "OWN_TEAM_E2E_FULL=1 \"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --parallel=3 --timeout=900000 test/e2e",
+    "test:e2e:t2": "\"$npm_execpath\" test --timeout 900000 test/e2e/adopt.e2e.test.ts test/e2e/integrate.e2e.test.ts test/e2e/release.e2e.test.ts test/e2e/links.e2e.test.ts test/e2e/record.e2e.test.ts test/e2e/guard.e2e.test.ts test/e2e/tools-cache.e2e.test.ts",
+    "test:e2e:t3": "\"$npm_execpath\" test --timeout 900000 test/e2e/reorg.e2e.test.ts test/e2e/assets.e2e.test.ts test/e2e/shared.e2e.test.ts",
+    "test:e2e:v": "\"$npm_execpath\" test --timeout 900000 test/e2e/voice.e2e.test.ts",
+    "test:e2e:bun-install": "OWN_E2E_BUN_INSTALL=1 \"$npm_execpath\" test --timeout 900000 test/e2e/links.e2e.test.ts -t opt-in",
+    "test:perf": "OWN_TEAM_PERF=1 \"$npm_execpath\" test test/assets/after-tool.test.ts test/hooks/tool.test.ts test/hooks/permission.test.ts test/e2e/guard.e2e.test.ts -t 'p95'",
+    "test:real-host": "bash test/real-host/run.sh t2",
+    "test:real-host:t3": "bash test/real-host/run.sh t3"
+  },
+  "dependencies": {
+    "@opencode/client": "workspace:*",
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

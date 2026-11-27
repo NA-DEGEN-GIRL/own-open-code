@@ -8,7 +8,7 @@ import type { SessionInbox } from "@opencode/schema/session-inbox"
 import type { SessionError } from "@opencode/schema/session-error"
 import type { SessionMessage } from "@opencode/schema/session-message"
 import type { TokenUsage } from "@opencode/schema/token-usage"
-import type { JsonSchema, Types } from "effect"
+import type { Effect, JsonSchema, Types } from "effect"
 import type { ModelHooks } from "./registration.js"
 
 export interface SessionPrompt {
@@ -35,6 +35,13 @@ export interface SessionRequest {
   system: Array<SystemPart>
   messages: Array<SessionRequestMessage>
   options: SessionRequestOptions
+  // OWN-PATCH(P-032) begin
+  /**
+   * Primary and compaction requests: core's default `options.maxTokens` without its 256,000 cap, the model's output
+   * limit fitted to the room the prompt leaves. A hook that applies another cap sends `min(outputCeiling, cap)`.
+   */
+  readonly outputCeiling?: number
+  // OWN-PATCH(P-032) end
 }
 
 export interface SessionContext extends SessionRequest {
@@ -53,9 +60,53 @@ export interface SessionCompactionResult {
 export interface SessionCompaction extends SessionContext {
   /** Set to use this compaction and skip the model request. */
   result?: SessionCompactionResult
+  // OWN-PATCH(P-025) begin
+  /** Set to ask for the summary with this prompt in place of core's; the whole reply is the summary. */
+  prompt?: string
+  /**
+   * With `prompt`: turns the reply into the stored summary, or rejects it (undefined). A rejected reply is answered once
+   * with `repair` (default: ask again in the requested format); a second rejection fails the compaction.
+   */
+  accept?: (reply: string) => string | undefined
+  repair?: string
+  /** Merged into the checkpoint's metadata, which later requests see on the checkpoint message. */
+  metadata?: Record<string, unknown>
+  /**
+   * Models asked in turn when this compaction fails (an error, a refusal, or a reply rejected twice); the compaction
+   * hooks run again for each. A summary one of them writes records `fallback` in the checkpoint's metadata.
+   */
+  fallbackModels?: Array<Model.Ref>
+  /**
+   * The last resort when the compaction and every fallback model failed: a summary made without a model, or
+   * undefined to let the compaction fail. Its checkpoint records `fallback` in the metadata too.
+   */
+  fallback?: (error: SessionError.Error) => SessionCompactionResult | undefined
+  // OWN-PATCH(P-025) end
+  // OWN-PATCH(P-034) begin
+  /**
+   * With `prompt`: send the whole history first, the next primary request plus the prompt, so the summary reads the
+   * session's prompt cache. The hooks then run again on the whole history with `kept` and this set; clearing it there
+   * keeps the older part, and `metadata.prefix.reason` set there says why. One attempt; a failure goes on to the older
+   * part. Core records what became of it as `prefix: { request: "full" | "older", reason? }` in the checkpoint's
+   * metadata, a stand-in's or a model-free summary's checkpoint included.
+   */
+  prefix?: "full"
+  /** Set by core on that second run: the first message kept verbatim after the summary, which the prompt names. */
+  readonly kept?: { readonly messageID: SessionMessage.ID }
+  /**
+   * Set to end this compaction before any request: it fails as cancelled (`aborted`) with this message, no fallback
+   * model or `fallback` runs, and the history stays as it was.
+   */
+  cancel?: string
+  // OWN-PATCH(P-034) end
 }
 
-export interface SessionGenerate extends SessionContext {}
+export interface SessionGenerate extends SessionContext {
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
+}
 
 export interface SessionTitle extends SessionRequest {
   /** Set to use this title and skip the model request. */
@@ -86,6 +137,10 @@ export interface SessionModelRequest {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   baseURL?: string
   headers: Record<string, string>
 }
@@ -95,6 +150,10 @@ export interface SessionHttpRequest {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   request: Request
 }
 
@@ -103,6 +162,10 @@ export interface SessionHttpResponse {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   readonly request: Request
   response: Response
 }
@@ -242,4 +305,49 @@ export type SessionDomain = Pick<
 > &
   Pick<ExperimentalSessionApi<unknown>, "wait" | "instructions"> & {
     readonly hook: ModelHooks<SessionHooks>
+    // OWN-PATCH(P-054) begin
+    /** One indexed page of a Session's messages, read like `GET /api/session/:id/message`. */
+    readonly messages: (input: SessionMessagesInput) => Effect.Effect<ReadonlyArray<SessionMessage.Info>, unknown>
+    // OWN-PATCH(P-054) end
+    // OWN-PATCH(P-061) begin
+    /**
+     * One model call on the Session's history as the next primary request would carry it, then `turns`; streamed
+     * through `onText`. Nothing is written to the Session: no input, message, step, usage or event.
+     */
+    readonly side: (input: SessionSideInput) => Effect.Effect<SessionSideResult, unknown>
+    // OWN-PATCH(P-061) end
   }
+
+// OWN-PATCH(P-061) begin
+export interface SessionSideInput {
+  readonly sessionID: Session.ID
+  /** The side thread after the Session's history, oldest first; the last turn is the user's question. */
+  readonly turns: ReadonlyArray<{ readonly role: "user" | "assistant"; readonly text: string }>
+  /** `none` asks the provider for no tool call; omitted, the request offers the tools like a primary step. */
+  readonly toolChoice?: "none"
+  /** Each text delta as it arrives. */
+  readonly onText?: (text: string) => void
+}
+
+export interface SessionSideResult {
+  readonly text: string
+  /** Why the answer ended; `tool-calls` when the model asked for a tool, which a side call never runs. */
+  readonly finish: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "other"
+  readonly model: Model.Ref
+  readonly tokens?: TokenUsage.Info
+  /** What the provider said it charged, else the catalog price of `tokens`; USD. */
+  readonly cost?: number
+}
+// OWN-PATCH(P-061) end
+
+// OWN-PATCH(P-054) begin
+export interface SessionMessagesInput {
+  readonly sessionID: Session.ID
+  readonly limit?: number
+  /** Newest first when omitted. */
+  readonly order?: "asc" | "desc"
+  readonly type?: SessionMessage.Type
+  /** Only messages after (`next`) or before (`previous`) this one in `order`. */
+  readonly cursor?: { readonly id: SessionMessage.ID; readonly direction: "previous" | "next" }
+}
+// OWN-PATCH(P-054) end

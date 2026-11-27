@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The PC page's `prefers-color-scheme` (MUX 2026-11-06): WebView reads it from the theme's isLightTheme when the app
+      targets 33+, so own-web's `시스템 설정 따름` follows the phone's dark mode. The app's own screens stay dark.
+    -->
+    <bool name="system_light">true</bool>
+</resources>

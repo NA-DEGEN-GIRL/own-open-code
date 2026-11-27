@@ -52,7 +52,9 @@ const replayable = (message: SessionMessage.Info, boundary: Boundary) =>
     message.model.id === boundary.id &&
     decodesWindow(message.native.messages))
 
-const latestCompaction = Effect.fnUntraced(function* (
+// OWN-PATCH(P-017) begin: exported for SessionCompaction.sharesMeasuredPrompt
+export const latestCompaction = Effect.fnUntraced(function* (
+  // OWN-PATCH(P-017) end
   db: DatabaseService,
   sessionID: SessionSchema.ID,
   boundary: Boundary,
@@ -66,6 +68,9 @@ const latestCompaction = Effect.fnUntraced(function* (
         eq(SessionMessageTable.session_id, sessionID),
         eq(SessionMessageTable.type, "compaction"),
         sql`json_extract(${SessionMessageTable.data}, '$.status') = 'completed'`,
+        // OWN-PATCH(P-035) begin: an undone context reset stays in the transcript but bounds nothing
+        sql`json_extract(${SessionMessageTable.data}, '$.undone') is null`,
+        // OWN-PATCH(P-035) end
         before === undefined ? undefined : lt(SessionMessageTable.seq, before),
         boundary === "latest"
           ? undefined
@@ -225,7 +230,17 @@ const messageEntries = Effect.fnUntraced(function* (
   // Re-expansion may cross a native checkpoint whose completion already advanced the instruction
   // epoch: the baseline supersedes the chronological updates before it. Forks seed their baseline
   // at sequence 0 but retain parent sequences, so the copied checkpoint still retires them.
-  const native = entries.findLast((entry) => isNativeCompaction(entry.message))
+  // OWN-PATCH(P-035) begin: an undone reset whose undo restored the epoch it ended keeps its baseline, so the updates
+  // before it stay chronological history. Without one (a revert or fork since) the current baseline covers them.
+  const native = entries.findLast(
+    (entry) =>
+      isNativeCompaction(entry.message) ||
+      (entry.message.type === "compaction" &&
+        entry.message.status === "completed" &&
+        entry.message.undone !== undefined &&
+        entry.message.baseline === undefined),
+  )
+  // OWN-PATCH(P-035) end
   // The instruction baseline covers every update before its epoch. A committed revert that removes an
   // update clears the state, so the next baseline is rendered fresh and covers every surviving update.
   const epoch = (yield* InstructionState.epochStart(db, sessionID)) ?? Number.POSITIVE_INFINITY

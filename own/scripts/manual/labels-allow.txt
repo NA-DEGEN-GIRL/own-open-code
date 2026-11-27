@@ -1,0 +1,5 @@
+# Labels the manual quotes that are typed by the user, not UI strings (build-html.ts --strict).
+# Side questions (10.18): slash commands and an example question.
+/btw <질문>
+/곁질문
+/btw 지금 고치는 함수 이름이 뭐야?

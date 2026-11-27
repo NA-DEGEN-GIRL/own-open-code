@@ -1,0 +1,355 @@
+/*
+ * Git actions of the review tab (03 §19.2), loaded with the review chunk. --own-* tokens only (03 §13), so both
+ * schemes (dark default) follow the theme. The dock frame itself is session-ui's DockPrompt (permission kind).
+ */
+@layer components {
+  .own-git-bar,
+  .own-git-file {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px 4px 12px;
+    flex: none;
+    font-size: 12px;
+    line-height: var(--line-height-compact, 16px);
+    color: var(--own-text-muted);
+  }
+
+  .own-git-file {
+    border-top: 1px solid var(--own-border);
+  }
+
+  .own-git-grow {
+    flex: 1;
+  }
+
+  .own-git-branch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    color: var(--own-text);
+  }
+
+  .own-git-branch-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--own-font-mono);
+  }
+
+  .own-git-ab,
+  .own-git-staged {
+    color: var(--own-text-muted);
+    white-space: nowrap;
+  }
+
+  .own-git-file-state[data-staged] {
+    color: var(--own-accent-text);
+  }
+
+  .own-git-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--own-border-strong);
+    border-radius: 8px;
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    font: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .own-git-btn:hover:not(:disabled) {
+    background: var(--own-bg-hover);
+  }
+
+  .own-git-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .own-git-btn:focus-visible,
+  .own-git-link:focus-visible,
+  .own-git-message:focus-visible {
+    outline: 2px solid var(--own-focus);
+    outline-offset: 1px;
+  }
+
+  .own-git-btn[data-variant="primary"] {
+    border-color: var(--own-accent);
+    background: var(--own-accent);
+    color: var(--own-on-accent);
+  }
+
+  .own-git-btn[data-variant="primary"]:hover:not(:disabled) {
+    background: var(--own-accent);
+    filter: brightness(1.06);
+  }
+
+  .own-git-btn[data-variant="ghost"] {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .own-git-btn[data-variant="danger"] {
+    color: var(--own-danger);
+  }
+
+  .own-git-btn kbd {
+    font: inherit;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  .own-git-btn[data-variant="primary"] kbd {
+    opacity: 1;
+  }
+
+  .own-git-dock {
+    flex: none;
+    padding: 4px 8px 8px;
+    max-height: 60%;
+    overflow: auto;
+  }
+
+  .own-git-dock-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--own-text);
+  }
+
+  .own-git-dock-icon {
+    color: var(--own-accent-text);
+  }
+
+  .own-git-plan,
+  .own-git-hunks,
+  .own-git-result {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    line-height: var(--line-height-compact, 16px);
+    color: var(--own-text);
+  }
+
+  .own-git-effect {
+    margin: 0;
+  }
+
+  .own-git-effect[data-destructive] {
+    color: var(--own-danger);
+  }
+
+  .own-git-label {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--own-text-muted);
+  }
+
+  .own-git-command {
+    display: block;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--own-bg-subtle);
+    border: 1px solid var(--own-border);
+    font-family: var(--own-font-mono);
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--own-text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .own-git-output {
+    margin: 0;
+    max-height: 180px;
+    overflow: auto;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--own-bg-subtle);
+    font-family: var(--own-font-mono);
+    font-size: 11.5px;
+    line-height: 16px;
+    color: var(--own-text-muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .own-git-hint,
+  .own-git-note {
+    margin: 0;
+    font-size: 12px;
+    color: var(--own-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .own-git-message {
+    width: 100%;
+    min-height: 64px;
+    resize: vertical;
+    padding: 6px 8px;
+    border: 1px solid var(--own-border-input, var(--own-border-strong));
+    border-radius: 8px;
+    background: var(--own-bg);
+    color: var(--own-text);
+    font: inherit;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .own-git-ok {
+    margin: 0;
+    color: var(--own-ok);
+  }
+
+  .own-git-error {
+    margin: 0;
+    color: var(--own-danger);
+  }
+
+  .own-git-link {
+    align-self: flex-start;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--own-accent-text);
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+  }
+
+  .own-git-link:hover {
+    text-decoration: underline;
+  }
+
+  .own-git-actions {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .own-git-hunk-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .own-git-hunk-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .own-git-hunk-header {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--own-font-mono);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .own-git-hunk-stats {
+    display: inline-flex;
+    gap: 4px;
+    font-family: var(--own-font-mono);
+    font-size: 12px;
+  }
+
+  .own-git-add {
+    color: var(--own-ok);
+  }
+
+  .own-git-del {
+    color: var(--own-danger);
+  }
+}
+
+/*
+ * The DockPrompt frame, laid out in the tab like the request docks lay it out above the composer. Outside the layer
+ * and one attribute more specific than session-ui's own `[data-component="dock-prompt"][data-kind="permission"] …`
+ * rules (unlayered, in the review chunk's stylesheet): its body and content grow from a 0 basis, which lets the
+ * footer cover the last lines of a taller body.
+ */
+.own-git-dock [data-component="dock-prompt"][data-kind] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-raised);
+  overflow: hidden;
+}
+
+.own-git-dock[data-phase="confirm"] [data-component="dock-prompt"][data-kind] {
+  border-color: color-mix(in srgb, var(--own-warn) 55%, var(--own-border-strong));
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind]:focus-visible,
+.own-git-dock [data-component="dock-prompt"][data-kind]:focus-within {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind] [data-dock-surface] {
+  position: static;
+  z-index: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind] [data-slot$="-body"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  min-height: auto;
+  padding: 12px 14px 10px;
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind] [data-slot$="-header"] {
+  display: block;
+  padding: 0;
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind] [data-slot$="-content"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  min-height: auto;
+}
+
+.own-git-dock [data-component="dock-prompt"][data-kind] [data-slot$="-footer"] {
+  display: flex;
+  flex: none;
+  margin: 0;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--own-border);
+  background: var(--own-bg-raised);
+}

@@ -2350,6 +2350,53 @@ describe("ShellTool", () => {
   )
 })
 
+// OWN-PATCH(P-030) begin
+describe("ShellTool commands without a command node", () => {
+  const shell = isWindows ? (Bun.which("pwsh") ? "pwsh" : "powershell") : "sh"
+  // Upstream's scanner asks the method call and the redirections itself; P-030 asks the assignments whole.
+  const commands = isWindows
+    ? ["[IO.File]::WriteAllText('marker', 'hi')", "'hi' > marker", "$x = 'hi'"]
+    : ["> marker", "X=1"]
+  const run = (directory: string, command: string) =>
+    withSession(directory, (registry) =>
+      Effect.gen(function* () {
+        const selection = yield* ShellSelect.Service
+        yield* selection.transform((editor) => editor.configure(shell))
+        return yield* executeTool(registry, call({ command }))
+      }),
+    )
+  it.live(
+    "asks shell for the whole command, so a shell deny stops it",
+    () =>
+      Effect.acquireUseRelease(
+        Effect.promise(() => tmpdir()),
+        (tmp) =>
+          Effect.gen(function* () {
+            for (const command of commands) {
+              reset()
+              denyAction = "shell"
+              yield* run(tmp.path, command)
+              expect(assertions.map((item) => [item.action, item.resources])).toEqual([["shell", [command]]])
+            }
+            // PowerShell ends a statement at a lone CR, and upstream's scanner asks the statement after it.
+            if (isWindows) {
+              reset()
+              denyAction = "shell"
+              yield* run(tmp.path, "cd .\rSet-Content marker hi")
+              expect(assertions.map((item) => item.resources)).toEqual([["Set-Content marker hi"]])
+            }
+            expect(yield* Effect.promise(() => Bun.file(path.join(tmp.path, "marker")).exists())).toBe(false)
+            reset()
+            yield* run(tmp.path, isWindows ? "Set-Location ." : "cd .")
+            expect(assertions).toEqual([])
+          }),
+        (tmp) => Effect.promise(() => tmp[Symbol.asyncDispose]().then(() => undefined)),
+      ),
+    { timeout: 30_000 },
+  )
+})
+// OWN-PATCH(P-030) end
+
 describe("ShellTool stopped", () => {
   // Runs a foreground call the way a session step does, then stops it as the user does (through `cancel`), or
   // interrupts it as a server shutdown does.

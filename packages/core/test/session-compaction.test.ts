@@ -68,9 +68,25 @@ const cost = [
     },
   },
 ]
+// OWN-PATCH(P-025) begin
+/** Models whose requests fail like a refusal. */
+let refused = new Set<string>()
+const standIn = SessionRunnerModel.resolved(
+  LanguageModel.make({ id: "stand-in", provider: "backup", route: OpenAIChat.route }),
+  {
+    capabilities: { tools: true, input: ["text", "image"], output: ["text"] },
+    cost,
+    limit: { context: 200_000, output: 32_000 },
+  },
+)
+// OWN-PATCH(P-025) end
 const client = Layer.mock(LLMClient.Service)({
   stream: (request: LLMRequest) => {
     requests.push(request)
+    // OWN-PATCH(P-025) begin
+    if (refused.has(request.model.id))
+      return Stream.fail(new AIError({ reason: new InvalidRequestError({ message: "refused" }) }))
+    // OWN-PATCH(P-025) end
     if (reject?.(request)) {
       return Stream.fail(
         new AIError({
@@ -124,6 +140,16 @@ const it = testEffect(
       Bus.node.replace(Bus.configured({ persist: true })),
       llmClient.replace(client),
       Location.node.replace(Location.boundNode({ directory: AbsolutePath.make("/project") })),
+      // OWN-PATCH(P-025) begin: only the stand-in resolves, for a hook's fallback models.
+      SessionRunnerModel.node.replace(
+        Layer.mock(SessionRunnerModel.Service)({
+          resolve: (session) =>
+            session.model?.id === "stand-in"
+              ? Effect.succeed(standIn)
+              : Effect.fail(new SessionRunnerModel.ModelNotSelectedError({ sessionID: session.id })),
+        }),
+      ),
+      // OWN-PATCH(P-025) end
     ],
   ),
 )
@@ -1019,6 +1045,164 @@ it.effect("compaction hooks can supply the summary instead of the model", () =>
   }),
 )
 
+// OWN-PATCH(P-025) begin
+it.effect("compaction hooks can supply the summary prompt and checkpoint metadata", () =>
+  Effect.gen(function* () {
+    requests = []
+    const hooks = yield* PluginHooks.Service
+    const store = yield* SessionStore.Service
+    const sessionID = Session.ID.make("ses_hook_prompt_compaction")
+    const session = yield* insertSession(sessionID)
+    const messages = [
+      { id: SessionMessage.ID.create(), type: "user" as const, text: "Compact me.", time: { created: DateTime.makeUnsafe(0) } },
+    ]
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.prompt = "Summarize as the harness asks."
+        event.metadata = { harness: "kept" }
+      }),
+    )
+    expect(yield* compactManually(session, messages, SessionMessage.ID.make("msg_hook_prompt"))).toEqual({
+      status: "completed",
+    })
+    expect(requests).toHaveLength(1)
+    expect(requests[0]!.messages.at(-1)).toMatchObject({ role: "user", content: [{ text: "Summarize as the harness asks." }] })
+    expect(yield* store.context(sessionID)).toMatchObject([
+      { type: "compaction", summary: "## Objective\n- manual summary", metadata: { harness: "kept" } },
+    ])
+  }),
+)
+
+it.effect("a hook's accept shapes the summary, and a rejected reply is repaired once", () =>
+  Effect.gen(function* () {
+    requests = []
+    const hooks = yield* PluginHooks.Service
+    const store = yield* SessionStore.Service
+    const sessionID = Session.ID.make("ses_hook_accept_compaction")
+    const session = yield* insertSession(sessionID)
+    const messages = [
+      { id: SessionMessage.ID.create(), type: "user" as const, text: "Compact me.", time: { created: DateTime.makeUnsafe(0) } },
+    ]
+    let calls = 0
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.prompt = "Summarize."
+        event.repair = "Again, please."
+        event.accept = (reply) => (++calls === 1 ? undefined : `accepted: ${reply}`)
+      }),
+    )
+    expect(yield* compactManually(session, messages, SessionMessage.ID.make("msg_hook_accept"))).toEqual({ status: "completed" })
+    expect(requests).toHaveLength(2)
+    expect(requests[1]!.messages.at(-1)).toMatchObject({ role: "user", content: [{ text: "Again, please." }] })
+    expect(yield* store.context(sessionID)).toMatchObject([
+      { type: "compaction", summary: "accepted: ## Objective\n- manual summary" },
+    ])
+  }),
+)
+
+it.effect("a failed compaction asks the hook's fallback model and records which model wrote it", () =>
+  Effect.gen(function* () {
+    requests = []
+    refused = new Set(["summary-model"])
+    const hooks = yield* PluginHooks.Service
+    const store = yield* SessionStore.Service
+    const sessionID = Session.ID.make("ses_hook_fallback_model")
+    const session = yield* insertSession(sessionID)
+    const messages = [
+      { id: SessionMessage.ID.create(), type: "user" as const, text: "Compact me.", time: { created: DateTime.makeUnsafe(0) } },
+    ]
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.fallbackModels = [
+          Schema.decodeUnknownSync(Model.Ref)({ providerID: "backup", id: "missing" }),
+          Schema.decodeUnknownSync(Model.Ref)({ providerID: "backup", id: "stand-in" }),
+        ]
+      }),
+    )
+    expect(yield* compactManually(session, messages, SessionMessage.ID.make("msg_hook_fallback"))).toEqual({
+      status: "completed",
+    })
+    refused = new Set()
+    expect(requests.map((request) => String(request.model.id))).toEqual(["summary-model", "stand-in"])
+    expect(yield* store.context(sessionID)).toMatchObject([
+      {
+        type: "compaction",
+        summary: "## Objective\n- manual summary",
+        metadata: { fallback: { failed: "test/summary-model", reason: "refused", model: "backup/stand-in" } },
+      },
+    ])
+  }),
+)
+
+it.effect("when every model fails, the hook's model-free summary keeps the session going", () =>
+  Effect.gen(function* () {
+    requests = []
+    refused = new Set(["summary-model", "stand-in"])
+    const hooks = yield* PluginHooks.Service
+    const store = yield* SessionStore.Service
+    const sessionID = Session.ID.make("ses_hook_fallback_summary")
+    const session = yield* insertSession(sessionID)
+    const messages = [
+      { id: SessionMessage.ID.create(), type: "user" as const, text: "Compact me.", time: { created: DateTime.makeUnsafe(0) } },
+    ]
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.fallbackModels = [Schema.decodeUnknownSync(Model.Ref)({ providerID: "backup", id: "stand-in" })]
+        event.fallback = (error) => ({ summary: `made without a model after: ${error.message}` })
+      }),
+    )
+    expect(yield* compactManually(session, messages, SessionMessage.ID.make("msg_hook_fallback_summary"))).toEqual({
+      status: "completed",
+    })
+    refused = new Set()
+    expect(requests.map((request) => String(request.model.id))).toEqual(["summary-model", "stand-in"])
+    expect(yield* store.context(sessionID)).toMatchObject([
+      {
+        type: "compaction",
+        summary: "made without a model after: refused",
+        metadata: { fallback: { failed: "test/summary-model", reason: "refused" } },
+      },
+    ])
+  }),
+)
+
+it.effect("a hook's prompt request and its repair follow-up lower the output limit as core's prompt does", () =>
+  Effect.gen(function* () {
+    const hooks = yield* PluginHooks.Service
+    const asks = { prompt: "", repair: "", rejects: 0 }
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.prompt = asks.prompt
+        event.repair = asks.repair
+        event.accept = (reply) => (asks.rejects-- > 0 ? undefined : reply)
+      }),
+    )
+    // About 170k estimated tokens: core's prompt keeps the 20k limit in the 200k window. 80k characters are 20k more.
+    const user = SessionMessage.User.make({
+      id: SessionMessage.ID.create(),
+      type: "user",
+      text: "x".repeat(680_000),
+      time: { created: DateTime.makeUnsafe(0) },
+    })
+    const fit = (id: string, ask: typeof asks) =>
+      Effect.gen(function* () {
+        requests = []
+        Object.assign(asks, ask)
+        expect(yield* compactManually(yield* insertSession(Session.ID.make(id)), [user])).toEqual({ status: "completed" })
+        return requests.map((request) => request.maxTokens ?? 0)
+      })
+    // Core's fitting with a short prompt (since upstream v2.1 a summary gets up to 32k of the room left).
+    const [base] = yield* fit("ses_hook_short_fit", { prompt: "Summarize.", repair: "Again.", rejects: 0 })
+    const prompted = yield* fit("ses_hook_prompt_fit", { prompt: "p".repeat(80_000), repair: "Again.", rejects: 0 })
+    expect(prompted).toHaveLength(1)
+    expect(prompted[0]).toBeLessThan(base!)
+    const repaired = yield* fit("ses_hook_repair_fit", { prompt: "Summarize.", repair: "r".repeat(80_000), rejects: 1 })
+    expect(repaired[0]).toBe(base!)
+    expect(repaired[1]).toBeLessThan(base!)
+  }),
+)
+// OWN-PATCH(P-025) end
+
 it.effect("native compaction fails without a model call on a route that cannot compact", () =>
   Effect.gen(function* () {
     requests = []
@@ -1075,6 +1259,460 @@ it.effect("forked session compaction reuses the fork root prompt cache key", () 
   }),
 )
 
+// OWN-PATCH(P-017) begin
+it.effect("auto compaction reuses another provider's count of the same model over the same history", () =>
+  Effect.gen(function* () {
+    const bus = yield* Bus.Service
+    const compaction = yield* SessionCompaction.Service
+    const model = { ...resolved, limit: { context: 100_000, output: 10_000 } }
+    const counted = (providerID: string, input: number, id = "summary-model") =>
+      Schema.decodeUnknownSync(SessionMessage.Assistant)({
+        id: SessionMessage.ID.create(),
+        type: "assistant",
+        agent: Agent.defaultID,
+        model: { id, providerID },
+        content: [{ type: "text", text: "Done" }],
+        tokens: { input, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        time: { created: 0, completed: 0 },
+      })
+    const made = (providerID: string) => ({
+      model: { providerID: Provider.ID.make(providerID), id: Model.ID.make("summary-model") },
+      native: { messages: [] },
+    })
+    const db = (yield* Database.Service).db
+    // As the runner asks (upstream v2.2 passes its step estimate; P-017 computes it with the shared count).
+    const auto = (context: SessionContext.Loaded) =>
+      SessionCompaction.sharesMeasuredPrompt(db, context).pipe(
+        Effect.flatMap((shared) =>
+          compaction.compact({
+            reason: "auto",
+            context,
+            estimate: SessionCompaction.estimatePrompt(context, shared),
+          }),
+        ),
+      )
+    const due = (name: string, messages: readonly SessionMessage.Info[]) =>
+      insertSession(Session.ID.make(name)).pipe(
+        Effect.flatMap((session) => auto({ ...loaded(session, messages), model })),
+        Effect.map((outcome) => outcome.status !== "skipped"),
+      )
+    // A switched account slot serves the same model id as another provider.
+    const slot = counted("own-codex-02", 95_000)
+    const context = { ...loaded(yield* insertSession(Session.ID.make("ses_shared_estimate")), [slot]), model }
+    expect(SessionCompaction.estimateContext(context, true)).toBe(95_000)
+    expect(SessionCompaction.estimatePrompt(context, true)).toEqual({ measured: 95_000, estimated: 0 })
+    // Without the shared count only the text estimate is left: far below the slot's measured 95,000.
+    expect(SessionCompaction.estimateContext(context)).toBeLessThan(1_000)
+    expect(yield* due("ses_shared_other_model", [counted("own-codex-02", 95_000, "other-model")])).toBe(false)
+    expect(yield* due("ses_shared_count", [slot])).toBe(true)
+
+    // The slot replayed its own native window, which history here replaces with the messages it stood for.
+    const native = yield* insertSession(Session.ID.make("ses_shared_native"))
+    yield* bus.publish(SessionEvent.Compaction.Started, { sessionID: native.id, reason: "auto" })
+    yield* bus.publish(SessionEvent.Compaction.Ended, {
+      sessionID: native.id,
+      reason: "auto",
+      text: "",
+      ...made("own-codex-02"),
+    })
+    expect(yield* auto({ ...loaded(native, [slot]), model })).toEqual({ status: "skipped" })
+    // This model's own native window opens history; the slot counted the messages it replaced instead.
+    const checkpoint = Schema.decodeUnknownSync(SessionMessage.CompactionCompleted)({
+      id: SessionMessage.ID.create(),
+      type: "compaction",
+      status: "completed",
+      reason: "auto",
+      summary: "",
+      ...made("test"),
+      time: { created: 0, completed: 0 },
+    })
+    expect(yield* due("ses_shared_checkpoint", [checkpoint, counted("test", 1_000), slot])).toBe(false)
+  }),
+)
+// OWN-PATCH(P-017) end
+
+// OWN-PATCH(P-034) begin
+/** [U1 A1 U2 A2]: everything fits `keep`, so the latest exchange (U2 A2) is kept and U1 A1 is the older part. */
+const exchanges = (second = "Second question", measured = 0) => {
+  const user = (text: string) =>
+    SessionMessage.User.make({ id: SessionMessage.ID.create(), type: "user", text, time: { created: DateTime.makeUnsafe(0) } })
+  const reply = (text: string, input = 0) =>
+    Schema.decodeUnknownSync(SessionMessage.Assistant)({
+      id: SessionMessage.ID.create(),
+      type: "assistant",
+      agent: Agent.defaultID,
+      model: { id: "summary-model", providerID: "test" },
+      content: [{ type: "text", text }],
+      ...(input > 0 ? { tokens: { input, output: 0, reasoning: 0, cache: { read: 0, write: 0 } } } : {}),
+      time: { created: 0, completed: 0 },
+    })
+  return [user("First question"), reply("First answer"), user(second), reply("Second answer", measured)]
+}
+
+/**
+ * A hook that asks for the whole history and records what each of its runs saw: the whole history with its kept start
+ * first, then the older part. `decline` keeps the older request and names why.
+ */
+const fullPrefixHook = (accept: (reply: string) => string | undefined = (reply) => reply, decline?: string) =>
+  Effect.gen(function* () {
+    const hooks = yield* PluginHooks.Service
+    const runs: Array<{ kept?: string; prefix?: string; messages: number }> = []
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        runs.push({ kept: event.kept?.messageID, prefix: event.prefix, messages: event.messages.length })
+        if (decline === undefined) event.prefix = "full"
+        event.prompt = event.kept === undefined ? "Summarize all." : `Summarize up to ${event.kept.messageID}.`
+        event.metadata = {
+          ...event.metadata,
+          harness: "kept",
+          ...(event.kept !== undefined && decline !== undefined ? { prefix: { request: "older", reason: decline } } : {}),
+        }
+        event.accept = accept
+      }),
+    )
+    return runs
+  })
+
+const texts = (request: LLMRequest | undefined) =>
+  (request?.messages ?? []).map((message) => message.content.map((part) => ("text" in part ? part.text : "")).join(""))
+
+const checkpointOf = (sessionID: Session.ID) =>
+  SessionStore.Service.pipe(
+    Effect.flatMap((store) => store.context(sessionID)),
+    Effect.map((messages) => messages[0]),
+  )
+
+it.effect("a full-prefix compaction sends the whole history first and keeps the recent part by its first message", () =>
+  Effect.gen(function* () {
+    requests = []
+    const runs = yield* fullPrefixHook()
+    const sessionID = Session.ID.make("ses_full_prefix")
+    const messages = exchanges()
+    expect(yield* compactManually(yield* insertSession(sessionID), messages)).toEqual({ status: "completed" })
+    expect(runs).toEqual([
+      { kept: messages[2]!.id, prefix: undefined, messages: 4 },
+      { kept: undefined, prefix: undefined, messages: 2 },
+    ])
+    expect(requests).toHaveLength(1)
+    expect(texts(requests[0])).toEqual([
+      "First question",
+      "First answer",
+      "Second question",
+      "Second answer",
+      `Summarize up to ${messages[2]!.id}.`,
+    ])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      type: "compaction",
+      metadata: { harness: "kept", prefix: { request: "full" }, keepID: messages[2]!.id },
+    })
+  }),
+)
+
+it.effect("without a hook asking, a hook's prompt goes with the older part", () =>
+  Effect.gen(function* () {
+    requests = []
+    const hooks = yield* PluginHooks.Service
+    const seen: Array<unknown> = []
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        seen.push([event.kept, event.prefix])
+        event.prompt = "Summarize."
+      }),
+    )
+    const sessionID = Session.ID.make("ses_full_prefix_off")
+    const messages = exchanges()
+    expect(yield* compactManually(yield* insertSession(sessionID), messages)).toEqual({ status: "completed" })
+    expect(seen).toEqual([
+      [{ messageID: messages[2]!.id }, undefined],
+      [undefined, undefined],
+    ])
+    expect(texts(requests[0])).toEqual(["First question", "First answer", "Summarize."])
+    expect(yield* checkpointOf(sessionID)).not.toHaveProperty("metadata.prefix")
+  }),
+)
+
+it.effect("a failed full-prefix reply goes straight to the older request, once", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook((reply) => (requests.length === 1 ? undefined : reply))
+    const sessionID = Session.ID.make("ses_full_prefix_failed")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges())).toEqual({ status: "completed" })
+    expect(requests.map((request) => request.messages.length)).toEqual([5, 3])
+    expect(texts(requests[1]).at(-1)).toBe("Summarize all.")
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      metadata: { harness: "kept", prefix: { request: "older", reason: "failed" } },
+    })
+  }),
+)
+
+it.effect("the older request goes when the full one would not fit by the provider's last count", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook()
+    // 190,000 measured tokens in the 200,000 window leave less than RESERVE_MIN, whatever the text estimates.
+    const sessionID = Session.ID.make("ses_full_prefix_fit")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges("Second question", 190_000))).toEqual({
+      status: "completed",
+    })
+    expect(requests.map((request) => request.messages.length)).toEqual([3])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({ metadata: { prefix: { request: "older", reason: "fit" } } })
+  }),
+)
+
+it.effect("the fit check takes the model's window, not a lowered compaction trigger's limit.input", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook()
+    // own-accounts registers `limit.input` 116,000 for a 100k trigger on a 1M window: 150,000 measured still fits.
+    const sessionID = Session.ID.make("ses_full_prefix_lowered")
+    const session = yield* insertSession(sessionID)
+    const bus = yield* Bus.Service
+    const compaction = yield* SessionCompaction.Service
+    const inputID = SessionMessage.ID.create()
+    yield* bus.publish(SessionEvent.Compaction.Started, { sessionID, reason: "manual", inputID })
+    const lowered = { ...resolved, limit: { context: 1_000_000, input: 116_000, output: 32_000 } }
+    const context = { ...loaded(session, exchanges("Second question", 150_000)), model: lowered }
+    expect(yield* compaction.compact({ reason: "manual", context, inputID })).toEqual({ status: "completed" })
+    expect(requests.map((request) => request.messages.length)).toEqual([5])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({ metadata: { prefix: { request: "full" } } })
+  }),
+)
+
+it.effect("a fixed thinking budget keeps the older request", () =>
+  Effect.gen(function* () {
+    requests = []
+    const runs = yield* fullPrefixHook()
+    // Haiku 4.5's `high` variant: the budget lives in the route's defaults, not in the hook's options.
+    const thinking = LanguageModel.make({
+      id: "summary-model",
+      provider: "test",
+      route: OpenAIChat.route,
+      options: { providerOptions: { thinking: { type: "enabled", budgetTokens: 16_000 } } },
+    })
+    const sessionID = Session.ID.make("ses_full_prefix_thinking")
+    const session = yield* insertSession(sessionID)
+    const bus = yield* Bus.Service
+    const compaction = yield* SessionCompaction.Service
+    const inputID = SessionMessage.ID.create()
+    yield* bus.publish(SessionEvent.Compaction.Started, { sessionID, reason: "manual", inputID })
+    const model = SessionRunnerModel.resolved(thinking, {
+      capabilities: { tools: true, input: ["text"], output: ["text"] },
+      cost,
+      limit: { context: 200_000, output: 32_000 },
+    })
+    const context = { ...loaded(session, exchanges()), model }
+    expect(yield* compaction.compact({ reason: "manual", context, inputID })).toEqual({ status: "completed" })
+    expect(runs).toHaveLength(2)
+    expect(requests.map((request) => request.messages.length)).toEqual([3])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      metadata: { prefix: { request: "older", reason: "thinking" } },
+    })
+  }),
+)
+
+it.effect("the full-prefix request's output limit is the room the provider's count leaves", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook()
+    // The older request keeps core's 20,000 (200k window, 180k budget); the full one has about 18,000 left.
+    const sessionID = Session.ID.make("ses_full_prefix_room")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges("Second", 182_000))).toEqual({
+      status: "completed",
+    })
+    const max = requests[0]?.maxTokens ?? 0
+    expect(requests[0]?.messages).toHaveLength(5)
+    expect(max).toBeLessThan(18_000)
+    expect(max).toBeGreaterThan(17_900)
+  }),
+)
+
+it.effect("the older request goes when the full one would cross a price tier it stays under", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook()
+    const sessionID = Session.ID.make("ses_full_prefix_tier")
+    const tiered = { ...resolved, cost: [...cost, { ...cost[0]!, tier: { type: "context" as const, size: 50_000 } }] }
+    const session = yield* insertSession(sessionID)
+    const bus = yield* Bus.Service
+    const compaction = yield* SessionCompaction.Service
+    const inputID = SessionMessage.ID.create()
+    yield* bus.publish(SessionEvent.Compaction.Started, { sessionID, reason: "manual", inputID })
+    // About 40,000 tokens to summarize and 12,000 kept (under upstream's 15,000 keep, #65768): the older request stays
+    // under the 50,000 tier, the full one crosses it.
+    const [, ...rest] = exchanges("x".repeat(48_000))
+    const first = SessionMessage.User.make({
+      id: SessionMessage.ID.create(),
+      type: "user",
+      text: "y".repeat(160_000),
+      time: { created: DateTime.makeUnsafe(0) },
+    })
+    const context = { ...loaded(session, [first, ...rest]), model: tiered }
+    expect(yield* compaction.compact({ reason: "manual", context, inputID })).toEqual({ status: "completed" })
+    // The kept part starts at the first answer (upstream's keep may start at any message): the older request is the
+    // first question and the prompt.
+    expect(requests.map((request) => request.messages.length)).toEqual([2])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({ metadata: { prefix: { request: "older", reason: "tier" } } })
+  }),
+)
+
+it.effect("overflow keeps the older request; with nothing kept the whole history is the only one", () =>
+  Effect.gen(function* () {
+    const compaction = yield* SessionCompaction.Service
+    requests = []
+    const runs = yield* fullPrefixHook()
+    const overflow = Session.ID.make("ses_full_prefix_overflow")
+    expect(
+      yield* compaction.compact({ reason: "overflow", context: loaded(yield* insertSession(overflow), exchanges()) }),
+    ).toEqual({ status: "completed" })
+    expect(runs).toHaveLength(2)
+    // Since v2.2.6 (6597f6cd6c) the rejected conversation goes as one text message, not unchanged.
+    expect(requests.map((request) => request.messages.length)).toEqual([2])
+    expect(yield* checkpointOf(overflow)).toMatchObject({
+      metadata: { prefix: { request: "older", reason: "overflow" } },
+    })
+
+    // One exchange and no earlier summary: nothing is kept, so the older part is already the whole history.
+    requests = []
+    const whole = Session.ID.make("ses_full_prefix_whole")
+    expect(yield* compactManually(yield* insertSession(whole), exchanges().slice(0, 2))).toEqual({ status: "completed" })
+    expect(runs).toHaveLength(3)
+    expect(texts(requests[0])).toEqual(["First question", "First answer", "Summarize all."])
+    expect(yield* checkpointOf(whole)).toMatchObject({ metadata: { prefix: { request: "full" } } })
+    expect(yield* checkpointOf(whole)).not.toHaveProperty("metadata.keepID")
+  }),
+)
+
+it.effect("a hook that does not take the whole history keeps the older request and can say why", () =>
+  Effect.gen(function* () {
+    // own-accounts, when the older request reads the cache as well.
+    requests = []
+    const runs = yield* fullPrefixHook((reply) => reply, "short")
+    const sessionID = Session.ID.make("ses_full_prefix_declined_short")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges())).toEqual({ status: "completed" })
+    expect(runs).toHaveLength(2)
+    expect(requests.map((request) => request.messages.length)).toEqual([3])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      metadata: { prefix: { request: "older", reason: "short" } },
+    })
+  }),
+)
+
+it.effect("a whole history that goes out as text is recorded flattened, not full", () =>
+  Effect.gen(function* () {
+    requests = []
+    yield* fullPrefixHook()
+    // One exchange, nothing kept: the older part is the whole history, and its tool output is over the budget.
+    const sessionID = Session.ID.make("ses_full_prefix_flattened")
+    const assistant = Schema.decodeUnknownSync(SessionMessage.Assistant)({
+      id: SessionMessage.ID.create(),
+      type: "assistant",
+      agent: Agent.defaultID,
+      model: { id: "summary-model", providerID: "test" },
+      content: [
+        {
+          type: "tool",
+          id: "call_read",
+          name: "read",
+          state: { status: "completed", input: {}, content: [{ type: "text", text: "x".repeat(1_000_000) }] },
+          time: { created: 0 },
+        },
+      ],
+      time: { created: 0, completed: 0 },
+    })
+    const messages = [exchanges()[0]!, assistant]
+    expect(yield* compactManually(yield* insertSession(sessionID), messages)).toEqual({ status: "completed" })
+    expect(requests).toHaveLength(1)
+    expect(requests[0]!.messages).toHaveLength(2)
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      metadata: { prefix: { request: "older", reason: "flattened" } },
+    })
+  }),
+)
+
+it.effect("after a failed full request the model-free summary keeps the record", () =>
+  Effect.gen(function* () {
+    requests = []
+    refused = new Set(["summary-model"])
+    const hooks = yield* PluginHooks.Service
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        event.prefix = "full"
+        event.prompt = "Summarize."
+        event.fallback = () => ({ summary: "digest" })
+      }),
+    )
+    const sessionID = Session.ID.make("ses_full_prefix_digest")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges())).toEqual({ status: "completed" })
+    refused = new Set()
+    expect(requests.map((request) => request.messages.length)).toEqual([5, 3])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      summary: "digest",
+      metadata: { prefix: { request: "older", reason: "failed" }, fallback: { failed: "test/summary-model" } },
+    })
+  }),
+)
+
+it.effect("a stand-in model never gets the full prefix", () =>
+  Effect.gen(function* () {
+    requests = []
+    refused = new Set(["summary-model"])
+    const hooks = yield* PluginHooks.Service
+    const runs: string[] = []
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        runs.push(`${event.model.id}:${event.kept === undefined ? "older" : "whole"}`)
+        event.prefix = "full"
+        event.prompt = "Summarize."
+        event.fallbackModels = [Schema.decodeUnknownSync(Model.Ref)({ providerID: "backup", id: "stand-in" })]
+      }),
+    )
+    const sessionID = Session.ID.make("ses_full_prefix_stand_in")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges())).toEqual({ status: "completed" })
+    refused = new Set()
+    // The session model: full (refused), then older (refused); the stand-in sends its older part only.
+    expect(runs).toEqual(["summary-model:whole", "summary-model:older", "stand-in:whole", "stand-in:older"])
+    expect(requests.map((request) => `${request.model.id}:${request.messages.length}`)).toEqual([
+      "summary-model:5",
+      "summary-model:3",
+      "stand-in:3",
+    ])
+    // The stand-in's checkpoint still says the full request failed.
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      metadata: { prefix: { request: "older", reason: "failed" }, fallback: { model: "backup/stand-in" } },
+    })
+  }),
+)
+
+it.effect("a hook that cancels ends the compaction before any request, with no stand-in or fallback", () =>
+  Effect.gen(function* () {
+    requests = []
+    const hooks = yield* PluginHooks.Service
+    const runs: string[] = []
+    yield* hooks.register("session", "compaction", (event) =>
+      Effect.sync(() => {
+        runs.push(event.model.id)
+        // own-accounts drops an idle compaction that delivered after the user came back.
+        event.cancel = "Dropped: the user was back"
+        event.prompt = "Summarize."
+        event.fallbackModels = [Schema.decodeUnknownSync(Model.Ref)({ providerID: "backup", id: "stand-in" })]
+        event.fallback = () => ({ summary: "digest" })
+      }),
+    )
+    const sessionID = Session.ID.make("ses_cancelled")
+    expect(yield* compactManually(yield* insertSession(sessionID), exchanges())).toEqual({
+      status: "failed",
+      error: { type: "aborted", message: "Dropped: the user was back" },
+    })
+    expect(runs).toEqual(["summary-model"])
+    expect(requests).toEqual([])
+    expect(yield* checkpointOf(sessionID)).toMatchObject({
+      type: "compaction",
+      status: "failed",
+      error: { type: "aborted" },
+    })
+  }),
+)
+// OWN-PATCH(P-034) end
 const measured = (text: string, input: number, created = 0) =>
   Schema.decodeUnknownSync(SessionMessage.Assistant)({
     id: SessionMessage.ID.create(),

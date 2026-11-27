@@ -1,0 +1,29 @@
+/* The 리셋권 쓰기 dialog's choices (03 §7.1.1): a full-width button of three lines (title, note, expiry), like the
+   choices of the 에이전트 방식 and 승인 모드 menus (requests.css `.own-rq-option`). Lazy, with the dialog. */
+.own-rc-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.own-rc-option:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-rc-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.own-rc-option:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}

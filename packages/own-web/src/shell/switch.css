@@ -1,0 +1,65 @@
+/*
+ * The on/off switch (switch.tsx, P2-11). The button is only the hit box: with a fine pointer it is exactly the 36×20
+ * track, as the switches looked before; under a coarse pointer `.own-target` makes it 44×44 and the track stays a
+ * centred pill. The track and thumb keep the old tokens: an input border on the subtle background, the accent when on;
+ * the thumb muted, on-accent when on.
+ */
+.own-switch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.own-switch-track {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 9999px;
+  background: var(--own-bg-subtle);
+  transition:
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.own-switch-thumb {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--own-text-muted);
+  translate: 2px 0;
+  transition: translate 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.own-switch[aria-checked="true"] .own-switch-track {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+}
+
+.own-switch[aria-checked="true"] .own-switch-thumb {
+  translate: 18px 0;
+  background: var(--own-on-accent);
+}
+
+.own-switch[aria-disabled="true"] .own-switch-track {
+  opacity: 0.5;
+}
+
+/* The focus ring goes round the track, where it was, not round the 44 px hit box. */
+.own-switch:focus-visible {
+  outline: none;
+}
+
+.own-switch:focus-visible .own-switch-track {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}

@@ -1,0 +1,486 @@
+/*
+ * The device viewer (05 §8.10): a session's browser pane on the PC, shown on a paired device. Loaded with view.tsx.
+ * One element in the workspace body (dock.tsx), after the conversation's content:
+ *  - from 840 px (shell/breakpoints.ts BESIDE_MIN; view.tsx reads the same width) a column beside the conversation,
+ *    half each and neither under 360 px;
+ *  - below, a layer over the whole window; the conversation stays mounted under it, so its scroll position holds.
+ * The bars are one grid: two rows normally, one row while the window is at most 500 px high (a raised keyboard, a
+ * phone on its side), where the address row moves up beside the close button and the title gives way.
+ */
+.own-rb {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: min(360px, 50%);
+  min-height: 0;
+  border-left: 1px solid var(--own-border);
+  background: var(--own-bg);
+  color: var(--own-text);
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+@media (min-width: 840px) {
+  .own-workspace-body:has(> .own-rb) > .own-workspace-content {
+    flex: 1 1 0;
+    min-width: min(360px, 50%);
+  }
+}
+
+@media (max-width: 839.98px) {
+  .own-rb {
+    position: fixed;
+    inset: 0;
+    /* Over the shell's header and scrim (40), under its drawers (50), menus and toasts. */
+    z-index: 45;
+    min-width: 0;
+    border-left: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+.own-rb-bars {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  flex: none;
+  column-gap: 2px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--own-border);
+}
+
+.own-rb-bars > .own-icon-button,
+.own-rb-tabs-button {
+  width: 44px;
+  height: 44px;
+}
+
+.own-rb-close {
+  grid-area: 1 / 1;
+}
+
+.own-rb-title {
+  grid-area: 1 / 2;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-rb-tabs-button {
+  grid-area: 1 / 3;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--own-text-muted);
+  cursor: pointer;
+}
+
+.own-rb-tabs-button > span {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1.6px solid currentColor;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.own-rb-menu {
+  grid-area: 1 / 4;
+}
+
+.own-rb-row {
+  grid-area: 2 / 1 / 3 / -1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.own-rb-row > .own-icon-button {
+  width: 40px;
+  height: 40px;
+}
+
+.own-rb-address {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  margin-inline: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text);
+  /* 16 px: a phone browser zooms the page into a field with smaller text. */
+  font-size: 16px;
+}
+
+@media (pointer: coarse) {
+  .own-rb-address {
+    height: 44px;
+  }
+}
+
+.own-rb-address:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -1px;
+}
+
+.own-rb-address:read-only {
+  color: var(--own-text-muted);
+}
+
+.own-rb-agent {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-inline: 8px 4px;
+  font-size: 13px;
+}
+
+.own-rb-agent-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  /* Still: an endless animation keeps a phone drawing at the display rate (styles/running-mark.test.ts). */
+  background: var(--own-accent-text);
+}
+
+.own-rb-agent-label {
+  flex: none;
+  font-weight: 600;
+}
+
+.own-rb-agent-action {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-rb-agent > .own-btn {
+  flex: none;
+}
+
+@media (max-height: 500px) {
+  .own-rb-title {
+    display: none;
+  }
+  .own-rb-row {
+    grid-area: 1 / 2;
+  }
+}
+
+@media (max-height: 500px) and (max-width: 599.98px) {
+  .own-rb-row > .own-icon-button {
+    display: none;
+  }
+}
+
+/* ---- the frame ---- */
+
+.own-rb-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--own-bg-subtle);
+}
+
+.own-rb-surface {
+  position: absolute;
+  inset: 0;
+  /* Every touch is the page's: no scrolling, zooming or text selection of this view by the browser. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.own-rb-frame {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.own-rb-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  overflow-y: auto;
+  background: var(--own-bg);
+  color: var(--own-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.own-rb-message > p {
+  max-width: 34em;
+  margin: 0;
+}
+
+.own-rb-message > .own-rb-lead {
+  color: var(--own-text);
+  font-weight: 600;
+}
+
+.own-rb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.own-rb-note {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+/* The field a soft keyboard types into: on screen (a keyboard does not open for a hidden field) and invisible. */
+.own-rb-keys {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  opacity: 0;
+  pointer-events: none;
+  resize: none;
+}
+
+.own-rb-float {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.own-rb-float > button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 50%;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.own-rb-float > button[aria-pressed="true"] {
+  border-color: var(--own-accent);
+  color: var(--own-accent-text);
+}
+
+.own-rb-float svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- sheets: the tab list, a page's JavaScript dialog ---- */
+
+.own-rb-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--own-scrim);
+}
+
+.own-rb-sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: 85%;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--own-border-strong);
+  border-radius: var(--own-radius-dialog) var(--own-radius-dialog) 0 0;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-rb-sheet-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 2px 4px 2px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.own-rb-sheet-head > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.own-rb-sheet-head > .own-icon-button {
+  width: 44px;
+  height: 44px;
+}
+
+.own-rb-tab-list {
+  min-height: 0;
+  margin: 0;
+  padding: 0 0 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+.own-rb-tab {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding-inline-end: 4px;
+}
+
+.own-rb-tab[data-active] {
+  background: var(--own-accent-soft);
+}
+
+.own-rb-tab-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 4px 8px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  justify-content: center;
+  text-align: start;
+  cursor: pointer;
+}
+
+.own-rb-tab-title,
+.own-rb-tab-url {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-rb-tab-title {
+  font-size: 14px;
+}
+
+.own-rb-tab-url {
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-rb-tab-mark {
+  flex: none;
+  margin-inline-start: 6px;
+  color: var(--own-accent-text);
+  font-size: 11px;
+}
+
+.own-rb-tab > .own-icon-button {
+  width: 44px;
+  height: 44px;
+}
+
+.own-rb-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 16px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.own-rb-dialog > p {
+  max-height: 40vh;
+  margin: 0;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.own-rb-dialog > input {
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 16px;
+}
+
+.own-rb-dialog > .own-rb-actions {
+  justify-content: flex-end;
+}
+
+.own-rb-dialog .own-btn {
+  min-width: 88px;
+  min-height: 44px;
+}

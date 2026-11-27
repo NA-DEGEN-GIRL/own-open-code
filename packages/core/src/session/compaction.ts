@@ -18,7 +18,12 @@ import type { StreamOptions } from "@opencode/ai/route"
 import type { SessionCompactionResult } from "@opencode/plugin/effect/session"
 import type { SessionError } from "@opencode/schema/session-error"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
-import { Clock, Context, DateTime, Effect, Exit, Fiber, Layer, Result, Scope, Stream } from "effect"
+// OWN-PATCH(P-034) begin
+import { isRecord } from "@opencode/util/record"
+// OWN-PATCH(P-034) end
+// OWN-PATCH(P-034) begin: Option, Schema
+import { Clock, Context, DateTime, Effect, Exit, Fiber, Layer, Option, Result, Schema, Scope, Stream } from "effect"
+// OWN-PATCH(P-034) end
 import { Agent } from "../agent.js"
 import { Bus } from "../bus.js"
 import { Database } from "../database/database.js"
@@ -166,6 +171,33 @@ const CACHE_MARGIN = 30_000
 const PRECOMPUTED_TAIL_SHARE = 0.4
 /** Failed background summaries after which no new one starts until the next compaction. */
 const PRECOMPUTE_MAX_FAILURES = 2
+// OWN-PATCH(P-034) begin
+/** A hook declining the whole history may name why (`metadata.prefix.reason`). */
+const decodeDeclined = Schema.decodeUnknownOption(Schema.Struct({ reason: Schema.String }))
+const decodeFull = Schema.decodeUnknownOption(Schema.Struct({ request: Schema.Literal("full") }))
+const decodeFixedThinking = Schema.decodeUnknownOption(
+  Schema.Union([
+    Schema.Struct({ type: Schema.Literal("enabled"), budgetTokens: Schema.Number }),
+    Schema.Struct({ type: Schema.Literal("enabled"), budget_tokens: Schema.Number }),
+  ]),
+)
+
+/**
+ * `thinking: {type: "enabled", budget}` as the route sends it: the model's options (the route's preset merged under the
+ * variant's), then the request's, each object merged over the one before (@opencode/ai's provider option merge).
+ */
+const fixedThinking = (request: LLMRequest) =>
+  Option.isSome(
+    decodeFixedThinking(
+      [request.model.options?.providerOptions, request.providerOptions]
+        .map((options) => options?.thinking)
+        .reduce<unknown>(
+          (merged, value) => (isRecord(merged) && isRecord(value) ? { ...merged, ...value } : (value ?? merged)),
+          undefined,
+        ),
+    ),
+  )
+// OWN-PATCH(P-034) end
 
 const SUMMARY_TEMPLATE = `You MUST use this format for your response (you may omit sections that aren't applicable). Do not include the <template> tags in your response.
 <template>
@@ -463,6 +495,10 @@ export const layer = Layer.effect(
       budget: number,
       keep: number,
       background?: Background,
+      // OWN-PATCH(P-025) begin
+      /** Set when this is a hook's fallback model standing in for the session's model. */
+      standIn?: Model.Ref,
+      // OWN-PATCH(P-025) end
     ): Effect.fn.Return<Result, Failure> {
       const context = trigger.context
       const messages = background?.messages ?? context.messages
@@ -475,17 +511,92 @@ export const layer = Layer.effect(
       const prompt = buildPrompt(previous !== undefined, previous?.summary.includes(LEGACY_HEADING) ?? false)
       const headings = SUMMARY_TEMPLATE.split("\n").filter((line) => line.startsWith("##"))
       const filled = (text: string) => text.split("\n").some((line) => headings.includes(line.trim()))
-      const prepared = yield* prepare(context, messages, budget)
+      // OWN-PATCH(P-034) begin: the hooks see the whole history and where its kept part starts (`kept`). A hook's own
+      // prompt (P-025) is for the part before it unless the hook takes the whole history (`prefix`); that part is
+      // prepared by running the hooks again on it, so its prompt and cache hints are its own. A hook may cancel.
+      const whole = yield* prepare(context, messages, budget, undefined, keepID)
+      if (whole.event.cancel !== undefined)
+        return yield* Effect.fail<Failure>({ error: { type: "aborted", message: whole.event.cancel } })
+      const own = whole.event.prompt !== undefined && keepID !== undefined
+      const prepared = own ? yield* prepare(context, beforeKept(messages, keepID), budget) : whole
+      // A stand-in model never takes the whole history: the session model's cache is not its own.
+      const choice =
+        standIn !== undefined ? undefined : own ? yield* fullPrefix(trigger, whole, prepared) : wholeRecord(whole)
+      if (choice?.record) prepared.event.metadata = { ...prepared.event.metadata, prefix: choice.record }
+      const full = choice?.full
+      const first =
+        full &&
+        Effect.gen(function* () {
+          // Output room by the provider's count (`fullPrefix`), where `fitOutput` would take the text estimate.
+          const max = whole.request.maxTokens
+          const limit = context.model.limit.context
+          const asked = {
+            ...whole.request,
+            messages: [...whole.request.messages, Message.user(full.prompt)],
+            ...(max === undefined || limit <= 0 ? {} : { maxTokens: Math.min(max, limit - full.size) }),
+          }
+          const reply = yield* stream(context, asked, whole.options)
+          const text = (whole.event.accept ?? ((reply: string) => (reply.trim() ? reply : undefined)))(reply.text)
+          if (text === undefined)
+            return yield* Effect.fail<Failure>({ error: { type: "compaction.failed", message: "No usable reply" } })
+          return { ...reply, text, metadata: { ...whole.event.metadata, prefix: { request: "full" } } } satisfies Result
+        }).pipe(
+          // One attempt: a cut, failed or empty reply goes straight to the older request, which says so.
+          Effect.tapError(() =>
+            Effect.sync(() => {
+              prepared.event.metadata = { ...prepared.event.metadata, prefix: { request: "older", reason: "failed" } }
+            }),
+          ),
+        )
+      // OWN-PATCH(P-034) end
       // Size the unchanged request with the number that decided to compact: the last response's count plus an
       // estimate of what came after it. Characters overstate a conversation whose old reasoning the provider drops.
       // A hook can still make this request larger than that count; the provider then rejects it and it is resent as
       // text. An overflow already proved the count low, so it keeps the character estimate.
-      const measured = trigger.reason === "overflow" ? undefined : measuredPrompt({ ...context, messages })
+      const measured =
+        trigger.reason === "overflow" || prepared !== whole // OWN-PATCH(P-034): the older part is not what was counted
+          ? undefined
+          : measuredPrompt({ ...context, messages })
 
       // Hooks saw the request without the summary prompt, so it is appended here. A reply that ignores the
       // template gets one reminder before it counts as a failure.
       const send = (request: LLMRequest, size?: Estimate) =>
         Effect.gen(function* () {
+          // OWN-PATCH(P-025) begin: a hook's own summary prompt; its `accept` turns the reply into the summary.
+          const custom = prepared.event.prompt
+          if (custom !== undefined) {
+            const accept = prepared.event.accept ?? ((text: string) => (text.trim() ? text : undefined))
+            // Fitted like core's request below: the hook's prompt replaces core's on every own-harness compaction.
+            const asked = fitOutput(
+              { ...request, messages: [...request.messages, Message.user(custom)] },
+              context.model.limit,
+              size && { ...size, estimated: size.estimated + Token.estimate(custom) },
+            )
+            const reply = yield* stream(context, asked, prepared.options, background)
+            const first = accept(reply.text)
+            if (first !== undefined)
+              return { ...reply, text: first, metadata: prepared.event.metadata } satisfies Result
+            const repair =
+              prepared.event.repair ??
+              "Your reply could not be used. Reply again in exactly the requested format. Do not call tools."
+            const again = fitOutput(
+              { ...asked, messages: [...asked.messages, Message.assistant(reply.text), Message.user(repair)] },
+              context.model.limit,
+              size && {
+                ...size,
+                estimated:
+                  size.estimated + Token.estimate(custom) + Token.estimate(reply.text) + Token.estimate(repair),
+              },
+            )
+            const retry = yield* stream(context, again, prepared.options, background)
+            const second = accept(retry.text)
+            if (second !== undefined)
+              return { ...retry, text: second, metadata: prepared.event.metadata } satisfies Result
+            return yield* Effect.fail<Failure>({
+              error: { type: "compaction.failed", message: "Compaction reply was not in the requested format" },
+            })
+          }
+          // OWN-PATCH(P-025) end
           const prompted = fitOutput(
             { ...request, messages: [...request.messages, Message.user(prompt)] },
             context.model.limit,
@@ -521,24 +632,122 @@ export const layer = Layer.effect(
         trigger.reason === "overflow"
           ? budget
           : Math.max(budget, summaryRoom(context.model.limit, prepared.request.maxTokens))
-      const result = yield* deliver(
-        trigger,
-        prepared,
-        budget - overhead,
-        send,
-        {
-          fit: fit - overhead,
-          history: withoutTail(prepared.request, keepID),
-          measured,
-          // The provider just rejected this conversation, so sending it unchanged again would be rejected too.
-          text: trigger.reason === "overflow",
-        },
-        background,
+      // OWN-PATCH(P-025) begin: when this fails, the hook's fallback models in turn, then its model-free summary.
+      const delivered = yield* Effect.result(
+        deliver(
+          trigger,
+          prepared,
+          budget - overhead,
+          send,
+          {
+            fit: fit - overhead,
+            history: withoutTail(prepared.request, keepID),
+            measured,
+            // The provider just rejected this conversation, so sending it unchanged again would be rejected too.
+            text: trigger.reason === "overflow",
+          },
+          background,
+          first,
+        ),
       )
+      const result = Result.isSuccess(delivered) ? delivered.success : yield* fallBack(delivered.failure)
+      // OWN-PATCH(P-025) end
       if (!keepID) return result
       // A compaction hook may choose its own kept range.
       return { ...result, metadata: { keepID, ...result.metadata } }
+
+      // OWN-PATCH(P-025) begin
+      function fallBack(failure: Failure) {
+        return Effect.gen(function* () {
+          // A stand-in does not start fallbacks of its own; the compaction that asked for it tries the next one. Nor
+          // does a background summary: automatic compaction summarizes as usual when it fails.
+          if (standIn !== undefined || background !== undefined) return yield* Effect.fail(failure)
+          const failed = `${context.model.ref.providerID}/${context.model.ref.id}`
+          // OWN-PATCH(P-034) begin: what became of the whole-history request stays on a stand-in's or the model-free
+          // summary's checkpoint.
+          const record = prepared.event.metadata?.prefix
+          const recorded = record === undefined ? {} : { prefix: record }
+          // OWN-PATCH(P-034) end
+          for (const ref of prepared.event.fallbackModels ?? []) {
+            const model = yield* models
+              .resolve({ ...context.session, model: ref }, catalog.available, {
+                kind: "compaction",
+                agent: Agent.ID.make("compaction"),
+              })
+              .pipe(Effect.orElseSucceed(() => undefined))
+            if (model === undefined) continue
+            const ceiling = calculateCeiling(model.limit, state.get().buffer)
+            const window = Number.isFinite(ceiling)
+              ? ceiling
+              : calculateCeiling({ ...model.limit, context: UNKNOWN_WINDOW }, state.get().buffer)
+            const retried = yield* Effect.result(
+              summarize({ ...trigger, context: { ...context, model } }, window, keep, undefined, context.model.ref),
+            )
+            // Native data belongs to the stand-in's provider, so it is not replayed to the session's model.
+            if (Result.isSuccess(retried))
+              return {
+                ...retried.success,
+                native: undefined,
+                metadata: {
+                  ...retried.success.metadata,
+                  // OWN-PATCH(P-034) begin
+                  ...recorded,
+                  // OWN-PATCH(P-034) end
+                  fallback: { failed, reason: failure.error.message, model: `${ref.providerID}/${ref.id}` },
+                },
+              } satisfies Result
+          }
+          const supplied = prepared.event.fallback?.(failure.error)
+          if (supplied === undefined) return yield* Effect.fail(failure)
+          const made = yield* fromHook(context, supplied)
+          // OWN-PATCH(P-034) begin: `recorded`
+          return {
+            ...made,
+            metadata: { ...made.metadata, ...recorded, fallback: { failed, reason: failure.error.message } },
+          } satisfies Result
+          // OWN-PATCH(P-034) end
+        })
+      }
+      // OWN-PATCH(P-025) end
     })
+
+    // OWN-PATCH(P-034) begin
+    /**
+     * Whether a hook's own prompt (P-025) takes the whole history, which the session's prompt cache already holds: only
+     * when a hook asked for it (`prefix: "full"`) and it is not overflow (just rejected), a fixed thinking budget, more
+     * than the model's real window minus RESERVE_MIN by the provider's last count (P-017's anchor, as the runner sizes
+     * the next request), or a price tier crossed that the older request stays under. Records the older request's
+     * reason, or a hook's own (`metadata.prefix.reason`); nothing when no hook asked.
+     */
+    const fullPrefix = Effect.fnUntraced(function* (trigger: Trigger, whole: Prepared, older: Prepared) {
+      const context = trigger.context
+      const reason = (reason: string) => ({ record: { request: "older", reason }, full: undefined })
+      const declined = Option.getOrUndefined(decodeDeclined(whole.event.metadata?.prefix))?.reason
+      const prompt = whole.event.prompt
+      if (whole.event.prefix !== "full" || prompt === undefined)
+        return declined === undefined ? undefined : reason(declined)
+      if (trigger.reason === "overflow") return reason("overflow")
+      // Claude 3.7 and 4.0–4.5 send a fixed budget (variant.ts `claudeInfo.manual`, e.g. Haiku 4.5's thinking, high and
+      // max) and drop earlier turns' thinking once a plain user message follows; any fixed budget may also be cut to
+      // half of this request's smaller output limit (`fitThinkingBudget`). Either way it is not the cached request.
+      if (fixedThinking(whole.request)) return reason("thinking")
+      const size = estimateContext(context, yield* sharesMeasuredPrompt(db, context)) + Token.estimate(prompt)
+      // `limit.input` can be a lowered compaction trigger's window (own-accounts registers one), not the model's.
+      if (size > (context.model.limit.context || (context.model.limit.input ?? 0)) - RESERVE_MIN) return reason("fit")
+      const smaller = estimateRequest(older.request)
+      const tier = context.model.cost.find(
+        (cost) => cost.tier?.type === "context" && smaller <= cost.tier.size && size > cost.tier.size,
+      )
+      if (tier !== undefined) return reason("tier")
+      return { record: undefined, full: { prompt, size } }
+    })
+
+    /** Nothing kept, so the whole history is the only request: a hook that asked for it gets the record. */
+    const wholeRecord = (whole: Prepared) =>
+      whole.event.prompt !== undefined && whole.event.prefix === "full"
+        ? { record: { request: "full" }, full: undefined }
+        : undefined
+    // OWN-PATCH(P-034) end
 
     /**
      *   endpoint:  [window]                      →  [U U][item]    the provider picks which messages to keep
@@ -562,6 +771,10 @@ export const layer = Layer.effect(
       const unsupported = (message: string) =>
         Effect.fail<Failure>({ error: { type: "provider.unsupported-operation", message } })
       const prepared = yield* prepare(context, context.messages, budget, "session")
+      // OWN-PATCH(P-034) begin: a hook cancelled it before any request.
+      if (prepared.event.cancel !== undefined)
+        return yield* Effect.fail<Failure>({ error: { type: "aborted", message: prepared.event.cancel } })
+      // OWN-PATCH(P-034) end
 
       const toResult = (window: ReadonlyArray<Message>, usage: Usage | undefined) =>
         spend(context.session.id, usage && SessionUsage.record(usage, context.model.cost)).pipe(
@@ -620,9 +833,17 @@ export const layer = Layer.effect(
         history: prepared.request,
       },
       background?: Background,
+      // OWN-PATCH(P-034) begin
+      /** Tried once before `prepared.request` (the whole-history request); any failure goes on to it. */
+      first?: Effect.Effect<Result, AIError | Failure>,
+      // OWN-PATCH(P-034) end
     ): Effect.fn.Return<Result, Failure> {
       const context = trigger.context
       if (prepared.event.result) return yield* fromHook(context, prepared.event.result, background)
+      // OWN-PATCH(P-034) begin
+      const tried = first === undefined ? undefined : yield* Effect.result(first)
+      if (tried !== undefined && Result.isSuccess(tried)) return tried.success
+      // OWN-PATCH(P-034) end
 
       const policy = yield* SessionRunnerRetry.policy(context.session.id)
       let rejections = 0
@@ -656,6 +877,10 @@ export const layer = Layer.effect(
             },
           })
         }
+        // OWN-PATCH(P-034) begin: a whole history sent shortened no longer reads the cached prefix its record claims.
+        if (request !== prepared.request && Option.isSome(decodeFull(prepared.event.metadata?.prefix)))
+          prepared.event.metadata = { ...prepared.event.metadata, prefix: { request: "older", reason: "flattened" } }
+        // OWN-PATCH(P-034) end
 
         const size = request === prepared.request ? measured : undefined
         const attempt = yield* Effect.result(send(request, size))
@@ -846,6 +1071,9 @@ export const layer = Layer.effect(
       messages: ReadonlyArray<SessionMessage.Info>,
       budget: number,
       webSocket?: "session",
+      // OWN-PATCH(P-034) begin
+      kept?: SessionMessage.ID,
+      // OWN-PATCH(P-034) end
     ) => {
       const base = transcript(context, messages)
       return requests.compaction({
@@ -857,6 +1085,9 @@ export const layer = Layer.effect(
         messages: base.messages,
         webSocket,
         inputTokens: { measured: budget, estimated: 0 },
+        // OWN-PATCH(P-034) begin
+        ...(kept === undefined ? {} : { kept: { messageID: kept } }),
+        // OWN-PATCH(P-034) end
       })
     }
 
@@ -984,7 +1215,9 @@ const cacheLifetime = (ttl: string | undefined) => {
 /** History loads from the latest completed compaction, so a previous one is always the first message. */
 const previousCompaction = (messages: ReadonlyArray<SessionMessage.Info>) => {
   const [first] = messages
-  return first?.type === "compaction" && first.status === "completed" ? first : undefined
+  // OWN-PATCH(P-035) begin: a context reset starts history with no checkpoint to update
+  return first?.type === "compaction" && first.status === "completed" && first.reason !== "reset" ? first : undefined
+  // OWN-PATCH(P-035) end
 }
 
 const transcript = (context: SessionContext.Loaded, messages: ReadonlyArray<SessionMessage.Info>) =>
@@ -1012,6 +1245,14 @@ const splitConversation = (messages: ReadonlyArray<SessionMessage.Info>, keep: n
     keepID: first?.message.id,
   }
 }
+
+// OWN-PATCH(P-034) begin
+/** The messages before the kept part, which starts at the message with ID `kept`. */
+const beforeKept = (messages: ReadonlyArray<SessionMessage.Info>, kept: SessionMessage.ID) => {
+  const index = messages.findIndex((message) => message.id === kept)
+  return index < 0 ? messages : messages.slice(0, index)
+}
+// OWN-PATCH(P-034) end
 
 /** The request without the retained tail, which starts at the message with ID `from`. */
 const withoutTail = (request: LLMRequest, from: SessionMessage.ID | undefined) => {
@@ -1111,11 +1352,22 @@ export const recentUserMessages = (
 
 const total = (estimate: Estimate) => estimate.measured + estimate.estimated
 
-export const estimateContext = (context: SessionContext.Loaded) => total(estimatePrompt(context))
+// OWN-PATCH(P-017) begin
+export const estimateContext = (context: SessionContext.Loaded, shared = false) =>
+  total(estimatePrompt(context, shared))
+// OWN-PATCH(P-017) end
 
 /** The size of the prompt `context` sends. */
-export const estimatePrompt = (context: SessionContext.Loaded): Estimate => {
-  const anchorIndex = context.messages.findLastIndex((message) => hasMeasuredPrompt(message, context.model.ref))
+// OWN-PATCH(P-017) begin
+// `shared`: another provider's count of this model holds over this history (`sharesMeasuredPrompt`).
+export const estimatePrompt = (context: SessionContext.Loaded, shared = false): Estimate => {
+  // OWN-PATCH(P-035) begin
+  const anchorIndex = context.messages.findLastIndex(
+    (message, index) =>
+      hasMeasuredPrompt(message, context.model.ref, shared) && !hiddenByReset(context, message, index),
+  )
+  // OWN-PATCH(P-035) end
+  // OWN-PATCH(P-017) end
   const anchor = context.messages[anchorIndex]
   const base = transcript(context, context.messages.slice(Math.max(0, anchorIndex)))
   // TODO: Pass compaction history the runner has already shaped. This and `recentUserMessages` repeat the
@@ -1139,6 +1391,22 @@ export const estimatePrompt = (context: SessionContext.Loaded): Estimate => {
     estimated: unmeasured.reduce((sum, message) => sum + estimateMessage(message), 0),
   }
 }
+
+// OWN-PATCH(P-035) begin
+/**
+ * A count measured after an undone context reset's marker, before the undo, covered only the history after the marker:
+ * the restored part before it would be missing from the measured size.
+ */
+const hiddenByReset = (context: SessionContext.Loaded, message: SessionMessage.Info, index: number) =>
+  context.messages.some(
+    (reset, position) =>
+      position < index &&
+      reset.type === "compaction" &&
+      reset.status === "completed" &&
+      reset.undone !== undefined &&
+      message.time.created.epochMilliseconds <= reset.undone.epochMilliseconds,
+  )
+// OWN-PATCH(P-035) end
 
 /**
  * The largest request the model takes while leaving room for its reply: `RESERVE_SHARE` of the window, or
@@ -1174,12 +1442,33 @@ const inputWindow = (limit: SessionContext.Loaded["model"]["limit"]) =>
  * Another provider's count may describe a native window this model cannot replay. History then holds the original
  * messages that window stood for, which the count leaves out, so only the current provider's counts are trusted.
  */
-const hasMeasuredPrompt = (message: SessionMessage.Info, model: SessionContext.Loaded["model"]["ref"]) =>
+// OWN-PATCH(P-017) begin
+// With `shared`, a count from another provider of the same model id stands in: account slots of one model are
+// separate providers, and a catalog model id names the served model, so its tokenizer.
+const hasMeasuredPrompt = (
+  message: SessionMessage.Info,
+  model: SessionContext.Loaded["model"]["ref"],
+  shared = false,
+) =>
   message.type === "assistant" &&
-  message.model.providerID === model.providerID &&
+  (message.model.providerID === model.providerID || (shared && message.model.id === model.id)) &&
+  // OWN-PATCH(P-017) end
   !message.error &&
   message.tokens !== undefined &&
   promptTokens(message.tokens) > 0
+
+// OWN-PATCH(P-017) begin
+// Whether another provider's count of this model holds over this history. History leaves out native windows this model
+// cannot replay, so no compaction may be newer than the one it starts from, nor may that be native.
+export const sharesMeasuredPrompt = Effect.fnUntraced(function* (
+  db: Database.Interface["db"],
+  context: SessionContext.Loaded,
+) {
+  const newest = yield* SessionHistory.latestCompaction(db, context.session.id, "latest")
+  const start = yield* SessionHistory.latestCompaction(db, context.session.id, context.model.ref)
+  return newest?.seq === start?.seq && !context.messages.some(SessionHistory.isNativeCompaction)
+})
+// OWN-PATCH(P-017) end
 
 /** The prompt size, only while the model, variant and agent that were measured still match; they shape the request. */
 const measuredPrompt = (context: SessionContext.Loaded) => {

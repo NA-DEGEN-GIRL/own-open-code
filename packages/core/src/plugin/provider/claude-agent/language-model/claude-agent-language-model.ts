@@ -48,6 +48,17 @@ export class Model implements LanguageModelV3 {
     const loaded = settings?.[ClaudeSystemPrompt.INSTRUCTIONS_OPTION]
     const instructions = typeof loaded === "string" ? loaded : undefined
     const effort = parseEffort(settings?.effort)
+    // OWN-PATCH(P-060) begin
+    // own's speed (02 §4.8) asks Claude Code's Fast mode for this turn.
+    const fastMode = settings?.fastMode === true
+    // OWN-PATCH(P-060) end
+    // OWN-PATCH(P-045) begin
+    // own's Claude Agent route names the account folder of the conversation's tree per request (a provider option), so
+    // two conversations run on two accounts at once and a manual switch restarts claude on the other folder.
+    const folder = settings?.configDir
+    const connection =
+      typeof folder === "string" && folder !== "" ? { ...this.connection, CLAUDE_CONFIG_DIR: folder } : this.connection
+    // OWN-PATCH(P-045) end
     const primary = kind === "primary"
     const branch = kind === "generate" || kind === "compaction"
     const sessionID = primary ? session : undefined
@@ -69,10 +80,18 @@ export class Model implements LanguageModelV3 {
             {
               sessionID,
               sourceID,
+              // OWN-PATCH(P-044) begin
+              parentID: primary ? headers[RequestKind.PARENT_HEADER] : undefined,
+              // OWN-PATCH(P-044) end
               model: this.modelId,
               effort,
+              // OWN-PATCH(P-060) begin
+              ...(fastMode ? { fastMode } : {}),
+              // OWN-PATCH(P-060) end
               maxOutputTokens: options.maxOutputTokens,
-              connection: this.connection,
+              // OWN-PATCH(P-045) begin
+              connection,
+              // OWN-PATCH(P-045) end
               system,
               prompt: options.prompt,
               tools: offered,

@@ -179,12 +179,14 @@ function makeRoutes(
         content: options.config?.content,
       }),
     ),
+    // OWN-PATCH(P-058) begin
     InstructionDiscovery.node.replace(
       InstructionDiscovery.configured({
-        project: options.config?.project,
+        project: options.config?.instructions ?? options.config?.project,
         claude: options.instructions?.claude,
       }),
     ),
+    // OWN-PATCH(P-058) end
     ShellSelect.node.replace(ShellSelect.configured({ gitbash: options.windows?.gitbash })),
     Mcp.node.replace(
       Mcp.configured({

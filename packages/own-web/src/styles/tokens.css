@@ -1,0 +1,125 @@
+/*
+ * own semantic tokens (03 §13). They sit on top of the @opencode/ui v2 tokens (13.1, "v2 매핑" column of 13.2), so
+ * the theme picker of @opencode/ui drives own-web too. The 13.2 initial values (same as the prototype) are the
+ * fallbacks when a v2 token is missing. Components use --own-* (or the Tailwind `own-*` colors), never --v2-*.
+ */
+:root {
+  --own-font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic",
+    "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --own-font-mono: "D2Coding", "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  /* 13.4: 4 px grid, radii, fixed heights. */
+  --own-radius-chip: 6px;
+  --own-radius-card: 10px;
+  --own-radius-dialog: 14px;
+  --own-header-h: 52px;
+  --own-row-h: 52px;
+  --own-row-h-compact: 32px;
+  --own-composer-min-h: 96px;
+  --own-content-max: 760px;
+
+  --own-bg: var(--v2-background-bg-base, #ffffff);
+  --own-bg-subtle: var(--v2-background-bg-deep, #f6f6f7);
+  --own-bg-raised: var(--v2-background-bg-layer-01, #ffffff);
+  --own-bg-hover: var(--v2-overlay-simple-overlay-hover, #eeeff1);
+  --own-border: var(--v2-border-border-base, #e4e5e8);
+  --own-border-strong: var(--v2-border-border-strong, #cfd1d6);
+  --own-text: var(--v2-text-text-base, #1b1c1f);
+  --own-text-muted: var(--v2-text-text-muted, #5d6068);
+  /* The v2 faint grey is below 4.5:1 on raised, hovered and tinted surfaces in both schemes; a little past halfway
+     toward muted keeps 4.5:1 there and still reads dimmer than muted. */
+  --own-text-faint: color-mix(in srgb, var(--v2-text-text-muted, #5d6068) 60%, var(--v2-text-text-faint, #8a8e97));
+  /*
+   * Accent roles: --own-accent is a fill (primary buttons, checked boxes, underlines, drop marks) and takes
+   * --own-on-accent as its text. Accent-colored text, icons and selection rings use --own-accent-text: the v2 accent
+   * fill stays blue-600 in dark, too dark to read there. Light deepens it a little so it keeps 4.5:1 on the soft tint.
+   */
+  --own-accent: var(--v2-background-bg-accent, #2f5fd0);
+  --own-accent-text: color-mix(in srgb, var(--v2-text-text-accent, #2f5fd0) 85%, var(--v2-text-text-base, #1b1c1f));
+  --own-on-accent: var(--v2-text-text-contrast, #ffffff);
+  /* Tints blend over whatever surface they sit on (page, sidebar, raised card or popover). The selection tint is
+     light enough in light for faint, warn and accent text on it; dark needs more to show on raised surfaces. */
+  --own-accent-soft: color-mix(in srgb, var(--own-accent) 8%, transparent);
+  --own-meter-track: color-mix(in srgb, var(--own-text) 14%, transparent);
+  --own-meter-fill: var(--own-text-muted);
+  /* A meter whose value is unknown (the composer's context ring without the router's numbers): a whole ring a step
+     stronger than an empty track and well short of a fill, so it reads neither as empty nor as full (UX 2026-10-27). */
+  --own-meter-unknown: color-mix(in srgb, var(--own-text) 28%, transparent);
+  /* Text-field, checkbox and radio outlines: 3:1 against the surface (11장, WCAG 1.4.11). */
+  --own-border-input: color-mix(in srgb, var(--own-text) 50%, transparent);
+  /* The v2 light warning and success colors are fills; as text they fall below 4.5:1, so light deepens them. */
+  --own-warn: color-mix(in srgb, var(--v2-state-fg-warning, #b86e00) 60%, var(--v2-text-text-base, #1b1c1f));
+  --own-danger: var(--v2-state-fg-danger, #c93a3a);
+  --own-on-danger: var(--v2-text-text-inverse, #ffffff);
+  --own-ok: color-mix(in srgb, var(--v2-state-fg-success, #2d8a4e) 85%, var(--v2-text-text-base, #1b1c1f));
+  /* The v2 focus blue is 2.6:1 on light surfaces; light rings use the accent text blue. */
+  --own-focus: var(--v2-text-text-accent, #2f5fd0);
+  --own-scrim: rgb(20 22 28 / 0.28);
+  --own-shadow-float: var(--v2-elevation-floating, 0 8px 24px rgb(20 22 28 / 0.1), 0 0 0 0.5px rgb(20 22 28 / 0.1));
+  /* Boxes resting on the page (composer, request docks): the v2 elevation has a dark-scheme variant. */
+  --own-shadow-raised: var(--v2-elevation-raised, 0 1px 2px rgb(20 22 28 / 0.04));
+
+  /* 13.2 account colors: dots only, names always shown next to them. */
+  --own-account-indigo: #5b6ee1;
+  --own-account-teal: #2a9d8f;
+  --own-account-amber: #c9892b;
+  --own-account-rose: #d0607a;
+  --own-account-violet: #8e6bd6;
+  --own-account-green: #4f9a58;
+  --own-account-slate: #6b7a90;
+  --own-account-orange: #d9733b;
+  --own-dot-filter: none;
+
+  /*
+   * 03 §4.4.1 아이디어 노트: the paper of a sticky note (`Ideas.COLORS`). Fills only, under --own-text (at least 4.5:1
+   * in both schemes); the color name is always in the card's color button too. Dark mixes the hue into the raised
+   * surface so a board stays dim.
+   */
+  --own-sticky-yellow: #fff4b8;
+  --own-sticky-pink: #ffdbe4;
+  --own-sticky-green: #d7f2d8;
+  --own-sticky-blue: #d6e8ff;
+  --own-sticky-purple: #e8ddff;
+  --own-sticky-edge: color-mix(in srgb, var(--own-text) 12%, transparent);
+}
+
+[data-color-scheme="dark"] {
+  --own-bg: var(--v2-background-bg-base, #17181a);
+  --own-bg-subtle: var(--v2-background-bg-deep, #1d1f22);
+  --own-bg-raised: var(--v2-background-bg-layer-01, #23262a);
+  --own-bg-hover: var(--v2-overlay-simple-overlay-hover, #2a2d31);
+  --own-border: var(--v2-border-border-base, #2f3237);
+  --own-border-strong: var(--v2-border-border-strong, #40444b);
+  --own-text: var(--v2-text-text-base, #e8e9ec);
+  --own-text-muted: var(--v2-text-text-muted, #a3a7b0);
+  --own-text-faint: color-mix(in srgb, var(--v2-text-text-muted, #a3a7b0) 55%, var(--v2-text-text-faint, #747985));
+  --own-accent: var(--v2-background-bg-accent, #3b5cf6);
+  --own-accent-text: var(--v2-text-text-accent, #7da2ff);
+  --own-on-accent: var(--v2-text-text-contrast, #ffffff);
+  --own-accent-soft: color-mix(in srgb, var(--own-accent) 20%, transparent);
+  --own-border-input: color-mix(in srgb, var(--own-text) 40%, transparent);
+  --own-warn: var(--v2-state-fg-warning, #e0a63a);
+  --own-danger: var(--v2-state-fg-danger, #f07070);
+  --own-on-danger: var(--v2-text-text-inverse, #17181a);
+  --own-ok: var(--v2-state-fg-success, #5fc486);
+  --own-focus: var(--v2-border-border-focus, #7da2ff);
+  --own-scrim: rgb(0 0 0 / 0.5);
+  /* 13.2: account dots +12% lightness in dark. */
+  --own-dot-filter: brightness(1.12);
+  --own-sticky-yellow: color-mix(in srgb, #f2c230 20%, var(--own-bg-raised));
+  --own-sticky-pink: color-mix(in srgb, #e86a8e 20%, var(--own-bg-raised));
+  --own-sticky-green: color-mix(in srgb, #4fbf68 20%, var(--own-bg-raised));
+  --own-sticky-blue: color-mix(in srgb, #4f8ff0 20%, var(--own-bg-raised));
+  --own-sticky-purple: color-mix(in srgb, #9b74f0 20%, var(--own-bg-raised));
+  --own-sticky-edge: color-mix(in srgb, var(--own-text) 16%, transparent);
+}
+
+/* Desktop: the session header rides the window-controls-overlay band (03 §4.2.1, 05 §7.1). */
+[data-wco] {
+  --own-header-h: env(titlebar-area-height, 44px);
+  /* The window buttons' area at the band's right end. */
+  --own-wco-buttons: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+  /* What the band's rows keep free at their right end: the buttons, and the zoom indicator while it shows (zoom.css). */
+  --own-wco-right: calc(var(--own-wco-buttons) + var(--own-wco-zoom, 0px));
+}

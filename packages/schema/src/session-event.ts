@@ -662,6 +662,18 @@ export namespace RevertEvent {
   })
 }
 
+// OWN-PATCH(P-035) begin
+export namespace Reset {
+  /** Undoes a delivered context reset: its marker stays, but no longer bounds history. */
+  export const Undone = Event.durable({
+    type: "session.reset.undone",
+    ...options,
+    schema: { ...Base, messageID: SessionMessage.ID },
+  })
+  export type Undone = typeof Undone.Type
+}
+// OWN-PATCH(P-035) end
+
 export const Definitions = Event.inventory(
   Created,
   AgentSelected,
@@ -715,6 +727,9 @@ export const Definitions = Event.inventory(
   RevertEvent.Staged,
   RevertEvent.Cleared,
   RevertEvent.Committed,
+  // OWN-PATCH(P-035) begin
+  Reset.Undone,
+  // OWN-PATCH(P-035) end
 )
 
 // Internal and replay-only events are excluded from the public manifest.

@@ -11,6 +11,19 @@ import type {
   SpawnedProcess,
 } from "@anthropic-ai/claude-agent-sdk"
 import { Recorder } from "./recorder"
+// OWN-PATCH(P-043) begin
+import fs from "node:fs"
+import path from "node:path"
+import { FolderStore } from "@opencode/core/plugin/provider/claude-agent/claude/folder-store"
+
+// The last user or assistant entry of a transcript file (where a resumed conversation chains on), if any.
+function lastEntry(file: string): string | null {
+  if (!fs.existsSync(file)) return null
+  const lines = fs.readFileSync(file, "utf8").split("\n").filter((line) => line.trim() !== "")
+  const entries = lines.map((line) => JSON.parse(line)).filter((entry) => entry.type === "user" || entry.type === "assistant")
+  return entries.at(-1)?.uuid ?? null
+}
+// OWN-PATCH(P-043) end
 
 // One step of a script. Each `claude` the SDK starts takes the next steps in order.
 interface Gates {
@@ -194,6 +207,9 @@ function probeResponse(message: any, model: string | undefined) {
 export interface Run {
   readonly args: readonly string[]
   readonly env: Record<string, string | undefined>
+  // OWN-PATCH(P-043) begin
+  readonly cwd?: string
+  // OWN-PATCH(P-043) end
   readonly received: any[]
   readonly closed: Promise<void>
   readonly exit: (code: number) => Promise<void>
@@ -201,7 +217,18 @@ export interface Run {
 
 export type Fake = ReturnType<typeof make>
 
-export function make(script: readonly Step[], options?: { readonly probes?: boolean }) {
+export function make(
+  script: readonly Step[],
+  options?: {
+    readonly probes?: boolean
+    // OWN-PATCH(P-043) begin
+    // Also write each conversation as Claude Code does, under the run's CLAUDE_CONFIG_DIR (`projects/<project>/<id>.jsonl`,
+    // chained by parentUuid from the resumed file's last entry); recorded uuids get fresh ones per run, so a recording
+    // replayed twice still chains.
+    readonly files?: boolean
+    // OWN-PATCH(P-043) end
+  },
+) {
   const runs: Run[] = []
   const errors: string[] = []
   const transcripts = new Map<string, SessionMessage[]>()
@@ -219,6 +246,9 @@ export function make(script: readonly Step[], options?: { readonly probes?: bool
     const run: Run = {
       args: options.args,
       env: options.env,
+      // OWN-PATCH(P-043) begin
+      cwd: options.cwd,
+      // OWN-PATCH(P-043) end
       received: [],
       closed: closed.promise,
       async exit(code) {
@@ -319,10 +349,13 @@ export function make(script: readonly Step[], options?: { readonly probes?: bool
         const sessionID = run.args
           .find((arg) => arg.startsWith("--session-id=") || arg.startsWith("--resume="))
           ?.split("=")[1]
-        remember(run, reply)
+        // OWN-PATCH(P-043) begin
+        const fresh = options?.files ? renamed(run, reply) : reply
+        remember(run, fresh)
         process.stdout.write(
-          JSON.stringify(sessionID && "session_id" in reply ? { ...reply, session_id: sessionID } : reply) + "\n",
+          JSON.stringify(sessionID && "session_id" in fresh ? { ...fresh, session_id: sessionID } : fresh) + "\n",
         )
+        // OWN-PATCH(P-043) end
       }
     }
     completed++
@@ -339,9 +372,51 @@ export function make(script: readonly Step[], options?: { readonly probes?: bool
     const id = run.args.find((arg) => arg.startsWith("--session-id=") || arg.startsWith("--resume="))?.split("=")[1]
     if (!id) return
     const messages = transcripts.get(id) ?? []
-    if (!messages.some((saved) => saved.uuid === message.uuid)) messages.push({ ...message, session_id: id })
+    // OWN-PATCH(P-043) begin
+    if (!messages.some((saved) => saved.uuid === message.uuid)) {
+      messages.push({ ...message, session_id: id })
+      if (options?.files) persist(run, id, message)
+    }
+    // OWN-PATCH(P-043) end
     transcripts.set(id, messages)
   }
+
+  // OWN-PATCH(P-043) begin
+  const leaves = new Map<Run, string | null>()
+  const names = new Map<Run, Map<string, string>>()
+
+  function renamed(run: Run, message: any) {
+    if ((message.type !== "user" && message.type !== "assistant") || typeof message.uuid !== "string") return message
+    const known = names.get(run) ?? new Map<string, string>()
+    names.set(run, known)
+    const uuid = known.get(message.uuid) ?? crypto.randomUUID()
+    known.set(message.uuid, uuid)
+    return { ...message, uuid }
+  }
+
+  function persist(run: Run, id: string, message: any) {
+    const configDir = run.env.CLAUDE_CONFIG_DIR
+    if (!configDir) return
+    const file = path.join(configDir, "projects", FolderStore.projectKey(run.cwd ?? "."), `${id}.jsonl`)
+    if (!leaves.has(run)) leaves.set(run, lastEntry(file))
+    const entry = {
+      type: message.type,
+      uuid: message.uuid,
+      parentUuid: leaves.get(run) ?? null,
+      isSidechain: false,
+      userType: "external",
+      entrypoint: "sdk-ts",
+      cwd: run.cwd,
+      sessionId: id,
+      version: "2.1.301",
+      timestamp: new Date().toISOString(),
+      message: message.message,
+    }
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.appendFileSync(file, JSON.stringify(entry) + "\n")
+    leaves.set(run, message.uuid)
+  }
+  // OWN-PATCH(P-043) end
 
   return {
     spawn,

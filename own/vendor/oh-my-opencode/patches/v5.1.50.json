@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "package": "oh-my-opencode",
+  "tag": "v5.1.50",
+  "files": [
+    {
+      "file": "packages/omo-opencode/src/shared/opencode-storage-detection.ts",
+      "patch": "OMO-P1",
+      "preSha256": "7fce16c4bb4d80d1460f188621f5792e87df08cc2004bfb30b3652157a23a0e6",
+      "postSha256": "86b53ecedee67758e5fded7e6f4e5a9dc517f03bd9be7b5f531c1746bf97fc1b",
+      "edits": [
+        {
+          "find": "export function isSqliteBackend(): boolean {\n  if (cachedResult === true) return true\n",
+          "replace": "export function isSqliteBackend(): boolean {\n  // own-open-code (OMO-P1): inside own every message goes through the host's client, never v1's JSON storage.\n  if (process.env.OMO_OWN_HOST === \"1\") return true\n  if (cachedResult === true) return true\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/shared/data-path.ts",
+      "patch": "OMO-P2",
+      "preSha256": "8c2feb59c194d482403b8d86a536efe0945e3d8f25a0eae46e9d71f034d138b7",
+      "postSha256": "cd8ac7a983c331ed79222dbd5f27cf9d55cf5f6b8b15b73f6543ac4045f3112d",
+      "edits": [
+        {
+          "find": "export function getCacheDir(): string {\n  const preferredDir = process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), \".cache\")\n  return resolveWritableDirectory(preferredDir, \"opencode-cache\")\n",
+          "replace": "export function getCacheDir(): string {\n  // own-open-code (OMO-P2): inside own, omo's caches live under <OWN_HOME>/thirdparty/omo/cache.\n  const preferredDir = process.env.OMO_OWN_CACHE_HOME ?? process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), \".cache\")\n  return resolveWritableDirectory(preferredDir, \"opencode-cache\")\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/utils/src/xdg-data-dir.ts",
+      "patch": "OMO-P2",
+      "preSha256": "0e8444bc345bee442cee5d4fe6f8325ddab6fa353995f9e64fc2a828123d10e9",
+      "postSha256": "a21ad2183bbcc0db1f0f4920149518c3447f165d9af2e2cd40a589d3984b5f0c",
+      "edits": [
+        {
+          "find": "  const env = options.env ?? process.env\n  const preferredDir = env.XDG_DATA_HOME ?? path.join(osProvider.homedir(), \".local\", \"share\")\n  return resolveWritableDirectory(preferredDir, `${appName}-data`, osProvider)\n",
+          "replace": "  const env = options.env ?? process.env\n  // own-open-code (OMO-P2): inside own, omo's data lives under <OWN_HOME>/thirdparty/omo/data.\n  const preferredDir = env.OMO_OWN_DATA_HOME ?? env.XDG_DATA_HOME ?? path.join(osProvider.homedir(), \".local\", \"share\")\n  return resolveWritableDirectory(preferredDir, `${appName}-data`, osProvider)\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/features/background-agent/process-cleanup.ts",
+      "patch": "OMO-P3",
+      "preSha256": "387d8650e4999a754a3a3fdfdccd51f585e1b4787a1316c3224efadefd8fbe75",
+      "postSha256": "445762f6933979ea62325bed14b70443304a73c09095d4a6ad1327ff480135f1",
+      "edits": [
+        {
+          "find": "\n  if (cleanupRegistered) return\n  cleanupRegistered = true\n",
+          "replace": "\n  // own-open-code (OMO-P3): own's service owns its process; the host shuts omo's managers down through `dispose`.\n  if (cleanupRegistered || process.env.OMO_OWN_HOST === \"1\") return\n  cleanupRegistered = true\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/claude-code-compat-core/src/shared/opencode-config-dir.ts",
+      "patch": "OMO-P4",
+      "preSha256": "3f030226450181c6a2f9c6ac7fe2b5fd3578896a4ab3889d0c4126bb6eacea79",
+      "postSha256": "723a2ba78096da8b8c3cc3a25472f02a5a407672ec3b1b350183932c0f537fb5",
+      "edits": [
+        {
+          "find": "function getCliDefaultConfigDir(): string {\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n",
+          "replace": "function getCliDefaultConfigDir(): string {\n  // own-open-code (OMO-P4): inside own, omo reads only own's config folder, never the user's OpenCode config.\n  const ownConfigDir = process.env.OMO_OWN_HOST === \"1\" ? process.env.OMO_OWN_CONFIG_DIR?.trim() : undefined\n  if (ownConfigDir) return resolveConfigPath(ownConfigDir)\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/shared/opencode-config-dir.ts",
+      "patch": "OMO-P4",
+      "preSha256": "85201a61c5ed79e5cebdb7aa389982238c3a9cab0179b6d2820ba1fc67e875a6",
+      "postSha256": "501d7650c0e6e7b449dd83c5a31cf42ef36df4ba4c295b147ff7964abb560875",
+      "edits": [
+        {
+          "find": "function getCliDefaultConfigDir(): string {\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n",
+          "replace": "function getCliDefaultConfigDir(): string {\n  // own-open-code (OMO-P4): inside own, omo reads only own's config folder, never the user's OpenCode config.\n  const ownConfigDir = process.env.OMO_OWN_HOST === \"1\" ? process.env.OMO_OWN_CONFIG_DIR?.trim() : undefined\n  if (ownConfigDir) return resolveConfigPath(ownConfigDir)\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/skills-loader-core/src/shared/opencode-config-dir.ts",
+      "patch": "OMO-P4",
+      "preSha256": "3f030226450181c6a2f9c6ac7fe2b5fd3578896a4ab3889d0c4126bb6eacea79",
+      "postSha256": "723a2ba78096da8b8c3cc3a25472f02a5a407672ec3b1b350183932c0f537fb5",
+      "edits": [
+        {
+          "find": "function getCliDefaultConfigDir(): string {\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n",
+          "replace": "function getCliDefaultConfigDir(): string {\n  // own-open-code (OMO-P4): inside own, omo reads only own's config folder, never the user's OpenCode config.\n  const ownConfigDir = process.env.OMO_OWN_HOST === \"1\" ? process.env.OMO_OWN_CONFIG_DIR?.trim() : undefined\n  if (ownConfigDir) return resolveConfigPath(ownConfigDir)\n  const envXdgConfig = process.env.XDG_CONFIG_HOME?.trim()\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/plugin/tool-registry-core-tools.ts",
+      "patch": "OMO-P5",
+      "preSha256": "3fe671d4db23fff610f5ba994e4e88b07dd1ff6c5c2291a9901474ba23c13159",
+      "postSha256": "1787b464d53a6dfcb9de2bae361bd3444df8d68f7134de502a333622d436c061",
+      "edits": [
+        {
+          "find": "    agentOverrides: pluginConfig.agents,\n    loadCurrentModelConfig: () => {\n      const current = loadPluginConfig(ctx.directory, process.env)\n",
+          "replace": "    agentOverrides: pluginConfig.agents,\n    // own-open-code (OMO-P5): inside own the config the host started omo with is the config (own's model policy and\n    // categories); task calls must not read omo's config files again.\n    loadCurrentModelConfig: process.env.OMO_OWN_HOST === \"1\" ? undefined : () => {\n      const current = loadPluginConfig(ctx.directory, process.env)\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/features/run-continuation-state/storage.ts",
+      "patch": "OMO-P6",
+      "preSha256": "4016bed07e97f16802ed17b9a530d2ec3975f81271fc4263e4f5d4f9a1c7c9db",
+      "postSha256": "6785d99ae502c704ef4bfdd9620a31bc2bc38f747833f321b75269d0e762e7ee",
+      "edits": [
+        {
+          "find": "import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from \"node:fs\"\nimport { join } from \"node:path\"\n",
+          "replace": "import { createHash } from \"node:crypto\" // own-open-code (OMO-P6)\nimport { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from \"node:fs\"\nimport { basename, join, resolve } from \"node:path\" // own-open-code (OMO-P6): basename, resolve\n"
+        },
+        {
+          "find": "function getMarkerPath(directory: string, sessionID: string): string {\n  return join(directory, CONTINUATION_MARKER_DIR, `${sessionID}.json`)\n}\n",
+          "replace": "function getMarkerPath(directory: string, sessionID: string): string {\n  return join(getMarkerDir(directory), `${sessionID}.json`)\n}\n\n// own-open-code (OMO-P6): inside own, a project's continuation markers live under own's home\n// (OMO_OWN_STATE_HOME/<folder name>-<sha256 of its path, 12>/run-continuation), never in the project.\nfunction getMarkerDir(directory: string): string {\n  const stateHome = process.env.OMO_OWN_HOST === \"1\" ? process.env.OMO_OWN_STATE_HOME : undefined\n  if (!stateHome) return join(directory, CONTINUATION_MARKER_DIR)\n  const project = resolve(directory)\n  const key = createHash(\"sha256\").update(project).digest(\"hex\").slice(0, 12)\n  return join(stateHome, `${basename(project) || \"project\"}-${key}`, \"run-continuation\")\n}\n"
+        },
+        {
+          "find": "  mkdirSync(join(directory, CONTINUATION_MARKER_DIR), { recursive: true })\n",
+          "replace": "  mkdirSync(getMarkerDir(directory), { recursive: true }) // own-open-code (OMO-P6)\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/tools/delegate-task/tools.ts",
+      "patch": "OMO-P7",
+      "preSha256": "75d42d9fd24ae98a6d995a349c5d55640df9443b6f79d53e53aeb720c4399202",
+      "postSha256": "0d4e13e4e2a011485d41f7eb7e7d2711e13a5d35f281a6111394eb6440b76217",
+      "edits": [
+        {
+          "find": "        categoryModel = resolution.categoryModel\n        categoryPromptAppend = resolution.categoryPromptAppend\n",
+          "replace": "        // own-open-code (OMO-P7): inside own every child runs on its parent's model, so omo builds for that model and names it.\n        categoryModel = process.env.OMO_OWN_HOST === \"1\" && parentContext.model\n          ? { ...resolution.categoryModel, ...parentContext.model }\n          : resolution.categoryModel\n        categoryPromptAppend = resolution.categoryPromptAppend\n"
+        },
+        {
+          "find": "        categoryModel = resolution.categoryModel\n        fallbackChain = resolution.fallbackChain\n      }\n",
+          "replace": "        // own-open-code (OMO-P7): the parent's model, as above.\n        categoryModel = process.env.OMO_OWN_HOST === \"1\" && parentContext.model\n          ? { ...resolution.categoryModel, ...parentContext.model }\n          : resolution.categoryModel\n        fallbackChain = resolution.fallbackChain\n      }\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/omo-opencode/src/plugin/command-execute-before.ts",
+      "patch": "OMO-P8",
+      "preSha256": "8483128f6a4bde28b43e2a4d67f97537538a6d4e1fcd577e28346df65d7f8d25",
+      "postSha256": "2d49a17dfb52485a7628e581883d8a1cac5c71d57199290f02ceb82d7128238d",
+      "edits": [
+        {
+          "find": "    if (normalizedCommand === \"stop-continuation\" && sessionID) {\n      stopContinuation({ directory, hooks, sessionID })\n    }\n",
+          "replace": "    if (normalizedCommand === \"stop-continuation\" && sessionID) {\n      stopContinuation({ directory, hooks, sessionID })\n    }\n    // own-open-code (OMO-P8): own's `/resume-continuation` undoes `/stop-continuation` without a restart, the way back\n    // the stop guard leaves to a future command upstream.\n    if (process.env.OMO_OWN_HOST === \"1\" && normalizedCommand === \"resume-continuation\" && sessionID) {\n      hooks.stopContinuationGuard?.clear(sessionID)\n    }\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/skills-loader-core/src/features/opencode-skill-loader/loader.ts",
+      "patch": "OMO-P9",
+      "preSha256": "26e6deb452b0cfd5935951c9bdaaf16ea7855e8fbadecca55a03b34aab477159",
+      "postSha256": "e1ff2c7fc23a8a794df2593075b7b6de91b7ac4ae9c5e88c484b5acebc8117fb",
+      "edits": [
+        {
+          "find": "\nexport async function discoverProjectClaudeSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  const projectSkillDirs = findProjectClaudeSkillDirs(directory ?? process.cwd())\n",
+          "replace": "\n// own-open-code (OMO-P9): inside own, a project's skills (.opencode/skills, .claude/skills, .agents/skills) are read\n// only when the host says its service reads project config (OMO_OWN_PROJECT_SKILLS=1). Every project discovery below\n// goes through this, so omo's prompts, its skill tools and task(load_skills) all follow the host's setting.\nfunction ownProjectSkillsOff(): boolean {\n  return process.env.OMO_OWN_HOST === \"1\" && process.env.OMO_OWN_PROJECT_SKILLS !== \"1\"\n}\n\nexport async function discoverProjectClaudeSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  if (ownProjectSkillsOff()) return [] // own-open-code (OMO-P9)\n  const projectSkillDirs = findProjectClaudeSkillDirs(directory ?? process.cwd())\n"
+        },
+        {
+          "find": "export async function discoverOpencodeProjectSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  const opencodeProjectSkillDirs = findProjectOpencodeSkillDirs(\n",
+          "replace": "export async function discoverOpencodeProjectSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  if (ownProjectSkillsOff()) return [] // own-open-code (OMO-P9)\n  const opencodeProjectSkillDirs = findProjectOpencodeSkillDirs(\n"
+        },
+        {
+          "find": "export async function discoverProjectAgentsSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  const agentsProjectSkillDirs = findProjectAgentsSkillDirs(directory ?? process.cwd())\n",
+          "replace": "export async function discoverProjectAgentsSkills(directory?: string, provenance?: SkillProvenance): Promise<LoadedSkill[]> {\n  if (ownProjectSkillsOff()) return [] // own-open-code (OMO-P9)\n  const agentsProjectSkillDirs = findProjectAgentsSkillDirs(directory ?? process.cwd())\n"
+        }
+      ]
+    },
+    {
+      "file": "packages/skills-loader-core/src/features/opencode-skill-loader/opencode-config-skills-reader.ts",
+      "patch": "OMO-P9",
+      "preSha256": "244ac674e9eb1648a6d10c131bf977b30158b4e1cd8435094abddfa10b4522d8",
+      "postSha256": "0a581b029db4aace4476cf785a5fa668b2a3514e1797ee3ee51df83e08c8119a",
+      "edits": [
+        {
+          "find": "  const globalConfigDirs = getOpenCodeConfigDirs({ binary: \"opencode\" })\n  return [\n    { path: path.join(directory, \".opencode\", \"opencode.json\"), user: false },\n    { path: path.join(directory, \".opencode\", \"opencode.jsonc\"), user: false },\n    ...globalConfigDirs.flatMap((dir) => [\n",
+          "replace": "  const globalConfigDirs = getOpenCodeConfigDirs({ binary: \"opencode\" })\n  // own-open-code (OMO-P9): inside own, the project's opencode config names skill folders only when the host says its\n  // service reads project config (OMO_OWN_PROJECT_SKILLS=1), like the project skill folders in loader.ts.\n  const projectConfigs = process.env.OMO_OWN_HOST === \"1\" && process.env.OMO_OWN_PROJECT_SKILLS !== \"1\"\n    ? []\n    : [\n        { path: path.join(directory, \".opencode\", \"opencode.json\"), user: false },\n        { path: path.join(directory, \".opencode\", \"opencode.jsonc\"), user: false },\n      ]\n  return [\n    ...projectConfigs,\n    ...globalConfigDirs.flatMap((dir) => [\n"
+        }
+      ]
+    }
+  ]
+}

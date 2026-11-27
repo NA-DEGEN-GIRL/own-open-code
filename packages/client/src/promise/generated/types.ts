@@ -95,9 +95,9 @@ export type SkillName = string
 
 export type SessionInboxDelivery = "steer" | "queue"
 
-export type SessionInboxSyntheticPayload = { text: string; description?: string; metadata?: { [x: string]: JsonValue } }
-
 export type SessionInboxCompactionPayload = {}
+
+export type SessionInboxResetPayload = {}
 
 export type ShellID = string
 
@@ -122,6 +122,10 @@ export type SessionStructuredError = {
   response?: { body: string }
   retryAfterMs?: number
 }
+
+export type InstructionKey = string
+
+export type InstructionHash = string
 
 export type SessionInterruptResponse = { interrupted: boolean }
 
@@ -161,12 +165,6 @@ export type EventID = string
 export type EventSeq = number
 
 export type WorkspaceID = string
-
-export type InstructionKey = string
-
-export type InstructionHash = string
-
-export type SessionInboxSyntheticPayload1 = { text: string; description?: string; metadata?: { [x: string]: any } }
 
 export type SessionMessageNative1 = { [x: string]: any }
 
@@ -420,13 +418,19 @@ export type ModelRef = { id: string; providerID: ProviderID; variant?: string }
 
 export type ProviderCache = { ttl?: ProviderCacheTTL; warming?: ProviderCacheWarming }
 
-export type ModelVariantSettings = { compaction?: ProviderCompaction; encoding?: ProviderEncoding } & {
-  [x: string]: any
-}
+export type ModelVariantSettings = {
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
+  compaction?: ProviderCompaction
+  encoding?: ProviderEncoding
+} & { [x: string]: any }
 
-export type ConfigModelVariantSettings = { compaction?: ProviderCompaction; encoding?: ProviderEncoding } & {
-  [x: string]: JsonValue | null
-}
+export type ConfigModelVariantSettings = {
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
+  compaction?: ProviderCompaction
+  encoding?: ProviderEncoding
+} & { [x: string]: JsonValue | null }
 
 export type PermissionRule = { action: string; resource: string; effect: PermissionEffect }
 
@@ -437,6 +441,14 @@ export type AutomationTarget = { session: SessionID; subagent?: never } | { suba
 export type SessionForkBoundary =
   | { type: "before"; messageID: SessionMessageID }
   | { type: "through"; messageID: SessionMessageID }
+
+export type SessionInboxSyntheticPayload = {
+  text: string
+  description?: string
+  metadata?: { [x: string]: JsonValue }
+  beforeReset?: SessionMessageID
+  background?: boolean
+}
 
 export type SessionMessageAgentSelected = {
   id: SessionMessageID
@@ -473,6 +485,14 @@ export type SessionMessageCompactionRunning = {
   status: "running"
   reason: "auto" | "manual"
   summary: string
+}
+
+export type SessionInboxSyntheticPayload1 = {
+  text: string
+  description?: string
+  metadata?: { [x: string]: any }
+  beforeReset?: SessionMessageID
+  background?: boolean
 }
 
 export type UsageLimitsBudgetModel = { providerID: ProviderID; modelID: string; name: string; spent?: MoneyUSD }
@@ -522,21 +542,21 @@ export type SkillInfo = {
   content: string
 }
 
-export type SessionInboxSynthetic = {
-  id: SessionMessageID
-  sessionID: SessionID
-  time: { created: number }
-  type: "synthetic"
-  payload: SessionInboxSyntheticPayload
-  delivery: SessionInboxDelivery
-}
-
 export type SessionInboxCompaction = {
   id: SessionMessageID
   sessionID: SessionID
   time: { created: number }
   type: "compaction"
   payload: SessionInboxCompactionPayload
+  delivery: SessionInboxDelivery
+}
+
+export type SessionInboxReset = {
+  id: SessionMessageID
+  sessionID: SessionID
+  time: { created: number }
+  type: "reset"
+  payload: SessionInboxResetPayload
   delivery: SessionInboxDelivery
 }
 
@@ -612,6 +632,11 @@ export type SessionMessageIdle = {
   type: "idle"
   outcome: "succeeded" | "failed" | "interrupted"
   error?: SessionStructuredError
+}
+
+export type SessionMessageCompactionResetBaseline = {
+  epochStart: number
+  values: { [x: InstructionKey]: InstructionHash }
 }
 
 export type FormNumberField = {
@@ -1102,26 +1127,14 @@ export type SessionMessageModelSelected = {
   previous?: ModelRef
 }
 
-export type SessionMessageCompactionCompleted = {
-  type: "compaction"
-  id: SessionMessageID
-  metadata?: { [x: string]: JsonValue }
-  time: { created: number }
-  status: "completed"
-  reason: "auto" | "manual"
-  model?: ModelRef
-  native?: SessionMessageNative
-  summary: string
-  cost?: MoneyUSD
-  tokens?: TokenUsageInfo
-}
-
 export type SessionStatsModelUsage = { model: ModelRef; steps: number; tokens: TokenUsageInfo; cost: MoneyUSD }
 
 export type ProviderSettings = {
   timeout?: number | false
   headerTimeout?: number | false
   chunkTimeout?: number | false
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
   compaction?: ProviderCompaction
   cache?: ProviderCache
   transport?: ProviderTransport
@@ -1129,14 +1142,20 @@ export type ProviderSettings = {
   tls?: ProviderTls
 } & { [x: string]: any }
 
-export type ModelSettings = { compaction?: ProviderCompaction; cache?: ProviderCache; encoding?: ProviderEncoding } & {
-  [x: string]: any
-}
+export type ModelSettings = {
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
+  compaction?: ProviderCompaction
+  cache?: ProviderCache
+  encoding?: ProviderEncoding
+} & { [x: string]: any }
 
 export type ConfigProviderSettings = {
   timeout?: number | false
   headerTimeout?: number | false
   chunkTimeout?: number | false
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
   compaction?: ProviderCompaction
   cache?: ProviderCache
   transport?: ProviderTransport
@@ -1145,6 +1164,8 @@ export type ConfigProviderSettings = {
 } & { [x: string]: JsonValue | null }
 
 export type ConfigModelSettings = {
+  progressTimeout?: number | false
+  toolInputTimeout?: number | false
   compaction?: ProviderCompaction
   cache?: ProviderCache
   encoding?: ProviderEncoding
@@ -1160,6 +1181,15 @@ export type ModelVariant = {
 export type PermissionRuleset = Array<PermissionRule>
 
 export type AutomationActionPrompt = { type: "prompt"; prompt: string; to: AutomationTarget }
+
+export type SessionInboxSynthetic = {
+  id: SessionMessageID
+  sessionID: SessionID
+  time: { created: number }
+  type: "synthetic"
+  payload: SessionInboxSyntheticPayload
+  delivery: SessionInboxDelivery
+}
 
 export type UsageLimitsBudget = {
   id: string
@@ -1223,6 +1253,22 @@ export type SessionMessageToolStateError = {
   error: SessionStructuredError
   content?: [ToolContent, ...Array<ToolContent>]
   metadata?: { [x: string]: JsonValue }
+}
+
+export type SessionMessageCompactionCompleted = {
+  type: "compaction"
+  id: SessionMessageID
+  metadata?: { [x: string]: JsonValue }
+  time: { created: number }
+  status: "completed"
+  reason: "auto" | "manual" | "reset"
+  undone?: number
+  baseline?: SessionMessageCompactionResetBaseline
+  model?: ModelRef
+  native?: SessionMessageNative
+  summary: string
+  cost?: MoneyUSD
+  tokens?: TokenUsageInfo
 }
 
 export type FormField =
@@ -1726,6 +1772,16 @@ export type SessionRevertCommitted = {
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
   data: { sessionID: SessionID; to: SessionMessageID }
+}
+
+export type SessionResetUndone = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "session.reset.undone"
+  durable: { aggregateID: string; seq: EventSeq; version: 1 }
+  location?: LocationRef
+  data: { sessionID: SessionID; messageID: SessionMessageID }
 }
 
 export type SessionUsageRecorded = {
@@ -2361,11 +2417,6 @@ export type ReferenceInfo = {
   source: ReferenceSource
 }
 
-export type SessionMessageCompaction =
-  | SessionMessageCompactionRunning
-  | SessionMessageCompactionCompleted
-  | SessionMessageCompactionFailed
-
 export type SessionStatsInfo = {
   range: { from: number; to: number }
   sessions: number
@@ -2732,6 +2783,11 @@ export type SessionMessageAssistantTool = {
   time: { created: number; ran?: number; completed?: number }
 }
 
+export type SessionMessageCompaction =
+  | SessionMessageCompactionRunning
+  | SessionMessageCompactionCompleted
+  | SessionMessageCompactionFailed
+
 export type FormFields = [FormField, ...Array<FormField>]
 
 export type SessionInboxItem =
@@ -2739,6 +2795,7 @@ export type SessionInboxItem =
   | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
   | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
   | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
+  | { type: "reset"; payload: SessionInboxResetPayload; delivery: SessionInboxDelivery }
 
 export type SessionMessageAssistantTool1 = {
   type: "tool"
@@ -2821,7 +2878,12 @@ export type AutomationInfo = {
   time: { created: number; updated: number }
 }
 
-export type SessionInboxInfo = SessionInboxUser | SessionInboxSynthetic | SessionInboxCompaction | SessionInboxMove
+export type SessionInboxInfo =
+  | SessionInboxUser
+  | SessionInboxSynthetic
+  | SessionInboxCompaction
+  | SessionInboxMove
+  | SessionInboxReset
 
 export type SessionMessageAssistant = {
   id: SessionMessageID
@@ -2980,6 +3042,7 @@ export type SessionEventDurable =
   | SessionRevertStaged
   | SessionRevertCleared
   | SessionRevertCommitted
+  | SessionResetUndone
   | SessionUsageRecorded
   | SessionMessageContentUpdated
 
@@ -3044,6 +3107,7 @@ export type V2Event =
   | SessionRevertStaged
   | SessionRevertCleared
   | SessionRevertCommitted
+  | SessionResetUndone
   | FilesystemChanged
   | ReferenceUpdated
   | PermissionAsked
@@ -3623,6 +3687,8 @@ export type SessionSyntheticInput = {
   readonly metadata?: { readonly [x: string]: JsonValue } | undefined
   readonly delivery?: ("steer" | "queue") | null | undefined
   readonly resume?: boolean | null | undefined
+  readonly background?: boolean | null | undefined
+  readonly startedAt?: number | null | undefined
 }
 
 export type SessionSyntheticOutput = { data: SessionInboxSynthetic }["data"]
@@ -3642,6 +3708,14 @@ export type SessionCompactInput = {
 }
 
 export type SessionCompactOutput = { data: SessionInboxCompaction }["data"]
+
+export type SessionResetCreateInput = { readonly sessionID: string; readonly id?: string | undefined }
+
+export type SessionResetCreateOutput = { data: SessionInboxReset }["data"]
+
+export type SessionResetUndoInput = { readonly sessionID: string; readonly resetID: string }
+
+export type SessionResetUndoOutput = void
 
 export type SessionRevertStageInput = {
   readonly sessionID: string
@@ -4588,6 +4662,7 @@ export type EventSubscribeInput = {
         | "session.revert.staged"
         | "session.revert.cleared"
         | "session.revert.committed"
+        | "session.reset.undone"
         | "filesystem.changed"
         | "reference.updated"
         | "permission.asked"

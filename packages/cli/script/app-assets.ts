@@ -7,7 +7,9 @@ import { collectFiles } from "./files"
 
 export async function buildAppArchive(channel: string, version: string, options?: { skipBuild?: boolean }) {
   if (options?.skipBuild) return AppArchive.encode([])
-  const root = path.resolve(import.meta.dirname, "../../app")
+  // OWN-PATCH(P-001) begin
+  const root = path.resolve(import.meta.dirname, "../..", process.env.OPENCODE_WEB_APP ?? "app")
+  // OWN-PATCH(P-001) end
   await $`bun run build`.cwd(root).env({
     ...process.env,
     OPENCODE_CHANNEL: channel,

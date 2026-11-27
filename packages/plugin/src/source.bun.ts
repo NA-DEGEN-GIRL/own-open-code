@@ -8,6 +8,10 @@ import { localSource } from "./source.js"
 import { missingPackageTarget } from "./source.package.js"
 
 let generation = Date.now()
+// OWN-PATCH(P-056) begin: every Location prepares the same plugin files, and scanning a bundled plugin's imports costs
+// ~40 ms per MB (0.4-0.6 s for own's release bundles), so a file's import list is kept while its text is unchanged.
+const scans = new Map<string, { hash: number | bigint; imports: ReturnType<Bun.Transpiler["scan"]>["imports"] }>()
+// OWN-PATCH(P-056) end
 
 export async function prepareSource(entrypoint: string, track: (file: string, directory?: boolean) => void) {
   const root = fileURLToPath(entrypoint)
@@ -24,16 +28,24 @@ export async function prepareSource(entrypoint: string, track: (file: string, di
     if (!/\.[cm]?[jt]sx?$/.test(file)) return
     // Scan dependencies only; the normal runtime loader still owns compilation,
     // package resolution, import attributes, and error reporting.
+    // OWN-PATCH(P-056) begin
     const imports = (() => {
       try {
-        return new Bun.Transpiler({
+        const text = readFileSync(file, "utf8")
+        const hash = Bun.hash(text)
+        const scanned = scans.get(file)
+        if (scanned?.hash === hash) return scanned.imports
+        const found = new Bun.Transpiler({
           loader: file.endsWith("tsx") ? "tsx" : file.endsWith("jsx") ? "jsx" : /\.[cm]?ts$/.test(file) ? "ts" : "js",
           target: "bun",
-        }).scan(readFileSync(file, "utf8")).imports
+        }).scan(text).imports
+        scans.set(file, { hash, imports: found })
+        return found
       } catch {
         return []
       }
     })()
+    // OWN-PATCH(P-056) end
     for (const item of imports) {
       const local =
         item.path.startsWith("./") || item.path.startsWith("../")

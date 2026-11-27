@@ -242,6 +242,8 @@ export type SessionSyntheticInput = {
   readonly metadata?: { readonly [x: string]: unknown } | undefined
   readonly delivery?: SessionInbox.Delivery | undefined
   readonly resume?: boolean | undefined
+  readonly background?: boolean | undefined
+  readonly startedAt?: number | undefined
 }
 export type SessionSyntheticOutput = SessionInbox.Synthetic
 export type SessionSyntheticOperation<E = never> = (
@@ -263,6 +265,18 @@ export type SessionCompactInput = {
 }
 export type SessionCompactOutput = SessionInbox.Compaction
 export type SessionCompactOperation<E = never> = (input: SessionCompactInput) => Effect.Effect<SessionCompactOutput, E>
+
+export type SessionResetCreateInput = { readonly sessionID: Session.ID; readonly id?: SessionMessage.ID | undefined }
+export type SessionResetCreateOutput = SessionInbox.Reset
+export type SessionResetCreateOperation<E = never> = (
+  input: SessionResetCreateInput,
+) => Effect.Effect<SessionResetCreateOutput, E>
+
+export type SessionResetUndoInput = { readonly sessionID: Session.ID; readonly resetID: SessionMessage.ID }
+export type SessionResetUndoOutput = void
+export type SessionResetUndoOperation<E = never> = (
+  input: SessionResetUndoInput,
+) => Effect.Effect<SessionResetUndoOutput, E>
 
 export type SessionRevertStageInput = {
   readonly sessionID: Session.ID
@@ -425,6 +439,7 @@ export interface SessionApi<E = never> {
   readonly synthetic: SessionSyntheticOperation<E>
   readonly shell: SessionShellOperation<E>
   readonly compact: SessionCompactOperation<E>
+  readonly reset: { readonly create: SessionResetCreateOperation<E>; readonly undo: SessionResetUndoOperation<E> }
   readonly revert: {
     readonly stage: SessionRevertStageOperation<E>
     readonly clear: SessionRevertClearOperation<E>
@@ -1402,6 +1417,17 @@ export type ExperimentalSessionLogOutput =
           readonly id: Event.ID
           readonly created: number
           readonly metadata?: { readonly [x: string]: unknown } | undefined
+          readonly type: "session.reset.undone"
+          readonly durable: { readonly aggregateID: string; readonly seq: Event.Seq; readonly version: Event.Version }
+          readonly location?:
+            | { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+            | undefined
+          readonly data: { readonly sessionID: Session.ID; readonly messageID: SessionMessage.ID }
+        }
+      | {
+          readonly id: Event.ID
+          readonly created: number
+          readonly metadata?: { readonly [x: string]: unknown } | undefined
           readonly type: "session.usage.recorded"
           readonly durable: { readonly aggregateID: string; readonly seq: Event.Seq; readonly version: Event.Version }
           readonly location?:
@@ -2156,6 +2182,7 @@ export type EventSubscribeInput = {
         | "session.revert.staged"
         | "session.revert.cleared"
         | "session.revert.committed"
+        | "session.reset.undone"
         | "filesystem.changed"
         | "reference.updated"
         | "permission.asked"

@@ -1,0 +1,118 @@
+// Strings of the settings screen's general sections (설정 > 일반, 화면, 알림, 서버 …) that no other screen uses, lazy
+// with the settings screen so they stay out of the first chunk (PF5, merge round 9). Keys shared with the shell stay in
+// src/i18n.
+import { featureText } from "@/queue/text"
+
+export const settingsSectionsKo = {
+  "own.banner.restarting": "서비스를 다시 시작하는 중 — 진행 중이던 턴은 이어서 실행돼요",
+  "own.desktop.restartConfirm":
+    "서비스를 {mode} 모드 그대로 다시 시작해요. 진행 중인 턴은 이어서 실행돼요(요청이 한 번 더 갈 수 있음).",
+  "own.desktop.restartService": "서비스 다시 시작",
+  "own.set.pcOnly.title": "PC에서 바꾸는 설정",
+  "own.set.pcOnly.note": "PC에서 바꿀 수 있어요",
+  "own.set.pcOnly.creator": "확장 (코드 플러그인 포함)",
+  "own.set.imageMoved": "이미지 만들기 도구는 설정 > 이미지 만들기로 옮겼어요",
+  "own.set.address": "주소",
+  "own.set.blocked": "차단됨",
+  "own.set.connection": "상태",
+  "own.set.copyDiagnostics": "성능 진단 복사",
+  "own.set.density": "대화 목록 밀도",
+  "own.set.done": "완료",
+  "own.set.editor": "에디터",
+  "own.set.editorNote": "`에디터에서 열기`가 파일을 여는 앱이에요. 앱 이름(code, cursor, zed) 또는 전체 경로를 적어요.",
+  "own.set.followUp": "실행 중 보내기 동작",
+  "own.set.language": "언어",
+  "own.set.locations": "열린 위치",
+  "own.set.notify": "OS 알림",
+  "own.set.notify.allow": "알림 허용…",
+  "own.set.notify.denied": "브라우저에서 막혀 있어요. 브라우저 사이트 설정에서 바꾸세요.",
+  "own.set.notify.granted": "허용됨",
+  "own.set.notify.note": "창이 숨어 있거나 다른 창을 보고 있을 때 승인·질문 요청을 알려요.",
+  "own.set.osNotifications": "OS 알림",
+  "own.set.osNotificationsNote": "창이 숨겨졌을 때 턴 완료·승인 요청을 알려요.",
+  "own.set.reconnect": "다시 동기화",
+  "own.set.reset": "초기화",
+  "own.set.resetWidths": "사이드바·작업 패널 폭 초기화",
+  "own.set.resetWidthsNote": "지금 화면 폭의 기본값으로 돌려요.",
+  "own.set.restartBoth":
+    "어떤 모드로 도는지 알 수 없어요. 믿을 수 있는 프로젝트만 열었다면 보통 모드로, 아니면 믿지 않는 폴더 모드로 다시 시작하세요.",
+  "own.set.server.lead": "이 PC에서 도는 서비스의 상태예요. 문제가 있을 때만 보면 돼요.",
+  "own.set.terminalBottom": "대화 아래",
+  "own.set.terminalPlacement": "터미널 위치",
+  "own.set.terminalPlacementNote": "태블릿·휴대폰 폭에서는 항상 아래에서 올라오는 시트예요.",
+  "own.set.terminalTab": "작업 패널 탭",
+  "own.set.testNotification": "테스트 알림",
+  "own.set.testNotificationBody": "알림이 이렇게 보여요.",
+  "own.set.testNotificationSent": "테스트 알림을 보냈어요",
+  "own.set.testNotificationTitle": "Own OpenCode",
+  "own.set.troubleshoot": "문제 해결용 정보",
+  "own.set.vault": "키 저장소",
+  "own.set.vaultOk": "사용 가능",
+  "own.set.workspaceView": "워크스페이스 보기",
+  "own.set.workspaceView.split": "나란히 (기본)",
+  "own.set.workspaceView.tabs": "탭으로 보기",
+  "own.set.workspaceViewNote":
+    "나란히: 대화와 브라우저, 여러 대화를 한 창에 나란히 봐요(분할 4개까지). 태블릿·휴대폰 폭이나 분할의 최소 너비보다 좁은 창에서는 이 값과 관계없이 탭으로 보여요. 창마다 탭 줄의 버튼으로 바꿀 수 있어요.",
+  "own.shell.themeLabel": "테마",
+  "own.zoom.note": "이 PC의 앱 창 모두에 같이 적용되고, 다음에 열어도 그대로예요.",
+} as const satisfies Record<string, string>
+
+export type SettingsSectionsKey = keyof typeof settingsSectionsKo
+
+export const settingsSectionsEn: Partial<Record<SettingsSectionsKey, string>> = {
+  "own.set.pcOnly.title": "Changed on the PC",
+  "own.set.pcOnly.note": "You can change this on the PC",
+  "own.set.pcOnly.creator": "Extensions (with code plugins)",
+  "own.set.imageMoved": "The image tool moved to Settings > Image generation",
+  "own.banner.restarting": "The service is restarting — running turns continue",
+  "own.set.address": "Address",
+  "own.set.blocked": "Blocked",
+  "own.set.connection": "Status",
+  "own.set.copyDiagnostics": "Copy performance diagnostics",
+  "own.set.density": "Session list density",
+  "own.set.done": "Done",
+  "own.set.editor": "Editor",
+  "own.set.editorNote": "The app `Open in editor` uses. An app name (code, cursor, zed) or a full path.",
+  "own.set.followUp": "Sending while running",
+  "own.set.language": "Language",
+  "own.set.locations": "Open locations",
+  "own.set.notify": "OS notifications",
+  "own.set.notify.allow": "Allow notifications…",
+  "own.set.notify.denied": "Blocked by the browser. Change it in the browser's site settings.",
+  "own.set.notify.granted": "Allowed",
+  "own.set.notify.note":
+    "Tells you about approval and question requests while the window is hidden or in the background.",
+  "own.set.osNotifications": "OS notifications",
+  "own.set.osNotificationsNote": "Tells you about finished turns and approval requests while the window is hidden.",
+  "own.set.reconnect": "Sync again",
+  "own.set.reset": "Reset",
+  "own.set.resetWidths": "Reset sidebar and work panel widths",
+  "own.set.resetWidthsNote": "Back to the defaults of the current window width.",
+  "own.set.restartBoth":
+    "The run mode is unknown. If you only opened projects you trust, restart in normal mode, otherwise in untrusted folder mode.",
+  "own.set.server.lead": "How the service on this PC is doing. Look here only when something is wrong.",
+  "own.set.terminalBottom": "Below the conversation",
+  "own.set.terminalPlacement": "Terminal placement",
+  "own.set.terminalPlacementNote": "On tablet and phone widths it is always a sheet from the bottom.",
+  "own.set.terminalTab": "Work panel tab",
+  "own.set.testNotification": "Test notification",
+  "own.set.testNotificationBody": "Notifications look like this.",
+  "own.set.testNotificationSent": "Sent a test notification",
+  "own.set.testNotificationTitle": "Own OpenCode",
+  "own.set.troubleshoot": "Troubleshooting details",
+  "own.set.vault": "Key store",
+  "own.set.vaultOk": "Available",
+  "own.set.workspaceView": "Workspace view",
+  "own.set.workspaceView.split": "Side by side (default)",
+  "own.set.workspaceView.tabs": "Show as tabs",
+  "own.set.workspaceViewNote":
+    "Side by side: chat and browser, and several sessions, next to each other in one window (up to 4 panes). Tablet and phone widths, and windows narrower than the panes' minimum widths, show tabs whatever this says. Each window can switch with the button on its tab row.",
+  "own.shell.themeLabel": "Theme",
+  "own.zoom.note": "Applies to every app window on this PC and stays the next time you open it.",
+  "own.desktop.restartConfirm":
+    "Restarts the service in {mode} mode as it is now. A running turn goes on afterwards (one request may be sent again).",
+  "own.desktop.restartService": "Restart the service",
+}
+
+export const settingsSectionsText = featureText(settingsSectionsKo, settingsSectionsEn)
+export const useSettingsSectionsText = settingsSectionsText.use

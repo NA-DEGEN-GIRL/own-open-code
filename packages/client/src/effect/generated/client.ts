@@ -53,6 +53,10 @@ import type {
   SessionShellOutput,
   SessionCompactInput,
   SessionCompactOutput,
+  SessionResetCreateInput,
+  SessionResetCreateOutput,
+  SessionResetUndoInput,
+  SessionResetUndoOutput,
   SessionRevertStageInput,
   SessionRevertStageOutput,
   SessionRevertClearInput,
@@ -584,6 +588,8 @@ const EndpointSessionSynthetic = (raw: RawClient["server.session"]) => (input: S
         metadata: input["metadata"],
         delivery: input["delivery"],
         resume: input["resume"],
+        background: input["background"],
+        startedAt: input["startedAt"],
       },
     }).pipe(
       Effect.mapError(mapClientError),
@@ -607,6 +613,21 @@ const EndpointSessionCompact = (raw: RawClient["server.session"]) => (input: Ses
     }).pipe(
       Effect.mapError(mapClientError),
       Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointSessionResetCreate = (raw: RawClient["server.session"]) => (input: SessionResetCreateInput) =>
+  preserveEffect<SessionResetCreateOutput>()(
+    raw["session.reset.create"]({ params: { sessionID: input["sessionID"] }, payload: { id: input["id"] } }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointSessionResetUndo = (raw: RawClient["server.session"]) => (input: SessionResetUndoInput) =>
+  preserveEffect<SessionResetUndoOutput>()(
+    raw["session.reset.undo"]({ params: { sessionID: input["sessionID"], resetID: input["resetID"] } }).pipe(
+      Effect.mapError(mapClientError),
     ),
   )
 
@@ -775,6 +796,7 @@ const adaptGroupSession = (raw: RawClient["server.session"]) => ({
   synthetic: EndpointSessionSynthetic(raw),
   shell: EndpointSessionShell(raw),
   compact: EndpointSessionCompact(raw),
+  reset: { create: EndpointSessionResetCreate(raw), undo: EndpointSessionResetUndo(raw) },
   revert: {
     stage: EndpointSessionRevertStage(raw),
     clear: EndpointSessionRevertClear(raw),

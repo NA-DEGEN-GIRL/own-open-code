@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/remote",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: SSH remote plugin (own.remote): host registry, bootstrap, tunnels, agent mode (04)",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./protocol": "./src/protocol/index.ts",
+    "./broker": "./src/protocol/broker.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" test --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**' --path-ignore-patterns='test/unit/scripts.test.ts' --timings=test/timings.json",
+    "test:quick": "\"$npm_execpath\" test --changed=main --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**' --path-ignore-patterns='test/unit/scripts.test.ts'",
+    "test:e2e": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --timeout=30000 test/e2e test/unit/scripts.test.ts",
+    "bundle": "\"$npm_execpath\" ./script/bundle.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

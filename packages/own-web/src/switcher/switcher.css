@@ -1,0 +1,374 @@
+/*
+ * Switcher module styles (03 §5.2, §6.3, §7.2, §7.4, §9): popover, cost dialog, pill, pending chip, toasts. Own tokens
+ * only; class names carry the `own-sw-` prefix so other modules' kits never collide. No layout reads are needed to
+ * style anything here (R7).
+ */
+
+.own-sw-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--own-text-faint);
+  filter: var(--own-dot-filter);
+}
+.own-sw-dot[data-color="indigo"] {
+  background: var(--own-account-indigo);
+}
+.own-sw-dot[data-color="teal"] {
+  background: var(--own-account-teal);
+}
+.own-sw-dot[data-color="amber"] {
+  background: var(--own-account-amber);
+}
+.own-sw-dot[data-color="rose"] {
+  background: var(--own-account-rose);
+}
+.own-sw-dot[data-color="violet"] {
+  background: var(--own-account-violet);
+}
+.own-sw-dot[data-color="green"] {
+  background: var(--own-account-green);
+}
+.own-sw-dot[data-color="slate"] {
+  background: var(--own-account-slate);
+}
+.own-sw-dot[data-color="orange"] {
+  background: var(--own-account-orange);
+}
+.own-sw-dot-empty {
+  background: transparent;
+  border: 1px dashed var(--own-text-faint);
+}
+
+/* 7.2 mini bar: neutral < 70 %, warn 70–90 %, danger ≥ 90 %; stale is dimmed, never hatched. */
+.own-sw-minibar {
+  display: inline-block;
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--own-meter-track);
+  overflow: hidden;
+  vertical-align: middle;
+}
+.own-sw-minibar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--own-meter-fill);
+}
+.own-sw-minibar[data-tone="warn"] > span {
+  background: var(--own-warn);
+}
+.own-sw-minibar[data-tone="danger"] > span {
+  background: var(--own-danger);
+}
+.own-sw-minibar[data-stale] {
+  opacity: 0.6;
+}
+
+.own-sw-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--own-radius-chip);
+  border: 1px solid var(--own-border);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--own-text-muted);
+  white-space: nowrap;
+  flex: none;
+}
+.own-sw-rec {
+  border-color: var(--own-accent-text);
+  color: var(--own-accent-text);
+  font-weight: 600;
+}
+.own-sw-dashed {
+  border-style: dashed;
+}
+
+.own-sw-link {
+  color: var(--own-accent-text);
+  font-size: 12px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.own-sw-link:hover {
+  text-decoration: underline;
+}
+
+.own-sw-faint {
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+}
+
+.own-sw-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--own-text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.own-sw-icon:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-sw-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--own-border-strong);
+  background: var(--own-bg);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-sw-btn:hover {
+  background: var(--own-bg-hover);
+}
+.own-sw-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.own-sw-primary {
+  background: var(--own-accent);
+  border-color: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-sw-primary:hover {
+  background: var(--own-accent);
+  filter: brightness(1.06);
+}
+
+/* ---- running-on pill (4.4) ---- */
+
+/* The header's title shortens first (03 §4.4 header fit, its shrink factor in styles/shell.css): the pill gives way
+   only once the title is at its minimum, so `모델 @ 계정` keeps the account readable (UX 2026-10-26). The pill itself
+   keeps the default factor: a factor below 1 on the last item that can give lets the flex line absorb only that share
+   of what is left, and the header ran under the work panel (a team main's header with its team pill at 1440 px). */
+.own-sw-pill-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: min(46ch, 48vw);
+}
+.own-sw-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--own-radius-chip);
+  border: 1px solid transparent;
+  background: var(--own-bg-hover);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-sw-pill:hover {
+  border-color: var(--own-border-strong);
+}
+.own-sw-pill-warn {
+  border: 1px dashed var(--own-warn);
+  background: transparent;
+}
+/* `모델 @ 계정` (UX 2026-10-26): the model gives way first (down to 2.5em, then an ellipsis), the account keeps its name
+   up to about 14em, like the composer's button (composer/composer.css). The model's large shrink factor takes all of
+   a shortfall until it is at its minimum; only then does the account shorten, with an ellipsis. It is that large
+   (UX 2026-10-27) because any share at all, even 1/32 px of 42 px the model gave at 1440 px with the sidebar and the
+   work panel open, put an ellipsis on the account (`Claude 구…`). */
+.own-sw-pill-label {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: pre;
+}
+.own-sw-pill-label > [data-part="model"] {
+  flex: 0 100000 auto;
+  min-width: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-sw-pill-label > [data-part="account"] {
+  min-width: 0;
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The crowded header (03 §4.4 header fit): from 640 to 690 px every pill is still on the line and the title is at its
+   minimum (820 px with the window buttons), and the header ran under them: the pill keeps the account, shortened if
+   it must, and leaves the model, still read out, to the composer's button below. Narrower, the 에이전트 방식 pill and
+   the Git chip make room. A handheld header (an unfolded foldable, Fold8 pass) has neither of those, and its composer
+   has no model button: the model stays. */
+@container own-header (min-width: 640px) and (max-width: 689px) {
+  .own-app:not([data-handheld])
+    .own-sw-pill-label:has(> [data-part="account"])
+    > :is([data-part="model"], [data-part="sep"]) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.own-sw-pill-cache {
+  color: var(--own-text-muted);
+}
+.own-sw-pill-next {
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-sw-pill-action {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+@media (max-width: 1099px) {
+  .own-sw-pill-next {
+    display: none;
+  }
+}
+
+/* ---- pending switch chip (4.6) ---- */
+
+.own-sw-chip-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--own-accent-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.own-sw-chip-icon {
+  color: var(--own-accent-text);
+}
+.own-sw-chip-faint {
+  color: var(--own-text-muted);
+}
+.own-sw-chip-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-sw-chip-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- toasts (9) ---- */
+
+.own-sw-toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.own-sw-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--own-text);
+  color: var(--own-bg);
+  font-size: 13px;
+  box-shadow: var(--own-shadow-float);
+  pointer-events: auto;
+}
+/* A phone (MUX 2026-11-06): toasts at the bottom right sat over `전송`. At the top they cover the header for their few
+   seconds (it holds no answer the thumb is reaching for), full width so a Korean sentence wraps instead of running off. */
+@media (max-width: 599px) {
+  .own-sw-toasts {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+    align-items: stretch;
+  }
+  .own-sw-toast {
+    max-width: none;
+  }
+}
+/* A touch screen from 600 px (Fold8 pass, 2026-11-20): an unfolded foldable's toast at the bottom right sat over `전송`
+   as well; it moves to the top right, over the header's end. */
+@media (pointer: coarse) and (min-width: 600px) {
+  .own-sw-toasts {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    bottom: auto;
+  }
+}
+.own-sw-toast[data-tone="danger"] {
+  background: var(--own-danger);
+  color: var(--own-on-danger);
+}
+.own-sw-toast-action,
+.own-sw-toast-close {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.own-sw-toast-action {
+  /* Narrower than the sentence beside it: a long label used to take the whole row and leave the sentence none. Two
+     fifths, not half: the close button and the gaps come off the sentence's share (at 45% the sentence was the
+     narrower one at 375 px). */
+  flex: none;
+  max-width: 40%;
+  font-weight: 650;
+  text-decoration: underline;
+}
+.own-sw-toast-close {
+  display: inline-grid;
+  place-items: center;
+  opacity: 0.8;
+}
+.own-sw-toast[data-tone="danger"] .own-sw-toast-close {
+  opacity: 1;
+}
+
+@media (forced-colors: active) {
+  .own-sw-minibar,
+  .own-sw-pill,
+  .own-sw-tag {
+    border: 1px solid CanvasText;
+  }
+}

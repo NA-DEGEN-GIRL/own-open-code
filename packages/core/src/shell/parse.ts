@@ -262,6 +262,34 @@ export function scan(
   })
 }
 
+// OWN-PATCH(P-019) begin
+/** `scan` for a shell approval, with the commands to ask (`asked`). */
+export const approval = Effect.fnUntraced(function* (command: string, shell: string, cwd: string) {
+  const result = yield* scan(command, shell, cwd)
+  return { directories: result.directories, commands: asked(command, result) }
+})
+
+/**
+ * The commands a shell approval asks for: the scanned ones, and a command the scanner finds no command in that does
+ * more than change directories (`$x = 'hi'`, `X=1`), asked whole so a `shell` deny still refuses it.
+ */
+export function asked(command: string, result: Result) {
+  const whole = command.trim()
+  if (result.commands.length > 0 || whole === "" || onlyDirectoryChanges(whole)) return result.commands
+  return [{ resource: whole, save: whole }]
+}
+
+/** Fails closed: quoting, variables, substitutions or redirections in any statement make it more than a `cd`. */
+const DIRECTORY_CHANGE =
+  /^(?:cd|chdir|popd|pushd|push-location|set-location)(?:[ \t]+(?:[^\s'"`$<>|&;(){}[\]@#,]+|'[^']*'|"[^"`$]*"))*$/i
+
+function onlyDirectoryChanges(command: string) {
+  return command
+    .split(/&&|\|\||;|\r\n|\r|\n/)
+    .every((statement) => statement.trim() === "" || DIRECTORY_CHANGE.test(statement.trim()))
+}
+// OWN-PATCH(P-019) end
+
 function unwrapDirectoryCommand(rawWords: string[], parts: Part[], powershell: boolean) {
   const head = powershell ? rawWords[0]?.toLowerCase() : rawWords[0]
   if (CWD.has(head ?? "")) return parts

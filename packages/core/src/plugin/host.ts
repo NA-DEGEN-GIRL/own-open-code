@@ -38,6 +38,12 @@ import { WorktreeStrategies } from "../worktree/strategies.js"
 import { Generate } from "../generate.js"
 import { Permission } from "../permission.js"
 import { PluginHooks } from "./hooks.js"
+// OWN-PATCH(P-019) begin
+import { ToolFailure } from "@opencode/ai/effect"
+import type { Tool as ToolSchema } from "@opencode/schema/tool"
+import { FileAccess } from "../file-access.js"
+import { ShellParse } from "../shell/parse.js"
+// OWN-PATCH(P-019) end
 import type { Interface } from "../plugin.js"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 
@@ -74,6 +80,43 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
   const generate = yield* Generate.Service
   const generateText = (input: Generate.TextInput) => generate.text(input).pipe(Effect.map((text) => ({ text })))
   const permission = yield* Permission.Service
+  // OWN-PATCH(P-019) begin
+  // This Location's file access, from its instance (as listAgents reads other Locations' services), so the
+  // host keeps its requirements.
+  const located = Effect.suspend(() =>
+    Effect.gen(function* () {
+      return { access: yield* FileAccess.Service }
+    }).pipe(
+      Effect.provide(
+        locations.get(Location.Ref.make({ directory: location.directory, workspaceID: location.workspaceID })),
+      ),
+    ),
+  )
+  const failure = (error: unknown) =>
+    new ToolFailure({ message: error instanceof globalThis.Error ? error.message : String(error), error })
+  const source = (context: ToolSchema.Context) => ({
+    type: "tool" as const,
+    messageID: context.messageID,
+    id: context.id,
+  })
+  const ask = (
+    input: {
+      action: string
+      resources: ReadonlyArray<string>
+      save?: ReadonlyArray<string>
+      metadata?: Record<string, unknown>
+    },
+    context: ToolSchema.Context,
+  ) =>
+    permission.assert({
+      ...input,
+      resources: [...input.resources],
+      ...(input.save ? { save: [...input.save] } : {}),
+      sessionID: context.sessionID,
+      agent: context.agent,
+      source: source(context),
+    })
+  // OWN-PATCH(P-019) end
   const hooks = yield* PluginHooks.Service
   const sessions = yield* Session.Service
   const instructionEntries = yield* InstructionEntry.Service
@@ -454,6 +497,19 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
     },
     permission: {
       hook: (name, callback) => hooks.register("permission", name, callback),
+      // OWN-PATCH(P-019) begin
+      paths: (input, context) =>
+        Effect.gen(function* () {
+          const { access } = yield* located
+          const targets = yield* Effect.forEach(input.paths, (path) => access.resolve({ path, kind: input.kind }))
+          yield* access.authorizeExternal(targets, context)
+          return targets.map((target) => ({
+            absolute: target.absolute,
+            resource: target.resource,
+            external: target.externalDirectory !== undefined,
+          }))
+        }).pipe(Effect.mapError(failure)),
+      // OWN-PATCH(P-019) end
       list: (input) => permission.forSession(input.sessionID),
       get: sessionPermission,
       reply: (input) =>
@@ -506,6 +562,28 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
     storage: storage(kv, pluginID),
     shell: {
       hook: (name, callback) => hooks.register("shell", name, callback),
+      // OWN-PATCH(P-019) begin: core's shell tool `prepare` (tool/plugin/shell.ts), for commands a plugin runs itself
+      authorize: (input, context) =>
+        Effect.gen(function* () {
+          const { access } = yield* located
+          const target = yield* access.resolve({ path: input.cwd, kind: "directory" })
+          const parsed = yield* ShellParse.approval(input.command, input.shell, target.absolute)
+          const directories = yield* Effect.forEach(parsed.directories, (directory) =>
+            access.resolve({ path: FileAccess.resolvePath(target.absolute, directory), kind: "directory" }),
+          )
+          yield* access.authorizeExternal([target, ...directories], context)
+          if (parsed.commands.length > 0)
+            yield* ask(
+              {
+                action: "shell",
+                resources: parsed.commands.map((command) => command.resource),
+                save: parsed.commands.map((command) => command.save),
+              },
+              context,
+            )
+          return { cwd: target.absolute }
+        }).pipe(Effect.mapError(failure)),
+      // OWN-PATCH(P-019) end
     },
     tool: {
       transform: tools.transform,
@@ -615,6 +693,13 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
           .pipe(Effect.map((interrupted) => ({ interrupted }))),
       wait: (input) => sessions.wait(input.sessionID),
       context: (input) => sessions.context(input.sessionID),
+      // OWN-PATCH(P-054) begin: a plugin that needs one message (own-accounts' current user message) reads it by index
+      // instead of decoding the whole context window
+      messages: sessions.messages,
+      // OWN-PATCH(P-054) end
+      // OWN-PATCH(P-061) begin: own's side questions (/btw) stream one model call on the Session's history, unrecorded
+      side: sessions.side,
+      // OWN-PATCH(P-061) end
       instructions: {
         entry: {
           list: Effect.fn(function* (input) {

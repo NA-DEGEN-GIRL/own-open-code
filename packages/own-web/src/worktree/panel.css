@@ -1,0 +1,360 @@
+/* Worktree popover content and dialogs (03 §19.3), lazy with their chunks. own tokens only (13.2). */
+.own-wt-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+.own-wt-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.own-wt-option {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.own-wt-option:hover {
+  background: var(--own-bg-hover);
+}
+.own-wt-option:has(input:focus-visible) {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -2px;
+}
+.own-wt-option input,
+.own-wt-branch input,
+.own-wt-inline input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: var(--own-accent);
+}
+.own-wt-option-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.own-wt-option-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-option input:checked + .own-wt-option-text .own-wt-option-title {
+  font-weight: 600;
+}
+.own-wt-option-hint {
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-wt-path,
+.own-wt-mono {
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-path {
+  display: block;
+  min-width: 0;
+  font-size: 11px;
+}
+.own-wt-count {
+  flex: none;
+  margin-top: 1px;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-wt-heading {
+  margin: 6px 8px 2px;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.own-wt-existing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.own-wt-empty {
+  margin: 0;
+  padding: 4px 8px 6px;
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+.own-wt-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 6px 31px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  /* A light tint of the text color reads as "inside" on the raised popover in both schemes. */
+  background: color-mix(in srgb, var(--own-text) 4%, transparent);
+}
+.own-wt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.own-wt-legend {
+  padding: 0;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.own-wt-input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 6px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+}
+.own-wt-input:focus-visible {
+  border-color: var(--own-focus);
+  outline: 1px solid var(--own-focus);
+}
+.own-wt-input.own-wt-mono {
+  font-family: var(--own-font-mono);
+}
+.own-wt-branches {
+  display: flex;
+  flex-direction: column;
+  max-height: 132px;
+  overflow-y: auto;
+}
+.own-wt-branch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  padding: 0 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.own-wt-branch:hover {
+  background: var(--own-bg-hover);
+}
+.own-wt-branch input {
+  margin: 0;
+}
+.own-wt-branch-name {
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-script {
+  display: flex;
+  gap: 6px;
+}
+.own-wt-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 4px 0;
+  border-top: 1px solid var(--own-border);
+}
+.own-wt-link {
+  flex: none;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-wt-link:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-wt-link:focus-visible,
+.own-wt-btn:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-wt-link:disabled {
+  color: var(--own-text-faint);
+  cursor: default;
+}
+.own-wt-btn {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-wt-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-wt-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.own-wt-btn[data-primary] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-wt-btn[data-danger] {
+  border-color: var(--own-danger);
+  background: var(--own-danger);
+  color: var(--own-on-danger);
+}
+
+/* Dialogs (move, cleanup): same frame as the revert dialog (18.7). */
+.own-wt-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--own-scrim);
+}
+.own-wt-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 18px 20px 16px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 13px;
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+}
+.own-wt-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.own-wt-body {
+  margin: 0;
+  color: var(--own-text-muted);
+}
+.own-wt-current {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-here {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+.own-wt-dialog-list {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  padding: 2px;
+}
+.own-wt-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 14px;
+  cursor: pointer;
+}
+.own-wt-inline input {
+  margin: 0;
+}
+.own-wt-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  list-style: none;
+}
+.own-wt-notes li {
+  overflow-wrap: anywhere;
+}
+.own-wt-notes li.own-wt-mono {
+  white-space: normal;
+}
+.own-wt-notes li[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-wt-notes li[data-tone="danger"] {
+  color: var(--own-danger);
+}
+.own-wt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Cleanup guard (06 §10.4 #5): nested repositories or the biggest ignored entries, path left and kind/size right. */
+.own-wt-guard-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  font-size: 12px;
+  list-style: none;
+}
+.own-wt-guard-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding: 2px 10px;
+}
+.own-wt-guard-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-guard-meta {
+  flex: none;
+  color: var(--own-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.own-wt-guard-more {
+  color: var(--own-text-faint);
+}

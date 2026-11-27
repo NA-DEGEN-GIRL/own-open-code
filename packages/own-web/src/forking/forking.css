@@ -1,0 +1,182 @@
+/* Fork dialog (03 §19.12). own tokens only (13.2); both color schemes come from the tokens. */
+.own-fk-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--own-scrim);
+}
+.own-fk-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+  padding: 18px 20px 16px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  transform: translate(-50%, -50%);
+}
+.own-fk-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.own-fk-body {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.own-fk-search {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+}
+.own-fk-search:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-fk-list {
+  flex: 1 1 auto;
+  min-height: 80px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+.own-fk-option {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  contain: content;
+}
+.own-fk-option[aria-selected="true"] {
+  background: var(--own-accent-soft);
+}
+.own-fk-option[aria-disabled="true"] {
+  color: var(--own-text-muted);
+  cursor: default;
+}
+.own-fk-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-fk-meta {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+}
+.own-fk-tag {
+  padding: 0 6px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+}
+.own-fk-state {
+  margin: 8px 2px;
+  color: var(--own-text-muted);
+  font-size: 13px;
+}
+.own-fk-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  list-style: none;
+}
+.own-fk-notes li[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-fk-cache[data-state="warm"] {
+  color: var(--own-ok);
+}
+.own-fk-keys {
+  margin: 0;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-fk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.own-fk-grow {
+  flex: 1;
+}
+.own-fk-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-fk-btn[data-primary] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-fk-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.own-fk-btn:focus-visible,
+.own-fk-link:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}
+.own-fk-link {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-fk-link:hover {
+  text-decoration: underline;
+}
+@media (pointer: coarse) {
+  .own-fk-option {
+    min-height: 44px;
+  }
+  .own-fk-btn {
+    height: 44px;
+  }
+}
+@media (forced-colors: active) {
+  .own-fk-option[aria-selected="true"] {
+    outline: 1px solid Highlight;
+  }
+}

@@ -1,0 +1,48 @@
+import { describe, test } from "node:test"
+import assert from "node:assert/strict"
+import { parseCsv } from "../src/csv.js"
+import { addBusinessDays } from "../src/dates.js"
+import { LRU } from "../src/lru.js"
+
+describe("parseCsv", () => {
+  test("plain rows", () => assert.deepEqual(parseCsv("a,b\nc,d"), [["a", "b"], ["c", "d"]]))
+  test("quoted comma", () => assert.deepEqual(parseCsv('a,"b,c"'), [["a", "b,c"]]))
+  test("doubled quotes inside a quoted field", () => assert.deepEqual(parseCsv('"he said ""hi"""'), [['he said "hi"']]))
+  test("CRLF rows", () => assert.deepEqual(parseCsv("a,b\r\nc,d"), [["a", "b"], ["c", "d"]]))
+  test("a trailing newline adds no row", () => assert.deepEqual(parseCsv("a,b\n"), [["a", "b"]]))
+  test("empty fields", () => assert.deepEqual(parseCsv("a,,c"), [["a", "", "c"]]))
+  test("empty input", () => assert.deepEqual(parseCsv(""), []))
+  test("newline inside quotes", () => assert.deepEqual(parseCsv('"x\ny",z'), [["x\ny", "z"]]))
+})
+
+describe("addBusinessDays", () => {
+  test("Wednesday + 2 is Friday", () => assert.equal(addBusinessDays("2026-10-14", 2), "2026-10-16"))
+  test("Friday + 1 is Monday", () => assert.equal(addBusinessDays("2026-10-16", 1), "2026-10-19"))
+  test("Saturday + 1 is Monday", () => assert.equal(addBusinessDays("2026-10-17", 1), "2026-10-19"))
+  test("Friday + 5 is the next Friday", () => assert.equal(addBusinessDays("2026-10-16", 5), "2026-10-23"))
+  test("zero days is the same date", () => assert.equal(addBusinessDays("2026-10-14", 0), "2026-10-14"))
+  test("a negative count is a RangeError", () => assert.throws(() => addBusinessDays("2026-10-14", -1), RangeError))
+})
+
+describe("LRU", () => {
+  test("reading a key keeps it", () => {
+    const cache = new LRU(2)
+    cache.set("a", 1)
+    cache.set("b", 2)
+    assert.equal(cache.get("a"), 1)
+    cache.set("c", 3)
+    assert.equal(cache.get("b"), undefined)
+    assert.equal(cache.get("a"), 1)
+    assert.equal(cache.get("c"), 3)
+  })
+  test("updating a key keeps it", () => {
+    const cache = new LRU(2)
+    cache.set("a", 1)
+    cache.set("b", 2)
+    cache.set("a", 10)
+    cache.set("c", 3)
+    assert.equal(cache.get("b"), undefined)
+    assert.equal(cache.get("a"), 10)
+    assert.equal(cache.size, 2)
+  })
+})

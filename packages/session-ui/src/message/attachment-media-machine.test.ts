@@ -169,6 +169,27 @@ describe("transitionAttachmentMedia", () => {
     expect(viewAttachmentMedia(INITIAL_ATTACHMENT_MEDIA_STATE, peeked).src).toBe("blob:cached")
   })
 
+  // OWN-PATCH(P-057) begin
+  test("inline bytes and URI sources ask peekMedia first", () => {
+    const inline: PromptAttachment = { mime: "image/png", source: { type: "inline" }, data: "AAAA" }
+    const link: PromptAttachment = {
+      mime: "image/png",
+      source: { type: "uri", uri: "https://x.test/a.png" },
+      data: "AAAA",
+    }
+    const peekMedia = (uri: string) => (uri.startsWith("data:") ? "blob:inline" : undefined)
+
+    expect(resolveAttachmentMediaTarget(inline, { hasReader: false, peekMedia })).toEqual({
+      kind: "direct",
+      src: "blob:inline",
+    })
+    expect(resolveAttachmentMediaTarget(link, { hasReader: true, peekMedia })).toEqual({
+      kind: "direct",
+      src: "https://x.test/a.png",
+    })
+  })
+  // OWN-PATCH(P-057) end
+
   test("leaving a read for a direct URL or unmounting cancels it, and nothing settles after", () => {
     const loading = transitionAttachmentMedia(INITIAL_ATTACHMENT_MEDIA_STATE, {
       type: "target.synced",

@@ -45,6 +45,37 @@ describe("Command", () => {
     }),
   )
 
+  // OWN-PATCH(P-038) begin
+  it.effect("a later transform wraps a command an earlier one added", () =>
+    Effect.gen(function* () {
+      const command = yield* Command.Service
+      const calls: string[] = []
+      yield* command.transform((editor) => {
+        editor.add({ name: "goal", description: "core", execute: () => Effect.sync(() => calls.push("core")) })
+      })
+      yield* command.transform((editor) => {
+        const inner = editor.get("goal")
+        expect(editor.get("missing")).toBeUndefined()
+        editor.add({
+          name: "goal",
+          description: inner?.description,
+          execute: (input) =>
+            input.prompt.text === "mine" ? Effect.sync(() => calls.push("wrapper")) : (inner?.execute(input) ?? Effect.void),
+        })
+      })
+      const invocation = (text: string) => ({
+        sessionID: Session.ID.make("ses_test"),
+        prompt: { text },
+        delivery: "steer" as const,
+      })
+      yield* command.execute({ name: "goal", invocation: invocation("mine") })
+      yield* command.execute({ name: "goal", invocation: invocation("other") })
+      expect(calls).toEqual(["wrapper", "core"])
+      expect(yield* command.list()).toEqual([Command.Info.make({ name: "goal", description: "core" })])
+    }),
+  )
+  // OWN-PATCH(P-038) end
+
   it.effect("returns callback error messages without stack traces", () =>
     Effect.gen(function* () {
       const command = yield* Command.Service

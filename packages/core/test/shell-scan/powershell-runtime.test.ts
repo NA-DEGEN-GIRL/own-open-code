@@ -546,7 +546,9 @@ test.skipIf(!pwsh)(
       stdin: new Blob([JSON.stringify(fixtures)]),
       stdout: "pipe",
       stderr: "pipe",
-      timeout: 45_000,
+      // OWN-PATCH(P-048) begin: one pwsh parses and runs every fixture; 19-31 s alone, past 45 s beside other suites.
+      timeout: 150_000,
+      // OWN-PATCH(P-048) end
     })
     const [output, error, code] = await Promise.all([
       new Response(process.stdout).text(),
@@ -600,5 +602,7 @@ test.skipIf(!pwsh)(
     expect(executed).toBeGreaterThan(100)
     expect(failures).toEqual([])
   },
-  60_000,
+  // OWN-PATCH(P-048) begin
+  180_000,
+  // OWN-PATCH(P-048) end
 )

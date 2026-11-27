@@ -1,0 +1,102 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "license": "MIT",
+  "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "describe": "dsh-v0.2.1-rc.2",
+  "date": "2026-10-17T15:22:43+08:00",
+  "release": "dsh 0.2.1-rc.2",
+  "files": {
+    "LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+    "packages/core/system-prompt/src/index.ts": "9e254cddc9ef00072f9205950405ba8650bc43c8809fba6162da93253efc7f71",
+    "packages/core/agent-loop/src/agent.ts": "4add12f5c22bb1b8cf1dbc239c9b09fa3351feff2c936cb2b8900036468bd01b",
+    "packages/core/agent-loop/src/index.ts": "3ea0262656c8ddcaa3be315c150bdc2af09371031c3c471d4ded511e21c6e86b",
+    "packages/core/agent-loop/src/runtime-context.ts": "4944ee5cbbc24f21c27f1f0be54af7601da280b7fd2354e48fcc0ef6beeea839",
+    "packages/core/tools/src/schema.ts": "096f679e38626cc52536b8ecb9eef4c551c1a8a095c8e84f7a3b6156ee533653",
+    "packages/core/tools/src/json-schema.ts": "13deffdfd34539e23706b0fde235991da45b2f07c5c18dbbf3ca734c1da0c788",
+    "packages/core/tools/src/index.ts": "398bcdeb221e450d088510830b77d99a513e65ab31e40ade71688a19cdf5e6aa",
+    "packages/bundle/base/cordis.patch.yml": "a2cc57868a4d016609801e28781262515483dde29b41c2742d9a3b27a6f52f77",
+    "packages/bundle/web-app/cordis.patch.yml": "3e1f923309612ed8551141127409d662e78758e2d0d125218a3f70514417e472",
+    "packages/bundle/web-app/presets/standard.patch.yml": "0d398d2a6872a73a106cb3bd19303ecccf1637e1fcad4d0bf9d8a72d2c2c68f5",
+    "packages/preset/persona/src/index.ts": "16dc065551de44f581868b029ef1883aca8b990aa724283466f26edfb736db76",
+    "packages/shell/tool-pwsh/src/index.ts": "be1caac01fc0cb383969d56382d8aa34e63d708acc4d30b6fb62e88dd33e4c12",
+    "packages/shell/tool-pwsh/src/render.ts": "1ecbb4aef0861427f24cd853753dee3d1119c09684bc5af616fffeb26746aaac",
+    "packages/shell/tool-bash/src/index.ts": "de24abe9436d4ee4c9d9773538da58621d1d028abac78a53ad3b9e47a5fca7fd",
+    "packages/shell/tool-bash/src/render.ts": "bfb17540c1902fc0a996ea3833f2a1df18a13cf0c764d1a3f50d11d3f733aedb",
+    "packages/shell/pwsh-local/src/index.ts": "feebf120ba9c27590b138da54fbc4124bbf79a1a63b56008199676c30239f5a4",
+    "packages/shell/pwsh-local/src/resolve.ts": "5c832a5a3cd944735dca27e608b40a1fd5e259ed5629b8c92d0ae899157fcf37",
+    "packages/shell/bash-local/src/index.ts": "03f7d8c0a6162aec6c71c719c937ab8b6b7fa011b7fcdc386e513c4d0aeab353",
+    "packages/shell/shell-env/src/index.ts": "69923f92f1a2e0b5fff75825d1f848b076495ffd056950b945cb9309be829a50",
+    "packages/shell/shell/src/render.ts": "e3c156942bce5b743500283c44a06398ad4640c879552e4290f91ac218b9e908",
+    "packages/subprocess/subprocess/src/index.ts": "19e3fde571d0cd1f76e95696477a7d38677529aaf51b07c429965f2e4330065f",
+    "packages/subprocess/subprocess-local/src/output.ts": "1151a91d7bc31ffcd6ea3db85af2ef8c19ac4bc2d3a41654da9feac29cae7433",
+    "packages/util/timeout/src/index.ts": "cadc1aea5b85854f59ca68cee8b7d08c4ebdd378d1c8e081e0031423c262e6b1",
+    "packages/fs/tool-fs/src/read.ts": "808d3018dbfb925dc223da25d5a7c7d30fd405b4aec121e895a35f374fee319d",
+    "packages/fs/tool-fs/src/read-render.ts": "72bcf4a70fd3e0908d4aa3869e0fbd6ee63b05ad790af65951af0c5db9edba84",
+    "packages/fs/tool-fs/src/write.ts": "87287ca7774af83f8c4841a78bfcfe213c684d172648c7b108a0539d5c674d47",
+    "packages/fs/tool-fs/src/edit.ts": "2602b2482f5234ab26cddf656cbe0020b53dc69a36bb8a835b57a55ed23a2055",
+    "packages/fs/tool-fs/src/error.ts": "3513fda3e34b4802ed6c2bda384bbd65f3d999a90df0cde52511d01942af15cf",
+    "packages/fs/fs-local/src/index.ts": "77cdf3a1a259c9e24fef28f42f937a6b5ce1ad6d692fbc8dab148925cc4f1f28",
+    "packages/fs/fs-local/src/fsio.ts": "d7cc70e0a8b06981b94e1ca64963f956f939892c4ea0399e282be5427c42778f",
+    "packages/fs/fs-observation-policy/src/index.ts": "def6cb5ed29c6d9ba7bccd3a9936349ea1fc1b6d439ca709a077ae88794afc06",
+    "packages/fs/tool-fs-search/src/glob.ts": "37c85bc8f63e925cdab8c63e11e28b8420cbb4560a03efb87cf4a2a45b6dae6e",
+    "packages/fs/tool-fs-search/src/grep.ts": "ad5dc6b5b9a41d8290172aa8d8dd7d4ddc66aa6cf6dfceba7d130666fd29a019",
+    "packages/fs/tool-fs-search/src/search-core.ts": "d642c99286faff7cb6e70a24b0c4743184b3f83e8c6620bc9537c426987b198f",
+    "packages/spill/spill-local/src/index.ts": "f275c81bdc8cd95717a0c6296e75af5164fa8b94222b3fffcda3defad867ee4f",
+    "packages/spill/spill-local/src/store.ts": "4c02d76b118bb5b660850500d37a596cb8f6d3887311c21dc609157b6f1c7d50",
+    "packages/todo/tool-todo/src/index.ts": "74eed074d1b056cc0a029f9b8343bc9337c14f04696c528daaedcbebe9842a17",
+    "packages/guard/repeat-tool-reminder/src/index.ts": "1e917986fe9c5187d8f0fa11154ab2bf3b7c1d30db991540f4d1e62a2c59236d",
+    "packages/context/agent-instructions/src/render.ts": "98499e3e1b846dab4ca7158ad262e8067102464d51933948057918b944262cd3",
+    "packages/context/time-context/src/index.ts": "0f16394ee0b010b888498216728efc86e06b3e9eec282eed036b70b5416f8d72",
+    "packages/context/time-context/src/timestamp.ts": "e494153362922c97b872445b1059db9239eaea9b6538f6a952c6e0d13b99fd01",
+    "packages/context/time-context/src/request-zone.ts": "9efaba0ec8861c7b6cdee6f1069ab20e1a58e67e69d8e0cccfbb7418617fc183",
+    "packages/session/working-directory/src/index.ts": "5d8b57ba56fe96f73713f66805342ca5690df50fb530b41846abc7d3d4447fbd",
+    "packages/interaction/user-approval/src/index.ts": "6bba9feef5257063aa41d89ddd51c31a1a474b5920c256c65d5ec2857cff1ff6",
+    "packages/sandbox/sandbox-policy/src/index.ts": "6fce58e5bf63475f761871389bbf01043fba859f22e44c805522c39afbff32d6",
+    "packages/skill/tool-skill/src/index.ts": "29f6cf10c7247379298d9a96a53aef9cb2b21dcf7266f57ab147860b27d7cc44",
+    "packages/skill/skill/src/index.ts": "af4fad67fb086c3f5c93aed4604830718b4535e7e59a60d680404b07ea08477c",
+    "packages/llm/llm/src/error.ts": "cd8657420bb84060ee45b1e72fa668df26b090532afd8afd2a96da983a74f792",
+    "packages/llm/llm-deepseek/src/transport.ts": "7d1f6ed8fe861ee71ba2d0c6a2a9e8512ddc1b6dc17d43a8795ab520a38746b6",
+    "packages/llm/llm-deepseek/src/serialize.ts": "2a9f9ae77bde951bf9dec21ceec36d87dbeb74e4a9d3f784496f19b55ccbe0a1",
+    "packages/llm/llm-deepseek/src/defaults.ts": "f0c753f0d4188f615182d7d25eabed7bc24021ece255524ac5cb8089718b0520",
+    "packages/compaction/compaction-basic/src/config.ts": "4972edc6447dcff87eab54c3a9c5984171238aa06aa0eb34ffde4bfac4ce1275",
+    "snapshots/session/pwsh-tool-turn/system-prompt.expected.md": "70f73f70e3f2b07eed9eb52c05c83dc67d2540cc79d2ab029a52838db0a54474",
+    "snapshots/session/pwsh-tool-turn/tool-schemas.expected.json": "b7f68f66aad4f3d19973e021a7e84085a35b6704dc44c43064065eb1342fe6f3",
+    "snapshots/web/fresh-round-trip/system-prompt.expected.md": "84787fb102a6ecc1587e8238f0400e9a3c70102fc1693100c22a1a23b621f27b",
+    "snapshots/web/fresh-round-trip/session.v4.jsonl": "b00f818c9cd6500b83a1e7e4259c89eb3ea6aa79d7400c81f6beaaee44b084b1",
+    "snapshots/session/agent-instructions/session.v4.jsonl": "eb456c2915d0d356ffee2ca0d11f6e479a453d9c3269d0a3b8cfdac8f518feb9",
+    "snapshots/session/office-skills/session.v4.jsonl": "c12d9fba0e69438732348d890ebc3335753799ed7b67a6d074c72c76fccef9c5"
+  },
+  "backports": [
+    {
+      "commit": "f3803c96974ad4a94195fb97e5c637e9c2a3afe3",
+      "describe": "dsh-v0.2.2-alpha.2",
+      "date": "2026-10-28T02:17:58+08:00",
+      "fixes": {
+        "home prefix (fs-local expandHomePrefix)": ["ae0dfd1003", "32004176bf"],
+        "glob folder pruning": ["ef284800b9", "e8bdbbe823", "b1c8c9bbbc", "f9ef03834a"],
+        "grep empty include": ["080a2c60b3", "4e4badb8f3"]
+      },
+      "files": {
+        "packages/fs/fs-local/src/fsio.ts": "afbc5cb2d6e9b98b564b03724aeee79f63b2672c10be5a2ac3787a7665946244",
+        "packages/fs/fs-local/src/index.ts": "12ea487a15f16b22a5797e48d5bba62fb47afc4ef123cbb498201cc5e047d06a",
+        "packages/fs/fs-local/tests/filesystem.spec.ts": "137faf455a5972e62773cc08160f87eb71c2747764e031604a8d706e0077acda",
+        "packages/fs/tool-fs-search/src/glob.ts": "ba59f2702d828d6dfc0ff27b73897d938ae3c6a9c06e4616cdafb07bc90f1e2b",
+        "packages/fs/tool-fs-search/src/grep.ts": "797505064759c7dd49052a7fa56165c04021d2b12ff2993d0c31604a004d84d0",
+        "packages/fs/tool-fs-search/tests/integration.spec.ts": "8e1205acf2ab4dead5560d63fa1b5be3d8f90f7e8c97efdff1c868f465708a6f",
+        "packages/fs/tool-fs-search/tests/tools.spec.ts": "9b4b1a91e35c3dd52515e254c6429c53251603cdec767030112020d23b9f476a"
+      }
+    },
+    {
+      "commit": "66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db",
+      "describe": "dsh-v0.2.2-rc.1",
+      "date": "2026-11-04T15:54:45+08:00",
+      "fixes": {
+        "write-failure texts (fsio writeIoError)": ["9b154c04a6", "8f798da97d", "7fab3cf976"]
+      },
+      "files": {
+        "packages/fs/fs-local/src/fsio.ts": "f349a91cb11fbf7da5cb3f7fca44bdace72a2a72a1527ec784f790c711960b41",
+        "packages/fs/fs-local/tests/fsio.spec.ts": "601093b239b7057c0966c906c265b8667679e463225b3211b247157701f7bc5b"
+      }
+    }
+  ]
+}

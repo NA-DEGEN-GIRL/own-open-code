@@ -1,0 +1,61 @@
+/* Mention chips and the list anchor (first chunk, small). `own-mc-` / `own-sg-anchor`; tokens only. */
+.own-sg-anchor {
+  position: relative;
+  height: 0;
+}
+
+.own-mc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px 0;
+  list-style: none;
+}
+
+.own-mc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg-subtle);
+  color: var(--own-text);
+  font-size: 12px;
+}
+
+.own-mc-icon {
+  color: var(--own-text-faint);
+}
+
+.own-mc-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--own-font-mono);
+}
+
+.own-mc-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--own-text-faint);
+  font-size: 11px;
+  cursor: pointer;
+}
+.own-mc-remove:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+.own-mc-remove:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}

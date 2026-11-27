@@ -47,6 +47,10 @@ import type {
   SessionShellOutput,
   SessionCompactInput,
   SessionCompactOutput,
+  SessionResetCreateInput,
+  SessionResetCreateOutput,
+  SessionResetUndoInput,
+  SessionResetUndoOutput,
   SessionRevertStageInput,
   SessionRevertStageOutput,
   SessionRevertClearInput,
@@ -806,6 +810,8 @@ export function make(options: ClientOptions) {
               metadata: input["metadata"],
               delivery: input["delivery"],
               resume: input["resume"],
+              background: input["background"],
+              startedAt: input["startedAt"],
             },
             successStatus: 200,
             declaredStatuses: [400, 401, 404, 409],
@@ -837,6 +843,31 @@ export function make(options: ClientOptions) {
           },
           requestOptions,
         ).then((value) => value.data),
+      reset: {
+        create: (input: SessionResetCreateInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: SessionResetCreateOutput }>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/reset`,
+              body: { id: input["id"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        undo: (input: SessionResetUndoInput, requestOptions?: RequestOptions) =>
+          request<SessionResetUndoOutput>(
+            {
+              method: "DELETE",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/reset/${encodeURIComponent(input.resetID)}`,
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: true,
+            },
+            requestOptions,
+          ),
+      },
       revert: {
         stage: (input: SessionRevertStageInput, requestOptions?: RequestOptions) =>
           request<{ readonly data: SessionRevertStageOutput }>(

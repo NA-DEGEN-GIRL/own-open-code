@@ -10,6 +10,14 @@ import type { SessionMessage } from "@opencode/schema/session-message"
 import type { TokenUsage } from "@opencode/schema/token-usage"
 import type { JsonSchema, Types } from "effect"
 import type { ModelHooks } from "./registration.js"
+// OWN-PATCH(P-054) begin
+import type { SessionMessagesInput } from "../effect/session.js"
+export type { SessionMessagesInput }
+// OWN-PATCH(P-054) end
+// OWN-PATCH(P-061) begin
+import type { SessionSideInput, SessionSideResult } from "../effect/session.js"
+export type { SessionSideInput, SessionSideResult }
+// OWN-PATCH(P-061) end
 
 export interface SessionPrompt {
   readonly sessionID: Session.ID
@@ -35,6 +43,13 @@ export interface SessionRequest {
   system: Array<SystemPart>
   messages: Array<SessionRequestMessage>
   options: SessionRequestOptions
+  // OWN-PATCH(P-032) begin
+  /**
+   * Primary and compaction requests: core's default `options.maxTokens` without its 256,000 cap, the model's output
+   * limit fitted to the room the prompt leaves. A hook that applies another cap sends `min(outputCeiling, cap)`.
+   */
+  readonly outputCeiling?: number
+  // OWN-PATCH(P-032) end
 }
 
 export interface SessionContext extends SessionRequest {
@@ -53,9 +68,23 @@ export interface SessionCompactionResult {
 export interface SessionCompaction extends SessionContext {
   /** Set to use this compaction and skip the model request. */
   result?: SessionCompactionResult
+  // OWN-PATCH(P-034) begin
+  /** Merged into the checkpoint's metadata (the Effect type's P-025 field), which later hooks of this run read too. */
+  metadata?: Record<string, unknown>
+  /** See the Effect type: the whole history first, so the summary reads the session's prompt cache. */
+  prefix?: "full"
+  readonly kept?: { readonly messageID: SessionMessage.ID }
+  /** See the Effect type: ends this compaction before any request, as cancelled, with this message. */
+  cancel?: string
+  // OWN-PATCH(P-034) end
 }
 
-export interface SessionGenerate extends SessionContext {}
+export interface SessionGenerate extends SessionContext {
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
+}
 
 export interface SessionTitle extends SessionRequest {
   /** Set to use this title and skip the model request. */
@@ -86,6 +115,10 @@ export interface SessionModelRequest {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   baseURL?: string
   headers: Record<string, string>
 }
@@ -95,6 +128,10 @@ export interface SessionHttpRequest {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   request: Request
 }
 
@@ -103,6 +140,10 @@ export interface SessionHttpResponse {
   readonly agent: Agent.ID
   readonly model: Model.Ref
   readonly kind: SessionRequestKind
+  // OWN-PATCH(P-061) begin
+  /** A side question (`ctx.session.side`): a `generate` request that should look like the next primary one. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
   readonly request: Request
   response: Response
 }
@@ -242,4 +283,12 @@ export type SessionDomain = Pick<
 > &
   Pick<ExperimentalSessionApi, "wait" | "instructions"> & {
     readonly hook: ModelHooks<SessionHooks>
+    // OWN-PATCH(P-054) begin
+    /** One indexed page of a Session's messages, read like `GET /api/session/:id/message`. */
+    readonly messages: (input: SessionMessagesInput) => Promise<ReadonlyArray<SessionMessage.Info>>
+    // OWN-PATCH(P-054) end
+    // OWN-PATCH(P-061) begin
+    /** `ctx.session.side` of the Effect API; `signal` ends the call. */
+    readonly side: (input: SessionSideInput, options?: { readonly signal?: AbortSignal }) => Promise<SessionSideResult>
+    // OWN-PATCH(P-061) end
   }

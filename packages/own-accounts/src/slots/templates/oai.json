@@ -1,0 +1,6100 @@
+{
+  "kind": "oai",
+  "sourceProvider": "openai",
+  "source": "bundled",
+  "capturedAt": "2026-10-29T21:33:01Z",
+  "models": [
+    {
+      "id": "gpt-5.6-cyber",
+      "modelID": "gpt-5.6-cyber",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.6 Cyber",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1786060800000
+      },
+      "cost": [
+        {
+          "input": 12.5,
+          "output": 75,
+          "cache": {
+            "read": 1.25,
+            "write": 15.625
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6",
+      "modelID": "gpt-5.6",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-fast",
+      "modelID": "gpt-5.6",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 8,
+          "output": 40,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-pro",
+      "modelID": "gpt-5.6",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.5",
+      "modelID": "gpt-5.5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.5",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1776902400000
+      },
+      "cost": [
+        {
+          "input": 5,
+          "output": 30,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 10,
+          "output": 45,
+          "cache": {
+            "read": 1,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.5-fast",
+      "modelID": "gpt-5.5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.5 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1776902400000
+      },
+      "cost": [
+        {
+          "input": 12.5,
+          "output": 75,
+          "cache": {
+            "read": 1.25,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 10,
+          "output": 45,
+          "cache": {
+            "read": 1,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.1",
+      "modelID": "gpt-5.1",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.1",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1762992000000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 10,
+          "cache": {
+            "read": 0.125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.1-fast",
+      "modelID": "gpt-5.1",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.1 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1762992000000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 20,
+          "cache": {
+            "read": 0.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.1-flex",
+      "modelID": "gpt-5.1",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.1 Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1762992000000
+      },
+      "cost": [
+        {
+          "input": 0.625,
+          "output": 5,
+          "cache": {
+            "read": 0.0625,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "modelID": "gpt-5.4-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5.4 mini",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773705600000
+      },
+      "cost": [
+        {
+          "input": 0.75,
+          "output": 4.5,
+          "cache": {
+            "read": 0.075,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-mini-fast",
+      "modelID": "gpt-5.4-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5.4 mini Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773705600000
+      },
+      "cost": [
+        {
+          "input": 1.5,
+          "output": 9,
+          "cache": {
+            "read": 0.15,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-mini-flex",
+      "modelID": "gpt-5.4-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5.4 mini Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773705600000
+      },
+      "cost": [
+        {
+          "input": 0.375,
+          "output": 2.25,
+          "cache": {
+            "read": 0.0375,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-daybreak-red-latest",
+      "modelID": "gpt-daybreak-red-latest",
+      "type": "chat",
+      "family": "gpt",
+      "name": "Daybreak Red",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1786060800000
+      },
+      "cost": [
+        {
+          "input": 12.5,
+          "output": 75,
+          "cache": {
+            "read": 1.25,
+            "write": 15.625
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o",
+      "modelID": "gpt-4o",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4o",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1715558400000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 10,
+          "cache": {
+            "read": 1.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o-fast",
+      "modelID": "gpt-4o",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4o Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1715558400000
+      },
+      "cost": [
+        {
+          "input": 4.25,
+          "output": 17,
+          "cache": {
+            "read": 2.125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-luna",
+      "modelID": "gpt-6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-6 Luna",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 0.1,
+          "output": 0.5,
+          "cache": {
+            "read": 0.01,
+            "write": 0.125
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.2,
+          "output": 0.75,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-luna-fast",
+      "modelID": "gpt-6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-6 Luna Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 0.2,
+          "output": 1,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.2,
+          "output": 0.75,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-luna-pro",
+      "modelID": "gpt-6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-6 Luna Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 0.1,
+          "output": 0.5,
+          "cache": {
+            "read": 0.01,
+            "write": 0.125
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.2,
+          "output": 0.75,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "o3",
+      "modelID": "o3",
+      "type": "chat",
+      "family": "o",
+      "name": "o3",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1744761600000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 8,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 200000,
+        "output": 100000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "o3-fast",
+      "modelID": "o3",
+      "type": "chat",
+      "family": "o",
+      "name": "o3 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1744761600000
+      },
+      "cost": [
+        {
+          "input": 3.5,
+          "output": 14,
+          "cache": {
+            "read": 0.875,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 200000,
+        "output": 100000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "o3-flex",
+      "modelID": "o3",
+      "type": "chat",
+      "family": "o",
+      "name": "o3 Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1744761600000
+      },
+      "cost": [
+        {
+          "input": 1,
+          "output": 4,
+          "cache": {
+            "read": 0.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 200000,
+        "output": 100000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "chat-latest",
+      "modelID": "chat-latest",
+      "type": "chat",
+      "name": "Chat Latest",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [],
+      "time": {
+        "released": 1777939200000
+      },
+      "cost": [
+        {
+          "input": 5,
+          "output": 30,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "modelID": "gpt-5.6-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-5.6 Terra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 12,
+          "cache": {
+            "read": 0.2,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 18,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-terra-fast",
+      "modelID": "gpt-5.6-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-5.6 Terra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 24,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 18,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-terra-pro",
+      "modelID": "gpt-5.6-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-5.6 Terra Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 12,
+          "cache": {
+            "read": 0.2,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 18,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "modelID": "gpt-6.1-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-6.1 Terra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1792972800000
+      },
+      "cost": [
+        {
+          "input": 1,
+          "output": 5,
+          "cache": {
+            "read": 0.05,
+            "write": 1.25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 2,
+          "output": 7.5,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-terra-fast",
+      "modelID": "gpt-6.1-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-6.1 Terra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1792972800000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 10,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 2,
+          "output": 7.5,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-terra-pro",
+      "modelID": "gpt-6.1-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-6.1 Terra Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1792972800000
+      },
+      "cost": [
+        {
+          "input": 1,
+          "output": 5,
+          "cache": {
+            "read": 0.05,
+            "write": 1.25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 2,
+          "output": 7.5,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "modelID": "gpt-5.4-nano",
+      "type": "chat",
+      "family": "gpt-nano",
+      "name": "GPT-5.4 nano",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773705600000
+      },
+      "cost": [
+        {
+          "input": 0.2,
+          "output": 1.25,
+          "cache": {
+            "read": 0.02,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-nano-flex",
+      "modelID": "gpt-5.4-nano",
+      "type": "chat",
+      "family": "gpt-nano",
+      "name": "GPT-5.4 nano Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773705600000
+      },
+      "cost": [
+        {
+          "input": 0.1,
+          "output": 0.625,
+          "cache": {
+            "read": 0.01,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "modelID": "gpt-4o-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-4o mini",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1721260800000
+      },
+      "cost": [
+        {
+          "input": 0.15,
+          "output": 0.6,
+          "cache": {
+            "read": 0.075,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o-mini-fast",
+      "modelID": "gpt-4o-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-4o mini Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1721260800000
+      },
+      "cost": [
+        {
+          "input": 0.25,
+          "output": 1,
+          "cache": {
+            "read": 0.125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 10,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.2,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol-fast",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.2,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.2,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol-pro",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 10,
+          "cache": {
+            "read": 0.1,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.2,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol-ultrafast",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol Ultrafast",
+      "body": {
+        "service_tier": "ultrafast"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [
+        {
+          "input": 12,
+          "output": 60,
+          "cache": {
+            "read": 0.6,
+            "write": 15
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.2,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4",
+      "modelID": "gpt-5.4",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.4",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1772668800000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 15,
+          "cache": {
+            "read": 0.25,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 5,
+          "output": 22.5,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.4-fast",
+      "modelID": "gpt-5.4",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.4 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1772668800000
+      },
+      "cost": [
+        {
+          "input": 5,
+          "output": 30,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 5,
+          "output": 22.5,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.3-codex-spark",
+      "modelID": "gpt-5.3-codex-spark",
+      "type": "chat",
+      "family": "gpt-codex-spark",
+      "name": "GPT-5.3 Codex Spark",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1770249600000
+      },
+      "cost": [
+        {
+          "input": 1.75,
+          "output": 14,
+          "cache": {
+            "read": 0.175,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "input": 100000,
+        "output": 32000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4.1",
+      "modelID": "gpt-4.1",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4.1",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1744588800000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 8,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1047576,
+        "output": 32768
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4.1-fast",
+      "modelID": "gpt-4.1",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4.1 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1744588800000
+      },
+      "cost": [
+        {
+          "input": 3.5,
+          "output": 14,
+          "cache": {
+            "read": 0.875,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1047576,
+        "output": 32768
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "o3-pro",
+      "modelID": "o3-pro",
+      "type": "chat",
+      "family": "o-pro",
+      "name": "o3-pro",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1749513600000
+      },
+      "cost": [
+        {
+          "input": 20,
+          "output": 80,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 200000,
+        "output": 100000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-sol",
+      "modelID": "gpt-6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 10,
+          "cache": {
+            "read": 0.2,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-sol-fast",
+      "modelID": "gpt-6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-sol-pro",
+      "modelID": "gpt-6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6 Sol Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 10,
+          "cache": {
+            "read": 0.2,
+            "write": 2.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 4,
+          "output": 15,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-image-1.5",
+      "modelID": "gpt-image-1.5",
+      "type": "image",
+      "family": "gpt-image",
+      "name": "gpt-image-1.5",
+      "package": "@opencode/ai/providers/openai",
+      "capabilities": {
+        "tools": false,
+        "input": ["text", "image"],
+        "output": ["text", "image"],
+        "temperature": false
+      },
+      "variants": [],
+      "time": {
+        "released": 1764028800000
+      },
+      "cost": [
+        {
+          "input": 0,
+          "output": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 0,
+        "input": 0,
+        "output": 0
+      }
+    },
+    {
+      "id": "gpt-image-1-mini",
+      "modelID": "gpt-image-1-mini",
+      "type": "image",
+      "family": "gpt-image",
+      "name": "gpt-image-1-mini",
+      "package": "@opencode/ai/providers/openai",
+      "capabilities": {
+        "tools": false,
+        "input": ["text", "image"],
+        "output": ["text", "image"],
+        "temperature": false
+      },
+      "variants": [],
+      "time": {
+        "released": 1758844800000
+      },
+      "cost": [
+        {
+          "input": 0,
+          "output": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 0,
+        "input": 0,
+        "output": 0
+      }
+    },
+    {
+      "id": "gpt-5-pro",
+      "modelID": "gpt-5-pro",
+      "type": "chat",
+      "family": "gpt-pro",
+      "name": "GPT-5 Pro",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1759708800000
+      },
+      "cost": [
+        {
+          "input": 15,
+          "output": 120,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 272000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o-2024-11-20",
+      "modelID": "gpt-4o-2024-11-20",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4o (2024-11-20)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1732060800000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 10,
+          "cache": {
+            "read": 1.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [
+        {
+          "input": 10,
+          "output": 50,
+          "cache": {
+            "read": 1,
+            "write": 12.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 20,
+          "output": 75,
+          "cache": {
+            "read": 2,
+            "write": 25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra-fast",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [
+        {
+          "input": 20,
+          "output": 100,
+          "cache": {
+            "read": 2,
+            "write": 25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 20,
+          "output": 75,
+          "cache": {
+            "read": 2,
+            "write": 25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra-pro",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [
+        {
+          "input": 10,
+          "output": 50,
+          "cache": {
+            "read": 1,
+            "write": 12.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 20,
+          "output": 75,
+          "cache": {
+            "read": 2,
+            "write": 25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra-ultrafast",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra Ultrafast",
+      "body": {
+        "service_tier": "ultrafast"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [
+        {
+          "input": 60,
+          "output": 300,
+          "cache": {
+            "read": 6,
+            "write": 75
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 20,
+          "output": 75,
+          "cache": {
+            "read": 2,
+            "write": 25
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.2-pro",
+      "modelID": "gpt-5.2-pro",
+      "type": "chat",
+      "family": "gpt-pro",
+      "name": "GPT-5.2 Pro",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1765411200000
+      },
+      "cost": [
+        {
+          "input": 21,
+          "output": 168,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-audio-1.5",
+      "modelID": "gpt-audio-1.5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-Audio-1.5",
+      "package": "@opencode/ai/providers/openai",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "audio"],
+        "output": ["text", "audio"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1771804800000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 10,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "modelID": "gpt-5.4-pro",
+      "type": "chat",
+      "family": "gpt-pro",
+      "name": "GPT-5.4 Pro",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1772668800000
+      },
+      "cost": [
+        {
+          "input": 30,
+          "output": 180,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 60,
+          "output": 270,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "chatgpt-image-latest",
+      "modelID": "chatgpt-image-latest",
+      "type": "image",
+      "family": "gpt-image",
+      "name": "chatgpt-image-latest",
+      "package": "@opencode/ai/providers/openai",
+      "capabilities": {
+        "tools": false,
+        "input": ["text", "image"],
+        "output": ["text", "image"],
+        "temperature": false
+      },
+      "variants": [],
+      "time": {
+        "released": 1765843200000
+      },
+      "cost": [
+        {
+          "input": 0,
+          "output": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 0,
+        "input": 0,
+        "output": 0
+      }
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "modelID": "gpt-5.6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-5.6 Luna",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 0.2,
+          "output": 1.2,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.4,
+          "output": 1.8,
+          "cache": {
+            "read": 0.04,
+            "write": 0.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-luna-fast",
+      "modelID": "gpt-5.6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-5.6 Luna Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 0.4,
+          "output": 2.4,
+          "cache": {
+            "read": 0.04,
+            "write": 0.5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.4,
+          "output": 1.8,
+          "cache": {
+            "read": 0.04,
+            "write": 0.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-luna-pro",
+      "modelID": "gpt-5.6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-5.6 Luna Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 0.2,
+          "output": 1.2,
+          "cache": {
+            "read": 0.02,
+            "write": 0.25
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 0.4,
+          "output": 1.8,
+          "cache": {
+            "read": 0.04,
+            "write": 0.5
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-daybreak-blue-latest",
+      "modelID": "gpt-daybreak-blue-latest",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "Daybreak Blue",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1786060800000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "modelID": "gpt-4.1-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-4.1 mini",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1744588800000
+      },
+      "cost": [
+        {
+          "input": 0.4,
+          "output": 1.6,
+          "cache": {
+            "read": 0.1,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1047576,
+        "output": 32768
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4.1-mini-fast",
+      "modelID": "gpt-4.1-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-4.1 mini Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1744588800000
+      },
+      "cost": [
+        {
+          "input": 0.7,
+          "output": 2.8,
+          "cache": {
+            "read": 0.175,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1047576,
+        "output": 32768
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.5-pro",
+      "modelID": "gpt-5.5-pro",
+      "type": "chat",
+      "family": "gpt-pro",
+      "name": "GPT-5.5 Pro",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1776902400000
+      },
+      "cost": [
+        {
+          "input": 30,
+          "output": 180,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 60,
+          "output": 270,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5",
+      "modelID": "gpt-5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 10,
+          "cache": {
+            "read": 0.125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-fast",
+      "modelID": "gpt-5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 20,
+          "cache": {
+            "read": 0.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-flex",
+      "modelID": "gpt-5",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5 Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.625,
+          "output": 5,
+          "cache": {
+            "read": 0.0625,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-search-api",
+      "modelID": "gpt-5-search-api",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5 Search API",
+      "package": "@opencode/ai/providers/openai",
+      "capabilities": {
+        "tools": false,
+        "input": ["text"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [],
+      "time": {
+        "released": 1760400000000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 10,
+          "cache": {
+            "read": 0.125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "modelID": "gpt-5.6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-sol-fast",
+      "modelID": "gpt-5.6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 8,
+          "output": 40,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-sol-pro",
+      "modelID": "gpt-5.6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Sol Pro",
+      "body": {
+        "reasoning": {
+          "mode": "pro"
+        }
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache": {
+            "read": 0.4,
+            "write": 5
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 272000
+          },
+          "input": 8,
+          "output": 30,
+          "cache": {
+            "read": 0.8,
+            "write": 10
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.3-codex",
+      "modelID": "gpt-5.3-codex",
+      "type": "chat",
+      "family": "gpt-codex",
+      "name": "GPT-5.3 Codex",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1770249600000
+      },
+      "cost": [
+        {
+          "input": 1.75,
+          "output": 14,
+          "cache": {
+            "read": 0.175,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.3-codex-fast",
+      "modelID": "gpt-5.3-codex",
+      "type": "chat",
+      "family": "gpt-codex",
+      "name": "GPT-5.3 Codex Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1770249600000
+      },
+      "cost": [
+        {
+          "input": 3.5,
+          "output": 28,
+          "cache": {
+            "read": 0.35,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-4o-2024-08-06",
+      "modelID": "gpt-4o-2024-08-06",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-4o (2024-08-06)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1722902400000
+      },
+      "cost": [
+        {
+          "input": 2.5,
+          "output": 10,
+          "cache": {
+            "read": 1.25,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.2",
+      "modelID": "gpt-5.2",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.2",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1765411200000
+      },
+      "cost": [
+        {
+          "input": 1.75,
+          "output": 14,
+          "cache": {
+            "read": 0.175,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.2-fast",
+      "modelID": "gpt-5.2",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.2 Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1765411200000
+      },
+      "cost": [
+        {
+          "input": 3.5,
+          "output": 28,
+          "cache": {
+            "read": 0.35,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.2-flex",
+      "modelID": "gpt-5.2",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.2 Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1765411200000
+      },
+      "cost": [
+        {
+          "input": 0.875,
+          "output": 7,
+          "cache": {
+            "read": 0.0875,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-mini",
+      "modelID": "gpt-5-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5 Mini",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.25,
+          "output": 2,
+          "cache": {
+            "read": 0.025,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-mini-fast",
+      "modelID": "gpt-5-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5 Mini Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.45,
+          "output": 3.6,
+          "cache": {
+            "read": 0.045,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-mini-flex",
+      "modelID": "gpt-5-mini",
+      "type": "chat",
+      "family": "gpt-mini",
+      "name": "GPT-5 Mini Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.125,
+          "output": 1,
+          "cache": {
+            "read": 0.0125,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-nano",
+      "modelID": "gpt-5-nano",
+      "type": "chat",
+      "family": "gpt-nano",
+      "name": "GPT-5 Nano",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.05,
+          "output": 0.4,
+          "cache": {
+            "read": 0.005,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5-nano-flex",
+      "modelID": "gpt-5-nano",
+      "type": "chat",
+      "family": "gpt-nano",
+      "name": "GPT-5 Nano Flex",
+      "body": {
+        "service_tier": "flex"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "minimal",
+          "settings": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1754524800000
+      },
+      "cost": [
+        {
+          "input": 0.025,
+          "output": 0.2,
+          "cache": {
+            "read": 0.0025,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    }
+  ]
+}

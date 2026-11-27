@@ -351,7 +351,13 @@ function operationError(strategy: StrategyID, operation: string, error: unknown)
     error instanceof Worktree.OperationError
   )
     return error
+  // OWN-PATCH(P-062) begin
+  // A plugin strategy's error is another bundle's class: keep the flag Git's refusal of a dirty worktree sets.
+  const forceRequired =
+    typeof error === "object" && error !== null && "forceRequired" in error && error.forceRequired === true
   return new Worktree.OperationError({
     message: `Worktree strategy ${strategy} failed to ${operation}: ${error instanceof globalThis.Error ? error.message : String(error)}`,
+    ...(forceRequired ? { forceRequired } : {}),
   })
+  // OWN-PATCH(P-062) end
 }

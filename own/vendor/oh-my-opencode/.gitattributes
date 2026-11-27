@@ -1,0 +1,4 @@
+# Third-party sources vendored byte for byte (own/scripts/omo-vendor.ts; source.json holds their hashes).
+src/** -text
+LICENSE.md -text
+THIRD-PARTY-NOTICES.md -text

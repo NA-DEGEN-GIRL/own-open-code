@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/telemetry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: telemetry plugin for the Claude subscription slot (own.telemetry)",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" test"
+  },
+  "dependencies": {
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,130 @@
+// Compat account strings (07 §6.2 #2, #7, #8; 02 §3.3): the output cap field of the add-account form, the card's server,
+// output cap and running window lines, how to raise an Ollama window, and each model's image input and tools (the add
+// form's and the `모델 기능` dialog's 자동 / 켬 / 끔, the card's capability line). Kept next to the accounts code until the
+// integrator moves them into src/i18n (section "compat"); the card warning itself is `own.acct.compatOverflow`.
+import { featureText } from "@/queue/text"
+
+export const compatKo = {
+  "own.compat.outputLimit": "출력 한도(토큰, 선택)",
+  "own.compat.outputLimitPlaceholder": "모름",
+  "own.compat.outputLimitHint": "모르면 비워 두세요. 서버가 알려 주는 값을 쓰고, 없으면 32k를 써요(모름).",
+  "own.compat.outputLimitInvalid": "출력 한도는 토큰 수로 적으세요(예: 16k).",
+  "own.compat.family.ollama": "Ollama",
+  "own.compat.family.lmstudio": "LM Studio",
+  "own.compat.family.vllm": "vLLM",
+  "own.compat.family.llamacpp": "llama.cpp",
+  "own.compat.family.other": "OpenAI 호환 서버",
+  "own.compat.server": "서버: {family}",
+  "own.compat.outputs": "출력 한도: {list}",
+  "own.compat.output": "{model} {tokens}({source})",
+  "own.compat.source.server": "서버 값",
+  "own.compat.source.user": "직접 입력",
+  "own.compat.source.fallback": "모름",
+  "own.compat.runtime": "{model} 실행 창 {runtime} · 요청에 필요 {needed}",
+  "own.compat.runtimeUnknown": "{model} 실행 창 확인 안 됨 · 요청에 필요 {needed}",
+  "own.compat.status.verified": "확인됨",
+  "own.compat.status.unverified": "작음",
+  "own.compat.status.unknown": "확인 안 됨",
+  "own.compat.notSuggested":
+    "실행 창이 요청에 필요한 크기보다 작거나 확인되지 않은 모델은 하위 에이전트로 제안하지 않아요.",
+  "own.compat.raise":
+    "늘리는 법: Ollama를 OLLAMA_CONTEXT_LENGTH={needed} 이상으로 다시 시작하거나, 모델의 num_ctx를 {needed} 이상으로 정하세요(Modelfile의 PARAMETER num_ctx).",
+  "own.compat.raiseUnknown": "모델을 한 번 불러오거나 num_ctx를 정하면 실행 창이 확인돼요.",
+  "own.compat.image": "그림 입력",
+  "own.compat.tools": "도구",
+  "own.compat.setting.auto": "자동",
+  "own.compat.setting.on": "켬",
+  "own.compat.setting.off": "끔",
+  "own.compat.settingsHint":
+    "자동은 서버가 알려 주는 대로 해요(Ollama, LM Studio, llama.cpp). 알려 주지 않으면 그림 입력은 끔, 도구는 켬이에요.",
+  "own.compat.capabilities": "모델 기능: {list}",
+  "own.compat.capability": "{model} 그림 입력 {image} · 도구 {tools}",
+  "own.compat.value": "{value}({source})",
+  "own.compat.value.on": "켬",
+  "own.compat.value.off": "끔",
+  "own.compat.from.server": "서버 값",
+  "own.compat.from.user": "직접 정함",
+  "own.compat.from.unknown": "모름",
+  "own.compat.noTools": "도구가 꺼진 모델은 대화만 해요. 파일을 읽거나 명령을 실행하지 못해요.",
+  "own.compat.noImage": "그림 입력이 꺼진 모델에는 붙인 그림이 파일 경로로 가고, 컴퓨터 사용을 켤 수 없어요.",
+  "own.compat.edit": "모델 기능…",
+  "own.compat.editTitle": "모델 기능 · {account}",
+  "own.compat.editLead":
+    "모델마다 그림을 볼 수 있는지, 도구를 쓸 수 있는지 정해요. 바꾸면 이 계정을 쓰는 대화의 다음 요청에서 캐시를 한 번 새로 쌓아요.",
+  "own.compat.detected.image.true": "서버: 그림을 볼 수 있어요",
+  "own.compat.detected.image.false": "서버: 그림을 못 봐요",
+  "own.compat.detected.image.unknown": "서버가 알려 주지 않았어요",
+  "own.compat.detected.tools.true": "서버: 도구를 쓸 수 있어요",
+  "own.compat.detected.tools.false": "서버: 도구를 못 써요",
+  "own.compat.detected.tools.unknown": "서버가 알려 주지 않았어요",
+  "own.compat.reread": "서버에서 다시 읽기",
+  "own.compat.rereadDone": "서버에서 다시 읽었어요.",
+  "own.compat.save": "저장",
+  "own.compat.saved": "모델 기능을 바꿨어요.",
+  "own.compat.cancel": "취소",
+  "own.compat.olderService": "서비스가 이 설정을 몰라요. 서비스를 새 버전으로 다시 시작하세요.",
+} as const satisfies Record<string, string>
+
+export type CompatKey = keyof typeof compatKo
+
+export const compatEn: Partial<Record<CompatKey, string>> = {
+  "own.compat.outputLimit": "Output limit (tokens, optional)",
+  "own.compat.outputLimitPlaceholder": "Unknown",
+  "own.compat.outputLimitHint":
+    "Leave empty if you don't know it. The server's value is used; without one, 32k (unknown).",
+  "own.compat.outputLimitInvalid": "Enter the output limit as a token count (e.g. 16k).",
+  "own.compat.family.other": "OpenAI-compatible server",
+  "own.compat.server": "Server: {family}",
+  "own.compat.outputs": "Output limit: {list}",
+  "own.compat.output": "{model} {tokens} ({source})",
+  "own.compat.source.server": "from the server",
+  "own.compat.source.user": "entered",
+  "own.compat.source.fallback": "unknown",
+  "own.compat.runtime": "{model} running window {runtime} · a request needs {needed}",
+  "own.compat.runtimeUnknown": "{model} running window not verified · a request needs {needed}",
+  "own.compat.status.verified": "Verified",
+  "own.compat.status.unverified": "Too small",
+  "own.compat.status.unknown": "Not verified",
+  "own.compat.notSuggested":
+    "Models whose running window is smaller than a request needs, or not verified, are not suggested as subagents.",
+  "own.compat.raise":
+    "To raise it: restart Ollama with OLLAMA_CONTEXT_LENGTH={needed} or more, or set the model's num_ctx to {needed} or more (PARAMETER num_ctx in its Modelfile).",
+  "own.compat.raiseUnknown": "Load the model once or set its num_ctx and the running window is verified.",
+  "own.compat.image": "Image input",
+  "own.compat.tools": "Tools",
+  "own.compat.setting.auto": "Auto",
+  "own.compat.setting.on": "On",
+  "own.compat.setting.off": "Off",
+  "own.compat.settingsHint":
+    "Auto follows what the server reports (Ollama, LM Studio, llama.cpp). Without a report, image input is off and tools are on.",
+  "own.compat.capabilities": "Model capabilities: {list}",
+  "own.compat.capability": "{model} image input {image} · tools {tools}",
+  "own.compat.value": "{value} ({source})",
+  "own.compat.value.on": "on",
+  "own.compat.value.off": "off",
+  "own.compat.from.server": "from the server",
+  "own.compat.from.user": "set by you",
+  "own.compat.from.unknown": "unknown",
+  "own.compat.noTools": "A model with tools off only chats. It cannot read files or run commands.",
+  "own.compat.noImage":
+    "A model with image input off gets attached images as file paths, and computer use cannot be turned on for it.",
+  "own.compat.edit": "Model capabilities…",
+  "own.compat.editTitle": "Model capabilities · {account}",
+  "own.compat.editLead":
+    "Set whether each model can see images and use tools. A change rebuilds the cache once at the next request of the conversations using this account.",
+  "own.compat.detected.image.true": "Server: reads images",
+  "own.compat.detected.image.false": "Server: cannot read images",
+  "own.compat.detected.image.unknown": "The server did not say",
+  "own.compat.detected.tools.true": "Server: uses tools",
+  "own.compat.detected.tools.false": "Server: cannot use tools",
+  "own.compat.detected.tools.unknown": "The server did not say",
+  "own.compat.reread": "Read the server again",
+  "own.compat.rereadDone": "Read the server again.",
+  "own.compat.save": "Save",
+  "own.compat.saved": "Model capabilities changed.",
+  "own.compat.cancel": "Cancel",
+  "own.compat.olderService": "The service does not know this setting. Restart it with a newer version.",
+}
+
+export const compatText = featureText(compatKo, compatEn)
+export const useCompatText = compatText.use

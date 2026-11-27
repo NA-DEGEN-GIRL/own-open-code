@@ -1,0 +1,169 @@
+/* Subagent views (03 §18.11). own tokens only (13.2). */
+.own-sa-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.own-sa-crumb {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-sa-crumb[aria-current="page"] {
+  flex: none;
+  font-weight: 600;
+}
+.own-sa-crumb-link {
+  flex: 0 1 auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.own-sa-crumb-link:hover {
+  color: var(--own-text);
+  text-decoration: underline;
+}
+.own-sa-sep {
+  flex: none;
+  color: var(--own-text-faint);
+}
+.own-sa-badge {
+  flex: none;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--own-warn) 16%, var(--own-bg));
+  color: var(--own-warn);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.own-sa-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--own-border-strong);
+  border-radius: 12px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 13px;
+}
+.own-sa-notice-text {
+  flex: 1;
+  min-width: 180px;
+}
+.own-sa-notice-requests {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--own-warn);
+  font-size: 12px;
+}
+.own-sa-state {
+  flex: none;
+  font-size: 12px;
+}
+.own-sa-state[data-state="running"] {
+  color: var(--own-accent-text);
+}
+.own-sa-state[data-state="failed"] {
+  color: var(--own-danger);
+}
+.own-sa-state[data-state="succeeded"] {
+  color: var(--own-ok);
+}
+.own-sa-back,
+.own-sa-open,
+.own-sa-more {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-sa-back:hover,
+.own-sa-open:hover,
+.own-sa-more:hover {
+  text-decoration: underline;
+}
+.own-sa-back {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+}
+.own-sa-back:hover {
+  background: var(--own-bg-hover);
+  text-decoration: none;
+}
+.own-sa-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  font-size: 12.5px;
+}
+.own-sa-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 26px;
+}
+.own-sa-agent {
+  flex: none;
+  font-weight: 600;
+}
+.own-sa-task {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-sa-more {
+  align-self: flex-start;
+  font-size: 11.5px;
+}
+/* 07 §7.3: a subagent call the preset gate refused. Neutral on purpose: no danger or warning tokens. */
+.own-sa-rejected {
+  display: flex;
+  padding-top: 8px;
+}
+.own-sa-rejected-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.own-sa-rejected-icon {
+  flex: none;
+  color: var(--own-text-faint);
+}

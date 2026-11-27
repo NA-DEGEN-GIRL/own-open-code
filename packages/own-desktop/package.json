@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "own-desktop",
+  "productName": "Own OpenCode",
+  "private": true,
+  "version": "2.0.24-own.0",
+  "description": "own-open-code desktop shell: upstream packages/desktop main process, own-web renderer (05)",
+  "author": {
+    "name": "own-open-code"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -b && \"$npm_execpath\" check --no-script -p tsconfig.test.json",
+    "typecheck:tsc": "tsc -b && tsc --noEmit -p tsconfig.test.json",
+    "test": "\"$npm_execpath\" test ./test",
+    "rpc-hash": "node ./scripts/rpc-hash.mjs",
+    "resources": "\"$npm_execpath\" ./scripts/resources.ts",
+    "electron:install": "\"$npm_execpath\" ./scripts/install-electron.ts",
+    "dev": "\"$npm_execpath\" ./scripts/dev.ts",
+    "build": "\"$npm_execpath\" ./scripts/resources.ts && electron-vite build",
+    "package": "electron-builder --win --dir --config electron-builder.config.ts",
+    "package:win": "electron-builder --win --config electron-builder.config.ts",
+    "smoke": "\"$npm_execpath\" ./scripts/smoke.ts",
+    "gates": "\"$npm_execpath\" ./scripts/gates.ts",
+    "perf": "\"$npm_execpath\" ./scripts/perf-shell.ts",
+    "browser-agent": "\"$npm_execpath\" ./scripts/browser-agent.ts",
+    "split-panes": "\"$npm_execpath\" ./scripts/split-panes.ts",
+    "remote-browser": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun ./scripts/remote-browser.ts",
+    "zoom-level": "\"$npm_execpath\" ./scripts/zoom-level.ts",
+    "perf:many-sessions": "\"$npm_execpath\" ./scripts/perf-many-sessions.ts",
+    "perf:big-session": "\"$npm_execpath\" ./scripts/perf-big-session.ts"
+  },
+  "dependencies": {
+    "@zip.js/zip.js": "2.7.62",
+    "electron-context-menu": "5.0.0",
+    "electron-log": "^5",
+    "lighthouse": "13.4.1"
+  },
+  "devDependencies": {
+    "@brendonovich/vite-plugin-opencode": "0.1.3",
+    "@effect/platform-node": "catalog:",
+    "@lydell/node-pty": "catalog:",
+    "@opencode/app": "workspace:*",
+    "@opencode/client": "workspace:*",
+    "@opencode/desktop": "workspace:*",
+    "@own/web": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "app-builder-lib": "26.15.7",
+    "effect": "catalog:",
+    "electron": "44.10.2",
+    "electron-builder": "26.15.7",
+    "electron-vite": "6.0.0-beta.1",
+    "htmlparser2": "8.0.2",
+    "magic-string": "0.30.21",
+    "vite": "8.2.4"
+  },
+  "optionalDependencies": {
+    "@lydell/node-pty-darwin-arm64": "1.2.0-beta.12",
+    "@lydell/node-pty-darwin-x64": "1.2.0-beta.12",
+    "@lydell/node-pty-linux-arm64": "1.2.0-beta.12",
+    "@lydell/node-pty-linux-x64": "1.2.0-beta.12",
+    "@lydell/node-pty-win32-arm64": "1.2.0-beta.12",
+    "@lydell/node-pty-win32-x64": "1.2.0-beta.12"
+  }
+}

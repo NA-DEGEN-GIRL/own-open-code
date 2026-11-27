@@ -1,0 +1,429 @@
+/* Browser pane (03 §18.17). The surface is a placeholder: the page itself is a native view main draws above it. */
+.own-browser {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.own-browser-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.own-browser-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--own-border);
+  flex: none;
+}
+
+.own-browser-tab {
+  display: flex;
+  align-items: center;
+  max-width: 180px;
+  min-width: 0;
+  border-radius: var(--own-radius-chip);
+  color: var(--own-text-muted);
+}
+
+.own-browser-tab[data-active] {
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  box-shadow: 0 0 0 1px var(--own-border);
+}
+
+.own-browser-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.own-browser-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-browser-tab-close.own-icon-button {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.own-browser-spinner {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--own-accent-text);
+  animation: own-browser-pulse 1s ease-in-out infinite;
+}
+
+@keyframes own-browser-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-browser-spinner {
+    animation: none;
+  }
+}
+
+.own-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--own-border);
+  flex: none;
+}
+
+.own-browser-bar .own-icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.own-browser-address {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: 12px var(--own-font-mono);
+  text-overflow: ellipsis;
+}
+
+.own-browser-address:focus {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -1px;
+}
+
+.own-browser-address::placeholder {
+  color: var(--own-text-faint);
+  font-family: var(--own-font-sans);
+}
+
+/* Nothing opens here yet: the read-only field's placeholder is the one-line reason, so it stays readable. */
+.own-browser-bar[data-inert] .own-browser-address {
+  background: var(--own-bg-subtle);
+  cursor: default;
+}
+
+.own-browser-bar[data-inert] .own-browser-address::placeholder {
+  color: var(--own-text-muted);
+}
+
+.own-browser-address-note {
+  margin: 0;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--own-border);
+  color: var(--own-text-muted);
+  font-size: 12px;
+  flex: none;
+}
+
+.own-browser-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--own-border);
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+  font-size: 12px;
+  flex: none;
+}
+
+.own-browser-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--own-bg);
+}
+
+.own-browser-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  padding: 24px;
+  color: var(--own-text-faint);
+  text-align: center;
+}
+
+.own-browser-note {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* A page that did not load, or an SSH host that is not connected (05 §8.6): the reason in place of the page. */
+.own-browser-failure-title {
+  color: var(--own-text);
+  font-weight: 600;
+}
+
+.own-browser-failure-code {
+  font-family: var(--own-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.own-browser-still {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+
+.own-browser-still img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
+/* Agent activity strip (03 §18.17 "● 에이전트가 조작 중" + last action, takeover). */
+.own-browser-agent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 6px 3px 10px;
+  border-bottom: 1px solid var(--own-border);
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+  font-size: 12px;
+  flex: none;
+}
+
+.own-browser-agent[data-phase="takeover"] {
+  background: var(--own-bg-subtle);
+}
+
+.own-browser-agent-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--own-accent-text);
+  animation: own-browser-pulse 1.2s ease-in-out infinite;
+}
+
+.own-browser-agent[data-phase="recent"] .own-browser-agent-dot {
+  animation-duration: 2.4s;
+}
+
+.own-browser-agent-label {
+  flex: none;
+  font-weight: 600;
+}
+
+.own-browser-agent-action {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-browser-agent[data-phase="takeover"] .own-browser-agent-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-browser-takeover {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+.own-browser-agent-dismiss.own-icon-button {
+  width: 22px;
+  height: 22px;
+}
+
+.own-browser-tab-agent {
+  flex: none;
+  color: var(--own-accent-text);
+  font-size: 9px;
+}
+
+.own-browser-tab-user {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-browser-agent-dot {
+    animation: none;
+  }
+}
+
+/* A session created without the browser tools (05 §8.7 rule 3), in the pane's place. */
+.own-browser-removed {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  color: var(--own-text-muted);
+}
+
+.own-browser-confirm-address {
+  color: var(--own-text);
+  overflow-wrap: anywhere;
+}
+
+.own-browser-removed-title {
+  margin: 0;
+  color: var(--own-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.own-browser-removed .own-btn {
+  align-self: flex-start;
+}
+
+.own-browser-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-subtle);
+}
+
+.own-browser-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* The pane's buttons look like the kit's .own-btn (limits/kit.css) without depending on that chunk being loaded. */
+.own-browser .own-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-browser .own-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-browser .own-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.own-browser .own-btn[data-variant="ghost"] {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Downloads of the session's tabs (05 §8.4): name, size and state, `PC에 저장`. */
+.own-browser-downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 132px;
+  padding: 4px 6px 6px 10px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--own-border);
+  background: var(--own-bg-subtle);
+  font-size: 12px;
+  flex: none;
+}
+
+.own-browser-download {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.own-browser-download-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text);
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-browser-download-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-browser-download[data-state="removed"] .own-browser-download-name {
+  color: var(--own-text-faint);
+  text-decoration: line-through;
+}
+
+.own-browser-download-dismiss.own-icon-button {
+  width: 22px;
+  height: 22px;
+}
+
+.own-browser-downloads-note {
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+
+.own-browser-banner-actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}

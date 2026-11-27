@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "bun"],
+    "paths": {
+      "@/*": ["./src/*"],
+      // @opencode/app/desktop-menu, which the desktop IPC contract imports (types only), resolves its own "@/" alias.
+      "@/runtime/i18n/desktop-native": ["../app/src/runtime/i18n/desktop-native.ts"]
+    }
+  },
+  "include": ["src", "vite", "script", "e2e", "dev", "vite.config.ts"]
+}

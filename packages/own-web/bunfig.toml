@@ -1,0 +1,7 @@
+# Keeps core's feature flags off as in a release (own/scripts/test/release-flags.ts) for every Bun process started from
+# this folder (`bun <file>`, `bun run`: the e2e backends and dev services) and for the unit tests. Bun 1.4 reads a
+# run preload only at the top level: a `[run]` table's `preload` is ignored, and the top level does not reach `bun test`.
+preload = ["../../own/scripts/test/release-flags.ts"]
+
+[test]
+preload = ["../../own/scripts/test/release-flags.ts"]

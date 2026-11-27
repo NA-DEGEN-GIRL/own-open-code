@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      Voice input (02 §3.9, 08 §4.2): the PC page's microphone, audio only (PcActivity onPermissionRequest,
+      MicPermission). RECORD_AUDIO is asked at the first recording; WebView audio capture also needs
+      MODIFY_AUDIO_SETTINGS (a normal permission, no prompt).
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!--
+      Security (08-app-access.md §3.4, 05 §13.8): no backup or device transfer (the cookie store holds the device
+      token), no cleartext, no CA trusted for app hosts (network_security_config.xml, AA1), back navigation through
+      OnBackInvokedCallback on Android 13+.
+    -->
+    <application
+        android:name=".OwnApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${appLabel}"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Own"
+        android:usesCleartextTraffic="false"
+        tools:targetApi="33">
+
+        <!-- Google code scanner (no camera permission): download its module with the app. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
+        <!--
+          Telemetry audit (decisions TLM): the WebView only shows the paired PC's pages, so Safe Browsing has nothing
+          to check and is off; ML Kit's usage logging (Google Data Transport's "cct" backend, uploaded later by its job
+          scheduler) gets no backend, so the transport refuses its events on the phone and nothing is uploaded.
+        -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+                tools:node="remove" />
+        </service>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- ownpc://pair?v=1&k=…&p=…&c=…&n=…&r=… (08 §3.3) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="pair"
+                    android:scheme="ownpc" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".PairingActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:exported="false" />
+
+        <activity
+            android:name=".PcActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+</manifest>

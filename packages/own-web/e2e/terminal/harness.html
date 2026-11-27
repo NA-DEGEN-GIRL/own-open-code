@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+    <title>Terminal harness</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <!-- Dev-server only (never part of the build): the real terminal UI with the real data layer and server PTYs,
+         without the shell, so terminal e2e does not depend on the panel wiring (integrator) or other modules. -->
+    <div id="root"></div>
+    <script type="module" src="./harness.tsx"></script>
+  </body>
+</html>

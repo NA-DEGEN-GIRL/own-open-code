@@ -261,6 +261,11 @@ export function timeouts(settings: Readonly<Record<string, unknown>>) {
     timeout: timeout(settings.timeout),
     headerTimeout: timeout(settings.headerTimeout) ?? DEFAULT_TIMEOUT_MS,
     chunkTimeout: timeout(settings.chunkTimeout) ?? DEFAULT_CHUNK_TIMEOUT_MS,
+    // OWN-PATCH(P-018) begin
+    // Stall limits on parsed model events (`@opencode/ai` route client); unset keeps that package's defaults.
+    progressTimeout: timeout(settings.progressTimeout),
+    toolInputTimeout: timeout(settings.toolInputTimeout),
+    // OWN-PATCH(P-018) end
   }
 }
 

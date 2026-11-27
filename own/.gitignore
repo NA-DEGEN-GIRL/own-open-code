@@ -1,0 +1,3 @@
+# own-open-code build outputs and local scratch (root .gitignore is upstream-owned; do not edit it)
+.out/
+*.log

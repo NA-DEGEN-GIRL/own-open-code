@@ -1,0 +1,25 @@
+/* 문맥 비우기 marker (03 §4.5, 11 §7), loaded with its lazy chunk. own tokens only (13.2); the line and the pill are the
+ * transcript's `.own-marker` (transcript.css). */
+@layer components {
+  .own-reset .own-marker-pill {
+    border-style: dashed;
+  }
+  .own-reset[data-state="active"] .own-marker-pill {
+    border-color: var(--own-accent);
+    color: var(--own-text);
+  }
+  .own-reset[data-state="undone"] {
+    opacity: 0.6;
+  }
+  .own-reset[data-state="undone"] .own-marker-pill {
+    border-color: transparent;
+    background: transparent;
+  }
+  .own-reset .own-marker-toggle.own-target {
+    min-height: 24px;
+  }
+  .own-app[data-tier="phone"] .own-reset .own-marker-toggle.own-target {
+    min-height: 44px;
+    padding: 0 6px;
+  }
+}

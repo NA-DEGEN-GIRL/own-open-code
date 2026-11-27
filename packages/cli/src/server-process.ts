@@ -124,6 +124,11 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             project: !truthy(
               process.env.OPENCODE_CONFIG_PROJECT_DISABLE ?? process.env.OPENCODE_DISABLE_PROJECT_CONFIG,
             ),
+            // OWN-PATCH(P-058) begin
+            // Keeps the repository's AGENTS.md discovery on while project config stays off. A service without this
+            // patch ignores the variable and reads nothing from the project.
+            instructions: truthy(process.env.OPENCODE_CONFIG_PROJECT_INSTRUCTIONS) || undefined,
+            // OWN-PATCH(P-058) end
             // Config reads .claude only for skills; CLAUDE.md is gated under instructions.
             claude: !(
               truthy(process.env.OPENCODE_DISABLE_CLAUDE_CODE) ||

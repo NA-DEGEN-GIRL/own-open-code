@@ -26,6 +26,12 @@ import { ImageNotice } from "../../image/notice.js"
 import { ShellResult } from "../../shell/result.js"
 import { SubagentCompletion } from "../subagent-completion.js"
 import { SubagentJob } from "../subagent-job.js"
+// OWN-PATCH(P-035) begin
+import { eq } from "drizzle-orm"
+import { SessionInbox } from "../inbox.js"
+import { SessionMessage } from "../message.js"
+import { SessionInboxTable } from "../sql.js"
+// OWN-PATCH(P-035) end
 
 const CONTINUE_AFTER_SERVER_RESTART =
   "The server restarted while you were working. Continue from where you left off without repeating completed work."
@@ -98,7 +104,9 @@ export const layer = (options?: Options) =>
         if (owner && !owner.revert) yield* execution.wake(sessionID)
       })
 
-      const prepareResume = Effect.fnUntraced(function* (sessionID: SessionSchema.ID) {
+      // OWN-PATCH(P-035) begin: `continues`, false when a context reset applies first (`resetFirst`)
+      const prepareResume = Effect.fnUntraced(function* (sessionID: SessionSchema.ID, continues = true) {
+        // OWN-PATCH(P-035) end
         // Durable before the resume runs, so a crash inside the resumed turn is
         // counted by the next sweep and the budget cannot be dodged.
         const attempts = yield* store.countResume(sessionID)
@@ -113,6 +121,9 @@ export const layer = (options?: Options) =>
           )
           return false
         }
+        // OWN-PATCH(P-035) begin
+        if (!continues) return true
+        // OWN-PATCH(P-035) end
         yield* bus.publish(SessionEvent.Synthetic, {
           sessionID,
           text: CONTINUE_AFTER_SERVER_RESTART,
@@ -121,6 +132,46 @@ export const layer = (options?: Options) =>
         })
         return true
       })
+
+      // OWN-PATCH(P-035) begin
+      /**
+       * Nothing to continue around a context reset: nothing follows the newest one (a death after its delivery at the
+       * turn's end, before `Execution.Succeeded`), or one waits and the cut-off turn has no input or output since the
+       * last terminal (a death before its delivery). Returns the reset still waiting then (`waiting`), else undefined:
+       * a turn with delivered input or output is finished first (11 §7.2, RC-16).
+       */
+      const resetFirst = Effect.fnUntraced(function* (sessionID: SessionSchema.ID) {
+        const context = yield* store.context(sessionID).pipe(Effect.orElseSucceed(() => undefined))
+        if (!context) return undefined
+        const begun = (after: number) =>
+          context
+            .slice(after + 1)
+            .some((message) => message.type === "user" || message.type === "synthetic" || message.type === "assistant")
+        const marker = context.findLastIndex(
+          (message) => message.type === "compaction" && message.reason === "reset" && message.undone === undefined,
+        )
+        const waiting = (yield* sessions.inbox(sessionID).pipe(Effect.orElseSucceed(() => []))).find(
+          (item) => item.type === "reset",
+        )
+        if (marker !== -1 && !begun(marker)) return { waiting }
+        if (waiting && !begun(context.findLastIndex((m) => m.type === "idle"))) return { waiting }
+        return undefined
+      })
+
+      /**
+       * Applies a reset read as waiting like one requested while idle (ahead of everything pending), by its id and only
+       * while it still waits: the user may cancel it in between, and `Session.reset` would admit it again.
+       */
+      const applyWaiting = (sessionID: SessionSchema.ID, resetID: SessionMessage.ID) =>
+        SessionInbox.serialized(
+          sessionID,
+          Effect.gen(function* () {
+            if (yield* execution.isActive(sessionID)) return
+            if (!(yield* SessionInbox.list(db, sessionID)).some((item) => item.id === resetID)) return
+            yield* SessionInbox.deliverReset(db, bus, sessionID, resetID)
+          }),
+        )
+      // OWN-PATCH(P-035) end
 
       const restartMessage = (background: Job.Background, recovery: Exclude<Job.Recovery, { kind: "subagent" }>) => {
         if (recovery.kind === "codemode") return CodeModeJob.notice(background)
@@ -192,6 +243,10 @@ export const layer = (options?: Options) =>
             // Restart notices must not revive idle owners of long-lived background tools.
             // Interrupted executions resume separately after their notices are admitted.
             resume: false,
+            // OWN-PATCH(P-035) begin: background work, started when its record says (background alone without it)
+            background: true,
+            ...(background.started_at === undefined ? {} : { startedAt: background.started_at }),
+            // OWN-PATCH(P-035) end
           })
           .pipe(
             Effect.as(true),
@@ -348,11 +403,15 @@ export const layer = (options?: Options) =>
         notificationID: Job.Background["notificationID"],
         recovery: Extract<Job.Recovery, { kind: "subagent" }>,
         result: Pick<Job.Background, "status" | "output" | "error">,
+        // OWN-PATCH(P-035) begin: the job's first start from its record, never the recovered run's (the restart)
+        startedAt?: number,
+        // OWN-PATCH(P-035) end
       ) {
         yield* SubagentCompletion.deliver(notices, jobs, {
           ...result,
           recovery,
           notificationID,
+          started_at: startedAt, // OWN-PATCH(P-035)
         }).pipe(
           // A deleted parent owes nothing to the report; clear its row.
           Effect.catchTag("Session.NotFoundError", () => jobs.completeBackground(notificationID)),
@@ -400,7 +459,7 @@ export const layer = (options?: Options) =>
 
         if (background.status !== "running") {
           // Replay the settled report using the work captured with it.
-          yield* deliverSubagentSafe(notices, background.notificationID, recovery, background)
+          yield* deliverSubagentSafe(notices, background.notificationID, recovery, background, background.started_at) // OWN-PATCH(P-035)
           return false
         }
 
@@ -408,10 +467,13 @@ export const layer = (options?: Options) =>
         // prepareResume publishes Execution.Failed directly on the bus outside the
         // coordinator, so the settle hook never reports an exhausted child.
         if (!(yield* prepareResume(recovery.childSessionID))) {
-          yield* deliverSubagentSafe(notices, background.notificationID, recovery, {
-            status: "error",
-            error: RESUME_EXHAUSTED.message,
-          })
+          yield* deliverSubagentSafe(
+            notices,
+            background.notificationID,
+            recovery,
+            { status: "error", error: RESUME_EXHAUSTED.message },
+            background.started_at, // OWN-PATCH(P-035)
+          )
           return false
         }
         // Defer the start until every suspended session has counted its attempt; a fast
@@ -513,10 +575,24 @@ export const layer = (options?: Options) =>
           // A directly driven child can also settle and wake its parent. Account for every
           // claimed execution before starting any of them, leaving running jobs to SubagentJob.
           const resumed = yield* execution.active
+          // OWN-PATCH(P-035) begin
+          const claimed = yield* store.listSuspended()
           const direct = yield* Effect.filter(
-            (yield* store.listSuspended()).filter((sessionID) => !resumed.has(sessionID) && !children.has(sessionID)),
-            prepareResume,
+            claimed.filter((sessionID) => !resumed.has(sessionID) && !children.has(sessionID)),
+            Effect.fnUntraced(function* (sessionID) {
+              const first = yield* resetFirst(sessionID)
+              if (!first) return yield* prepareResume(sessionID)
+              // No forced step, no continuation notice. A waiting reset applies at once ahead of everything pending, as
+              // after a stop (RC-26, RC-33), so a parked prompt stays parked in the new context; a steer-scoped drain
+              // resumes the steers and releases the claim (an ordinary one when the reset applied before the death).
+              if (!(yield* prepareResume(sessionID, false))) return false
+              suspended.delete(sessionID)
+              if (first.waiting) yield* applyWaiting(sessionID, first.waiting.id)
+              yield* execution.wake(sessionID, first.waiting ? "steer" : undefined)
+              return false
+            }),
           )
+          // OWN-PATCH(P-035) end
           yield* Effect.forEach(
             direct,
             Effect.fnUntraced(function* (sessionID) {
@@ -525,6 +601,25 @@ export const layer = (options?: Options) =>
             }),
             { concurrency: "unbounded", discard: true },
           )
+          // OWN-PATCH(P-035) begin
+          // A reset left waiting while idle with no claim (a death between a stop's terminal and its delivery) applies
+          // now as one requested while idle: ahead of everything pending, no model call. Not over a staged revert,
+          // which applying it would commit; the next prompt does.
+          const idle = yield* db
+            .select({ id: SessionInboxTable.id, sessionID: SessionInboxTable.session_id })
+            .from(SessionInboxTable)
+            .where(eq(SessionInboxTable.type, "reset"))
+            .all()
+            .pipe(Effect.orDie)
+          yield* Effect.forEach(
+            idle.filter((row) => !claimed.includes(row.sessionID)),
+            Effect.fnUntraced(function* (row) {
+              if ((yield* store.get(row.sessionID))?.revert) return
+              yield* applyWaiting(row.sessionID, SessionMessage.ID.make(row.id))
+            }),
+            { discard: true },
+          )
+          // OWN-PATCH(P-035) end
 
           // Start children only now: their settlement reports wake parents, so the parent's
           // restart budget must already be charged. SessionExecution's settle hook owns the
@@ -532,7 +627,7 @@ export const layer = (options?: Options) =>
           yield* Effect.forEach(
             resumable,
             Effect.fnUntraced(function* ({ background, recovery }) {
-              yield* SubagentJob.start(jobs, execution, recovery, background.notificationID)
+              yield* SubagentJob.start(jobs, execution, recovery, background.notificationID, background.started_at) // OWN-PATCH(P-035)
               suspended.delete(recovery.childSessionID)
             }),
             { discard: true },

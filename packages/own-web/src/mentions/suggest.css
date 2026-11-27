@@ -1,0 +1,111 @@
+/*
+ * Suggestion list (03 §18.12, §18.13; lazy chunk). Floats above the composer box from a zero-height anchor, so opening
+ * it never moves the textarea (R7). Tokens only; `own-sg-` prefix.
+ */
+.own-sg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  z-index: 30;
+  max-height: min(360px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  font-size: 13px;
+  contain: content;
+}
+
+.own-sg-group + .own-sg-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--own-border);
+}
+
+.own-sg-head {
+  padding: 4px 8px 2px;
+  color: var(--own-text-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.own-sg-note {
+  padding: 2px 8px 4px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-sg-opt {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: var(--own-radius-chip);
+  color: var(--own-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* The tint is a weak cue on the popover; the inset bar marks the active option without relying on color. */
+.own-sg-opt[data-active] {
+  background: var(--own-accent-soft);
+  box-shadow: inset 2px 0 0 var(--own-accent-text);
+}
+
+.own-sg-icon {
+  flex: none;
+  width: 14px;
+  color: var(--own-text-faint);
+  text-align: center;
+}
+
+.own-sg-label {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+}
+
+.own-sg-hint {
+  flex: none;
+  color: var(--own-text-muted);
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+}
+
+.own-sg-detail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--own-text-muted);
+}
+
+.own-sg-badge {
+  flex: none;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid var(--own-border);
+  border-radius: 999px;
+  color: var(--own-text-faint);
+  font-size: 11px;
+}
+
+.own-sg-status,
+.own-sg-foot {
+  padding: 6px 8px;
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+.own-sg-foot {
+  padding-top: 4px;
+  border-top: 1px solid var(--own-border);
+  margin-top: 4px;
+}

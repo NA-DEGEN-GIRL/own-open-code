@@ -1,0 +1,135 @@
+/* Desktop WCO band (03 §4.2.1, 05 §7.1). `[data-wco]` is set on .own-app only when the host has
+   windowControlsOverlay; `:root[data-wco-visible]` while Windows draws its buttons (TitlebarBand). The band's height
+   is env(titlebar-area-height) (tokens.css `--own-header-h`), which already follows the zoom factor. */
+
+/* The work panel's head is the band's right part whenever it reaches the top-right corner (pushed panel, overlay
+   drawer, sheet): band height, drag area on empty space, the window buttons' area left empty. */
+.own-app[data-wco] .own-panel {
+  container-type: inline-size;
+}
+
+.own-app[data-wco] .own-panel-head {
+  height: var(--own-header-h);
+  box-sizing: border-box;
+  padding-right: var(--own-wco-right, 0px);
+  border-bottom: 1px solid var(--own-border);
+  -webkit-app-region: drag;
+}
+
+.own-app[data-wco] .own-panel-head .own-tabs {
+  align-self: stretch;
+  align-items: flex-end;
+  border-bottom: 0;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* The window buttons take 110-175 CSS px of the band (by zoom). A panel too narrow for its tabs next to them keeps
+   the band row for dragging and the close button and gives the tabs a row of their own below it, instead of hiding
+   tabs behind the list's scrollbar-less overflow. */
+/* Unnamed on purpose: the production CSS minifier drops a named `container` shorthand and its `@container <name>`
+   block (the dev build kept them), and .own-panel is the head's nearest container anyway. */
+@container (max-width: 599px) {
+  .own-app[data-wco] .own-panel-head {
+    height: auto;
+    flex-wrap: wrap;
+    padding-right: 0;
+  }
+
+  .own-app[data-wco] .own-panel-head::before {
+    content: "";
+    flex: 1 0 0;
+    height: var(--own-header-h);
+  }
+
+  .own-app[data-wco] .own-panel-head > :not(.own-tabs) {
+    margin-right: calc(var(--own-wco-right, 0px) + 4px);
+  }
+
+  .own-app[data-wco] .own-panel-head .own-tabs {
+    order: 1;
+    flex: 1 0 100%;
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Last resort in a very narrow panel: tabs shrink with an ellipsis; the selected tab and tabs with a badge (4.7) keep
+   their full label. A text-overflow ellipsis needs a block box, so the tab is one here and its badge an inline
+   block. */
+.own-app[data-wco] .own-panel-head .own-tab {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 2.75em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 32px;
+}
+
+.own-app[data-wco] .own-panel-head .own-tab:is([aria-selected="true"], :has(> .own-tab-badge)) {
+  flex-shrink: 0;
+}
+
+.own-app[data-wco] .own-panel-head .own-tab > .own-tab-badge {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Everything that takes a click or focus inside the band is not a drag area (Windows hit-tests drag areas before
+   the page sees the event). */
+.own-app[data-wco]
+  :is(.own-header, .own-panel-head)
+  :is(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    label,
+    summary,
+    [role="tab"],
+    [role="button"],
+    [role="combobox"],
+    [role="switch"],
+    [role="menuitem"],
+    [contenteditable]:not([contenteditable="false"]),
+    [tabindex]:not([tabindex="-1"])
+  ) {
+  -webkit-app-region: no-drag;
+}
+
+/* A pushed, open panel covers the band's right end, so the session header no longer needs to keep the window
+   buttons' area empty (shell.css reserves it for the closed-panel case). */
+.own-app[data-wco][data-panel-mode="push"][data-panel="open"] .own-header {
+  padding-right: 12px;
+}
+
+/* Layers drawn over the band (dialogs, menus, popovers, full-window scrims, the browser pane's overlays) subtract
+   themselves from the drag area, otherwise a click on their part of the top 44 px would move the window. A scrim
+   covers the whole band, so while one is open the band does not drag at all. */
+:root[data-wco-visible]
+  :is(
+    dialog,
+    [popover],
+    [role="dialog"],
+    [role="alertdialog"],
+    [role="menu"],
+    [role="listbox"],
+    [role="tooltip"],
+    [data-own-overlay],
+    [data-kb-popper-content-wrapper],
+    .own-scrim,
+    .fixed.inset-0
+  ) {
+  -webkit-app-region: no-drag;
+}
+
+/* A native modal <dialog> (limits/kit.tsx) paints its backdrop in the top layer, which cannot carry app-region: the
+   band's own parts stop dragging while one is open. `data-wco-modal` comes from titlebar-band.ts, not from
+   `:root:has(dialog[open])`: a `:has()` on the root made Blink restyle hundreds of elements on every DOM insertion,
+   i.e. on each new block of a streaming answer (SR 2026-10-20, styles/invalidation.test.ts). */
+:root[data-wco-visible][data-wco-modal]
+  .own-app[data-wco]
+  :is(.own-header, .own-panel-head, [data-testid="sidebar-band"]) {
+  -webkit-app-region: no-drag;
+}

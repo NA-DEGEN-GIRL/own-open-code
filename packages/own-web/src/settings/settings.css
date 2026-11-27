@@ -1,0 +1,181 @@
+/*
+ * Settings shell (03 §5.7). `split`: the section list in its own scrolling column beside the page, which scrolls on its
+ * own too, so the list never moves away. `stacked` (a main column under 640 px, settings/layout.ts): the list and the
+ * page take turns (`data-view`), with a back link on the page. The mode follows the main column's measured width, so
+ * it is a data attribute rather than a viewport tier variant.
+ */
+.own-settings {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.own-settings[data-layout="stacked"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.own-settings-nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 10px 24px 12px;
+  border-right: 1px solid var(--own-border);
+}
+
+.own-settings-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.own-settings-group-title {
+  margin: 0;
+  padding: 12px 10px 4px;
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+}
+
+.own-settings-group:first-child .own-settings-group-title {
+  padding-top: 4px;
+}
+
+.own-settings-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.own-settings-hint {
+  display: none;
+}
+
+.own-settings-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--own-text);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.own-settings-link:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-settings-link[aria-current="page"] {
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+  font-weight: 600;
+}
+
+.own-settings-nav-manual {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--own-border);
+}
+
+.own-settings-content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.own-settings-body {
+  max-width: 800px;
+  padding: 22px 28px 48px;
+}
+
+.own-settings-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.own-settings-title:focus {
+  outline: none;
+}
+
+/* stacked: a full-width list with touch-sized rows, then the page with a way back. */
+.own-settings[data-layout="stacked"] .own-settings-nav {
+  padding: 8px 12px 32px;
+  border-right: 0;
+}
+
+.own-settings[data-layout="stacked"] .own-settings-link {
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.own-settings[data-layout="stacked"] .own-settings-link::after {
+  content: "›" / "";
+  color: var(--own-text-faint);
+  font-size: 16px;
+}
+
+/* The stacked list shows each page's hint under its label; the rows grow to fit it. */
+.own-settings[data-layout="stacked"] .own-settings-link:has(.own-settings-hint) {
+  min-height: 56px;
+  padding-block: 6px;
+}
+
+.own-settings[data-layout="stacked"] .own-settings-hint {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--own-text-muted);
+  white-space: normal;
+}
+
+.own-settings[data-layout="stacked"] .own-settings-group-title {
+  padding: 16px 12px 4px;
+}
+
+.own-settings[data-layout="stacked"] [data-testid="settings-accounts-link"]::after,
+.own-settings[data-layout="stacked"] .own-settings-nav-manual .own-settings-link::after {
+  content: none;
+}
+
+.own-settings[data-layout="stacked"] .own-settings-body {
+  padding: 8px 16px 40px;
+}
+
+.own-settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin: 0 0 4px -8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--own-accent-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.own-settings-back:hover {
+  background: var(--own-bg-hover);
+}
+
+/* MUX (2026-11-06): `PC에서 바꾸는 설정`, names without a page here: muted, no chevron, no hover. */
+.own-settings-link.own-settings-pc-only {
+  color: var(--own-text-muted);
+  cursor: default;
+}
+.own-settings-link.own-settings-pc-only:hover {
+  background: none;
+}
+.own-settings[data-layout="stacked"] .own-settings-link.own-settings-pc-only::after {
+  content: none;
+}

@@ -93,6 +93,11 @@ export const Settings = Schema.StructWithRest(
     timeout: Timeout,
     headerTimeout: Timeout,
     chunkTimeout: Timeout,
+    // OWN-PATCH(P-018) begin
+    // Stall limits on parsed model events (`@opencode/ai` route client, milliseconds or false); models inherit them.
+    progressTimeout: Timeout,
+    toolInputTimeout: Timeout,
+    // OWN-PATCH(P-018) end
     compaction: Compaction.pipe(optional),
     cache: Cache.pipe(optional),
     transport: Transport.pipe(optional),

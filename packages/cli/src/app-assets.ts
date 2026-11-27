@@ -25,7 +25,9 @@ export const load = Effect.fn("cli.app-assets.load")(function* () {
 
 const sourceAssets = Effect.fnUntraced(function* () {
   const fs = yield* FileSystem.FileSystem
-  const root = path.resolve(import.meta.dirname, "../../app/dist")
+  // OWN-PATCH(P-002) begin
+  const root = path.resolve(import.meta.dirname, "../..", process.env.OPENCODE_WEB_APP ?? "app", "dist")
+  // OWN-PATCH(P-002) end
   const files = yield* fs.readDirectory(root, { recursive: true })
   const assets = Object.fromEntries(
     (yield* Effect.forEach(
@@ -33,7 +35,9 @@ const sourceAssets = Effect.fnUntraced(function* () {
       Effect.fnUntraced(function* (file) {
         const target = path.join(root, file)
         if ((yield* fs.stat(target)).type === "Directory") return
-        return [file, target] as const
+        // OWN-PATCH(P-002) begin
+        return [file.replaceAll(path.sep, "/"), target] as const
+        // OWN-PATCH(P-002) end
       }),
       { concurrency: "unbounded" },
     )).filter((asset) => asset !== undefined),

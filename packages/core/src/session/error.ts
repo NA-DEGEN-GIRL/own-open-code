@@ -94,6 +94,18 @@ export class InboxConflictError extends Schema.TaggedError<InboxConflictError>()
   inboxID: SessionMessage.ID,
 }) {}
 
+// OWN-PATCH(P-035) begin
+/**
+ * A context reset cannot be admitted or undone: `id` names another record, `subagent` the session has a parent,
+ * `superseded` a later compaction or reset bounds history, `revert` a revert is staged, `undone` it was already undone.
+ */
+export class ResetConflictError extends Schema.TaggedError<ResetConflictError>()("Session.ResetConflictError", {
+  sessionID: SessionSchema.ID,
+  resetID: SessionMessage.ID,
+  reason: Schema.Literals(["id", "subagent", "superseded", "revert", "undone"]),
+}) {}
+// OWN-PATCH(P-035) end
+
 export class SkillNotFoundError extends Schema.TaggedError<SkillNotFoundError>()("Session.SkillNotFoundError", {
   skill: Skill.ID,
 }) {}

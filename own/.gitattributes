@@ -1,0 +1,2 @@
+# own/ only (the root .gitattributes is upstream-owned). cmd.exe needs CRLF batch files.
+*.cmd text eol=crlf

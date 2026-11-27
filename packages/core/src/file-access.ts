@@ -103,6 +103,17 @@ export interface Interface {
     context: Invocation,
     options?: ReadOptions,
   ) => Effect.Effect<Target, Environment.Failed | Permission.Error | SessionErrors.NotFoundError>
+  // OWN-PATCH(P-031) begin
+  /**
+   * The files of `absolutes` whose `read` would be allowed without asking, as a search shows them (grep, glob). A
+   * search asks only for its pattern and its root, so without this it returned what a `read` of the file would deny.
+   */
+  readonly readable: (
+    absolutes: readonly string[],
+    context: Invocation,
+    allow?: ReadonlyArray<"allow" | "ask" | "deny">,
+  ) => Effect.Effect<ReadonlySet<string>, Environment.Failed | SessionErrors.NotFoundError>
+  // OWN-PATCH(P-031) end
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/FileAccess") {}
@@ -286,7 +297,29 @@ const layer = Layer.effect(
       return target
     })
 
-    return Service.of({ locate, resolve, authorizeExternal, authorizeRead })
+    // OWN-PATCH(P-031) begin
+    const readable = Effect.fn("FileAccess.readable")(function* (
+      absolutes: readonly string[],
+      context: Invocation,
+      allow: ReadonlyArray<"allow" | "ask" | "deny"> = ["allow"],
+    ) {
+      const kept = yield* Effect.forEach(new Set(absolutes), (absolute) =>
+        resolve({ path: absolute, kind: "file" }).pipe(
+          Effect.flatMap((target) =>
+            permission.check({
+              action: "read",
+              resources: [target.resource],
+              save: ["*"],
+              ...Permission.invocation(context),
+            }),
+          ),
+          Effect.map((effect) => (allow.includes(effect) ? [absolute] : [])),
+        ),
+      )
+      return new Set(kept.flat())
+    })
+    return Service.of({ locate, resolve, authorizeExternal, authorizeRead, readable })
+    // OWN-PATCH(P-031) end
   }),
 )
 

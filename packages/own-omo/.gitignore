@@ -1,0 +1,2 @@
+# The patched omo sources script/bundle.ts stages for Bun.build (inside this package so bare imports resolve here).
+.omo-stage/

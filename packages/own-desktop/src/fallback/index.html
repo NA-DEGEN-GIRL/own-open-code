@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Own OpenCode</title>
+    <style>
+      /* Dark by default, own-web's default (03 §5.7): --bg is the window background main starts with (#080808). Light
+         only for own-web's stored light choice, or its system choice on a light scheme: main.ts sets data-scheme.
+         Before it runs, prefers-color-scheme is the tone main started the window in (src/main/window-tone.ts), so a
+         light user's page does not flash dark either. */
+      :root {
+        color-scheme: dark;
+        --bg: #080808;
+        --fg: #fafafa;
+        --muted: #aeaeae;
+        --card: #161616;
+        --border: #2e2e2e;
+        --danger: #f17471;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-scheme]) {
+          color-scheme: light;
+          --bg: #fafafa;
+          --fg: #161616;
+          --muted: #5c5c5c;
+          --card: #ffffff;
+          --border: #dbdbdb;
+          --danger: #b82d35;
+        }
+      }
+      :root[data-scheme="light"] {
+        color-scheme: light;
+        --bg: #fafafa;
+        --fg: #161616;
+        --muted: #5c5c5c;
+        --card: #ffffff;
+        --border: #dbdbdb;
+        --danger: #b82d35;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.6 "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+      }
+      .band {
+        height: env(titlebar-area-height, 44px);
+        -webkit-app-region: drag;
+      }
+      main {
+        max-width: 560px;
+        margin: 8vh auto 0;
+        padding: 0 24px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 8px 0;
+        color: var(--muted);
+      }
+      code {
+        font: 13px Consolas, "Cascadia Mono", monospace;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 6px;
+        color: var(--fg);
+        user-select: all;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 16px;
+        margin: 16px 0 0;
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+        font-family: Consolas, "Cascadia Mono", monospace;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 20px 0 0;
+      }
+      button {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 14px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--muted);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      button[hidden] {
+        display: none;
+      }
+      #status {
+        min-height: 1.6em;
+        margin: 12px 0 0;
+      }
+      #status[data-tone="error"] {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="band"></div>
+    <main>
+      <section data-testid="own-fallback">
+        <h1 id="title">앱 셸과 화면 버전이 맞지 않아요</h1>
+        <p id="body">데스크톱 앱을 다시 설치하거나 업데이트를 마친 뒤 앱을 다시 여세요.</p>
+        <p id="hint">그동안은 브라우저로 열 수 있어요. PowerShell: <code>own open --browser</code></p>
+        <dl>
+          <dt>셸</dt>
+          <dd id="shell">-</dd>
+          <dt>화면</dt>
+          <dd id="ui">-</dd>
+        </dl>
+        <div class="actions">
+          <button id="browser" type="button" hidden>브라우저로 열기</button>
+          <button id="logs" type="button" hidden>로그 폴더</button>
+        </div>
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

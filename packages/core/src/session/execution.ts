@@ -25,7 +25,9 @@ export interface Interface {
   /** Starts execution while idle or joins the active execution. */
   readonly resume: (sessionID: SessionSchema.ID) => Effect.Effect<void, SessionRunner.RunError>
   /** Registers newly recorded work. Repeated wakeups may coalesce. */
-  readonly wake: (sessionID: SessionSchema.ID) => Effect.Effect<void>
+  // OWN-PATCH(P-035) begin: a scope, so a context reset's wake leaves queued prompts parked (`steer`)
+  readonly wake: (sessionID: SessionSchema.ID, scope?: SessionInbox.Promotable) => Effect.Effect<void>
+  // OWN-PATCH(P-035) end
   /**
    * Interrupt active work owned by this process. Idle interruption is a no-op. Resolves once
    * the interruption is accepted; cleanup settles asynchronously in the execution fiber.
@@ -90,8 +92,17 @@ export const layer = Layer.effect(
     } = {}
     const wake = (sessionID: SessionSchema.ID) =>
       Effect.suspend(() => (holder.coordinator ? holder.coordinator.wake(sessionID) : Effect.void))
-    const background = CodeModeJob.make(jobs, SessionSynthetic.make(store, inbox, wake), scope)
+    // OWN-PATCH(P-035) begin: background notices follow a context reset (Code Mode jobs: background without a start)
+    const resets: SessionSynthetic.Resets = {
+      db,
+      isActive: (sessionID) =>
+        Effect.suspend(() => (holder.coordinator ? holder.coordinator.isActive(sessionID) : Effect.succeed(false))),
+    }
+    const notice = SessionSynthetic.make(store, inbox, wake, resets)
+    const background = CodeModeJob.make(jobs, (input) => notice({ ...input, background: true }), scope)
     const subagentReport = SubagentReport.make({
+      resets,
+      // OWN-PATCH(P-035) end
       store,
       jobs,
       inbox,
@@ -135,6 +146,34 @@ export const layer = Layer.effect(
         Reloaded: (result) => drain(sessionID, result.force, result.continuation, promotable, result.stepped),
       })
     })
+    // OWN-PATCH(P-035) begin
+    // A deliberate stop ends the turn a reset waits for: it delivers now, before the execution settles, ahead of all
+    // pending input, which then follows the usual stop rules in the new context (a stop gives what a reset after it
+    // gives). Shutdown keeps it for the resumed turn. A steer-scoped run that ended at a parked queued prompt before it
+    // (no input wake, which would run that prompt in the old context) delivers it too, and resumes the steers after it
+    // (annotated: it wakes the coordinator it is a hook of).
+    const afterSettle = (sessionID: SessionSchema.ID, outcome: ReturnType<typeof terminal>): Effect.Effect<void> =>
+      (outcome.type === "interrupted" && outcome.reason !== "shutdown") || outcome.type === "succeeded"
+        ? reportLifecycle(
+            sessionID,
+            SessionInbox.serialized(
+              sessionID,
+              Effect.gen(function* () {
+                const reset =
+                  outcome.type === "interrupted"
+                    ? (yield* SessionInbox.list(db, sessionID)).find((item) => item.type === "reset")
+                    : yield* SessionInbox.nextPromotable(db, sessionID, "input", { parked: true })
+                if (reset?.type !== "reset") return false
+                yield* SessionInbox.deliverReset(db, bus, sessionID, reset.id)
+                return (
+                  outcome.type === "succeeded" &&
+                  (yield* SessionInbox.nextPromotable(db, sessionID, "steer")) !== undefined
+                )
+              }),
+            ).pipe(Effect.flatMap((resume) => (resume ? coordinator.wake(sessionID, "steer") : Effect.void))),
+          )
+        : Effect.void
+    // OWN-PATCH(P-035) end
     const coordinator = yield* SessionRunCoordinator.make<SessionSchema.ID, SessionRunner.RunError, InterruptReason>({
       started: (sessionID) =>
         reportLifecycle(
@@ -174,7 +213,10 @@ export const layer = Layer.effect(
               Effect.ignoreCause({ log: "Error", message: "Subagent report delivery failed" }),
             )
           }),
-        ),
+          // OWN-PATCH(P-035) begin: after a deliberate stop (user or inactivity), or a steer-scoped run that left a reset
+          // behind a parked queue, the waiting reset delivers
+        ).pipe(Effect.andThen(() => afterSettle(sessionID, terminal(exit, reason)))),
+      // OWN-PATCH(P-035) end
     })
     holder.coordinator = coordinator
 
@@ -194,9 +236,12 @@ export const layer = Layer.effect(
           // Reading the inbox concurrently with the dying drain is safe: delivery consumes
           // rows inside uninterruptible publications, so a steer row is either still
           // promotable here or was fully delivered and needs no resumption.
-          const next = yield* SessionInbox.nextPromotable(db, sessionID, "input")
+          // OWN-PATCH(P-035) begin: the stop delivers a waiting context reset ahead of everything (settled hook), so
+          // parked queued prompts do not hold it and the steers before and after it resume in the new context
+          const next = yield* SessionInbox.nextPromotable(db, sessionID, "input", { parked: true })
           if (next === undefined) return interrupted
-          if (next.delivery === "steer" || next.type === "compaction" || next.type === "move")
+          if (next.delivery === "steer" || next.type === "compaction" || next.type === "move" || next.type === "reset")
+            // OWN-PATCH(P-035) end
             yield* coordinator.wake(sessionID, "steer")
           return interrupted
         }),

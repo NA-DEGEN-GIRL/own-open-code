@@ -1,0 +1,310 @@
+/* Team mode screens (06 §9.3, §9.7): result cards above the team main and the confirm dialogs, lazy with the team
+   chunk. own tokens only (03 §13.2); the cards wrap to 360 px (4.2) and every button keeps a visible focus ring. */
+.own-team-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 16px 0;
+  /* Up to three cards sit above the team main: on a phone they would leave the conversation no room (4.2). */
+  max-height: 40dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.own-team-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-raised);
+  color: var(--own-text);
+  font-size: 13px;
+}
+.own-team-card[data-state="failed"] {
+  border-color: color-mix(in srgb, var(--own-danger) 45%, var(--own-border));
+}
+.own-team-card-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.own-team-card-state {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+/* RH-20: the step a running op waits at, why and since when, and its buttons. */
+.own-team-wait {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
+}
+.own-team-wait-line {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.own-team-wait-shells {
+  margin: 0;
+  padding-left: 16px;
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.own-team-wait-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.own-team-card[data-state="failed"] .own-team-card-state {
+  color: var(--own-danger);
+}
+.own-team-card-lines,
+.own-team-confirms,
+.own-team-choices,
+.own-team-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-team-card-line {
+  overflow-wrap: anywhere;
+}
+.own-team-card-line > span + .own-team-link {
+  margin-left: 6px;
+}
+/* 끝내기… and 무시 side by side (the review's suggestion line): never `끝내기…무시`. */
+.own-team-card-line > .own-team-link + .own-team-link {
+  margin-left: 8px;
+}
+.own-team-card-line[data-tone="muted"] {
+  color: var(--own-text-muted);
+}
+.own-team-card-line[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-team-muted {
+  color: var(--own-text-muted);
+}
+.own-team-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--own-accent-text);
+  font: inherit;
+  cursor: pointer;
+}
+.own-team-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.own-team-link:disabled {
+  color: var(--own-text-faint);
+  cursor: default;
+}
+.own-team-details-toggle {
+  align-self: flex-start;
+}
+.own-team-choices {
+  padding: 4px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+}
+.own-team-choice {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text);
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.own-team-choice:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-team-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+}
+.own-team-confirm-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.own-team-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.own-team-details {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+.own-team-details li {
+  overflow-wrap: anywhere;
+}
+.own-team-card-actions,
+.own-team-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.own-team-btn {
+  flex: none;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-team-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-team-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.own-team-btn[data-primary] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+.own-team-btn[data-danger] {
+  border-color: var(--own-danger);
+  background: var(--own-danger);
+  color: var(--own-on-danger);
+}
+.own-team-btn:focus-visible,
+.own-team-link:focus-visible,
+.own-team-choice:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+/* Confirm dialogs: the frame of 03's danger dialog (same as the worktree cleanup dialog). */
+.own-team-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--own-scrim);
+}
+.own-team-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 18px 20px 16px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 13px;
+  transform: translate(-50%, -50%);
+}
+.own-team-dialog[data-danger] {
+  border-top: 3px solid var(--own-danger);
+}
+.own-team-dialog-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.own-team-dialog-body {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.own-team-dialog-body[data-tone="danger"] {
+  color: var(--own-danger);
+}
+.own-team-dialog-label {
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.own-team-files {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  font-size: 12px;
+  list-style: none;
+}
+.own-team-file {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding: 2px 10px;
+}
+.own-team-file-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-team-file-size {
+  flex: none;
+  color: var(--own-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* 06 §8.6 step 2: an ignored file that cannot be made again is named apart in a removal's list. */
+.own-team-file-flag {
+  flex: none;
+  color: var(--own-danger);
+}
+.own-team-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  list-style: none;
+}
+.own-team-notes li[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-team-notes li[data-tone="danger"] {
+  color: var(--own-danger);
+}

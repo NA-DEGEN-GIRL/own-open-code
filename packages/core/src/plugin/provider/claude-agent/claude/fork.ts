@@ -1,5 +1,8 @@
 export * as ClaudeFork from "./fork.js"
 
+// OWN-PATCH(P-045) begin
+import type { SessionStore } from "@anthropic-ai/claude-agent-sdk"
+// OWN-PATCH(P-045) end
 import { ClaudeSDK } from "./sdk.js"
 
 export interface Result {
@@ -8,14 +11,22 @@ export interface Result {
 }
 
 // The SDK gives forked messages fresh UUIDs. Verify the copied prefix before mapping checkpoints onto them.
-export async function create(sessionID: string, messageID: string): Promise<Result | undefined> {
+export async function create(
+  sessionID: string,
+  messageID: string,
+  // OWN-PATCH(P-045) begin
+  folder?: { readonly dir: string; readonly sessionStore: SessionStore },
+  // OWN-PATCH(P-045) end
+): Promise<Result | undefined> {
   const { deleteSession, forkSession, getSessionMessages } = await ClaudeSDK.load()
-  const source = await getSessionMessages(sessionID)
+  // OWN-PATCH(P-045) begin
+  const source = await getSessionMessages(sessionID, folder)
   const end = source.findIndex((message) => message.uuid === messageID)
   if (end < 0) return
-  const fork = await forkSession(sessionID, { upToMessageId: messageID })
+  const fork = await forkSession(sessionID, { ...folder, upToMessageId: messageID })
   try {
-    const copied = await getSessionMessages(fork.sessionId)
+    const copied = await getSessionMessages(fork.sessionId, folder)
+    // OWN-PATCH(P-045) end
     if (copied.length !== end + 1) throw new Error("Claude fork did not preserve the requested history boundary")
     const messages = new Map<string, string>()
     for (let i = 0; i < copied.length; i++) {
@@ -28,7 +39,9 @@ export async function create(sessionID: string, messageID: string): Promise<Resu
     }
     return { sessionID: fork.sessionId, messages }
   } catch (error) {
-    await deleteSession(fork.sessionId)
+    // OWN-PATCH(P-045) begin
+    await deleteSession(fork.sessionId, folder)
+    // OWN-PATCH(P-045) end
     throw error
   }
 }

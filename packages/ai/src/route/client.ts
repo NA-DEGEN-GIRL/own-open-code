@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Layer, Option, Schema, Stream } from "effect"
+import { Cause, Clock, Context, Duration, Effect, Layer, Option, Schema, Stream } from "effect"
 import { Auth } from "./auth.js"
 import { Endpoint, type EndpointPatch } from "./endpoint.js"
 import { RequestExecutor } from "./executor.js"
@@ -13,7 +13,7 @@ import { normalizeToolHistory } from "../tool-history.js"
 import { sanitizeSurrogates } from "../utils/sanitize.js"
 import * as ProviderShared from "../protocols/shared.js"
 import { ToolSchemaProjection } from "../protocols/utils/tool-schema.js"
-import type { LanguageModelSanitizerCompatibility, ProtocolID, ProviderOptions } from "../schema/index.js"
+import type { HttpTimeout, LanguageModelSanitizerCompatibility, ProtocolID, ProviderOptions } from "../schema/index.js"
 import type { LLMRequestInput } from "../llm.js"
 import {
   AIError,
@@ -30,9 +30,11 @@ import {
   ProviderID,
   ToolChoice,
   ToolEntry,
+  TransportError,
   type LLMRequest,
   mergeGeneration,
   mergeRequestOptions,
+  timeoutConfig,
   mergeProviderOptions,
   mergeTransport,
   type RequestOptions,
@@ -332,6 +334,88 @@ const requireTerminalEvent = (route: string) => (events: Stream.Stream<LLMEvent,
     )
   })
 
+// OWN-PATCH(P-018) begin
+const PROGRESS_TIMEOUT_MS = 300_000
+const TOOL_INPUT_TIMEOUT_MS = 120_000
+/** A local tool call's input may stay open for this many tool-input windows (10 minutes by default). */
+const TOOL_INPUT_WINDOWS = 5
+const TOOL_INPUT_MAX_CHARS = 1_000_000
+/** ChatGPT's backend ends a Responses stream after about 900 seconds with `request_timeout`. */
+const RESPONSES_ATTEMPT_MS = 900_000
+const limitMs = (value: HttpTimeout | undefined, fallback: number) => (value === false ? Infinity : (value ?? fallback))
+const seconds = (ms: number) => Math.round(ms / 1000)
+
+/**
+ * Fails a stream whose parsed events stop making progress with a retryable read timeout, so the runner retries the
+ * attempt (nothing durable yet) or continues the step (output started). Progress is a new output item or a non-empty
+ * text, reasoning or tool-input delta; keepalives, `response.in_progress` and metadata parse to nothing or to
+ * `step-start`. The byte-level chunk timeout (transport/http.ts) runs before parsing and stays as it is.
+ */
+const watchProgress =
+  (request: LLMRequest, protocol: ProtocolID, transport: "http" | "websocket") =>
+  (events: Stream.Stream<LLMEvent, AIError>) =>
+    Stream.unwrap(
+      Effect.gen(function* () {
+        // A route that disabled the chunk timeout may pause for long (local servers): no progress limit by default.
+        const config = timeoutConfig(request.timeout)
+        const quiet = config.chunk === false
+        const idle = limitMs(config.progress, quiet ? Infinity : PROGRESS_TIMEOUT_MS)
+        const toolInput = limitMs(config.toolInput, quiet ? Infinity : TOOL_INPUT_TIMEOUT_MS)
+        const total = limitMs(config.total, protocol.endsWith("responses") ? RESPONSES_ATTEMPT_MS : Infinity)
+        const fail = (message: string) =>
+          new AIError({ reason: new TransportError({ message, transport, operation: "read", code: "Timeout" }) })
+        // ChatGPT's backend ends long Responses streams with `request_timeout`: retry it like the attempt limit.
+        const backendTimeout = (error: AIError) =>
+          error.reason._tag !== "Transport" &&
+          /\brequest_timeout\b/.test(`${error.reason.message} ${error.reason.body}`)
+            ? fail(`The provider ended the response with request_timeout: ${error.reason.message}`)
+            : error
+        if (![idle, toolInput, total].some(Number.isFinite)) return events.pipe(Stream.mapError(backendTimeout))
+        const started = yield* Clock.currentTimeMillis
+        const open = new Map<string, { readonly since: number; size: number }>()
+        let last = started
+        const limits = (): ReadonlyArray<readonly [number, string]> => {
+          const gap = open.size > 0 ? Math.min(idle, toolInput) : idle
+          const opened = Math.min(...Array.from(open.values(), (tool) => tool.since))
+          const what = open.size > 0 ? "A tool call input" : "The model stream"
+          return [
+            [last + gap, `${what} made no progress for ${seconds(gap)} seconds`],
+            [
+              opened + toolInput * TOOL_INPUT_WINDOWS,
+              `A tool call input stayed open for ${seconds(toolInput * TOOL_INPUT_WINDOWS)} seconds`,
+            ],
+            [started + total, `The model response did not complete within ${seconds(total)} seconds`],
+          ]
+        }
+        const watch = Effect.gen(function* () {
+          while (true) {
+            const [deadline, message] = limits().reduce((first, next) => (next[0] < first[0] ? next : first))
+            const now = yield* Clock.currentTimeMillis
+            if (now >= deadline) return yield* fail(message)
+            // A tool input that opens moves the deadline earlier, so check at least once a second.
+            yield* Effect.sleep(Duration.millis(Math.min(deadline - now, 1_000)))
+          }
+        })
+        const observe = Effect.fnUntraced(function* (event: LLMEvent) {
+          // Raw provider frames (`includeRaw`) are copies of what parsed into other events, keepalives included.
+          if (event.type === "step-start" || event.type === "raw") return
+          const delta =
+            event.type === "text-delta" || event.type === "reasoning-delta" || event.type === "tool-input-delta"
+          if (delta && event.text === "") return
+          last = yield* Clock.currentTimeMillis
+          if (event.type === "tool-input-start" && !event.providerExecuted) open.set(event.id, { since: last, size: 0 })
+          if (event.type === "tool-input-end" || event.type === "tool-call" || event.type === "tool-input-error")
+            open.delete(event.id)
+          const tool = event.type === "tool-input-delta" ? open.get(event.id) : undefined
+          if (tool === undefined || !Number.isFinite(toolInput) || event.type !== "tool-input-delta") return
+          tool.size += event.text.length
+          if (tool.size > TOOL_INPUT_MAX_CHARS)
+            return yield* fail(`A tool call input grew past ${TOOL_INPUT_MAX_CHARS} characters without completing`)
+        })
+        return events.pipe(Stream.tap(observe), Stream.interruptWhen(watch), Stream.mapError(backendTimeout))
+      }),
+    )
+// OWN-PATCH(P-018) end
 const decodeJsonOption = Schema.decodeUnknownOption(ProviderShared.Json)
 
 // JSON text frames are parsed; non-JSON sentinels such as `[DONE]` stay strings.
@@ -471,6 +555,13 @@ function makeFromTransport<Body, Prepared, Frame, Event, State>(
                   : parsed
               }).pipe(
                 Stream.catchCause((cause) => Stream.fail(streamError(route, `Failed to read ${route} stream`, cause))),
+                // OWN-PATCH(P-018) begin
+                watchProgress(
+                  request,
+                  protocol.id,
+                  routeInput.transport.id.startsWith("websocket") ? "websocket" : "http",
+                ),
+                // OWN-PATCH(P-018) end
                 requireTerminalEvent(route),
                 Stream.mapError(
                   (error) =>

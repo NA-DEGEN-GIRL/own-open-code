@@ -1,0 +1,449 @@
+/* 다른 도구의 대화 (09 §3, §6): the list and the read-only viewer, loaded with their lazy chunks. own tokens only
+   (03 §13.2). Rows have fixed heights (R7) and `contain: content`; the page fits 360 px (4.2) and every control keeps
+   a visible focus ring. */
+.own-import {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.own-import-head {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 28px 10px;
+}
+.own-app[data-tier="phone"] .own-import-head {
+  padding: 12px 12px 8px;
+}
+
+.own-import-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.own-import-filters,
+.own-import-search,
+.own-import-toggles,
+.own-import-tags {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.own-import-filters {
+  gap: 8px 12px;
+}
+
+.own-import-toggle {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 999px;
+  background: var(--own-bg);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+.own-import-toggle:hover {
+  background: var(--own-bg-hover);
+}
+.own-import-toggle[aria-pressed="true"] {
+  border-color: var(--own-accent-text);
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+  font-weight: 600;
+}
+
+.own-import-searchbox {
+  display: flex;
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text-faint);
+}
+.own-import-searchbox:focus-within {
+  border-color: var(--own-focus);
+}
+.own-import-searchbox input {
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--own-text);
+  font-size: 13px;
+  outline: none;
+}
+
+.own-import-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 28px 24px;
+}
+.own-app[data-tier="phone"] .own-import-scroll {
+  padding: 0 12px 16px;
+}
+
+.own-import-state {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--own-text-faint);
+  font-size: 13px;
+}
+
+.own-import-rows {
+  position: relative;
+  width: 100%;
+}
+.own-import-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  contain: content;
+}
+
+.own-import-folder {
+  display: flex;
+  height: 100%;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 4px 6px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-import-row {
+  display: flex;
+  height: calc(100% - 6px);
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+}
+.own-import-row[data-child] {
+  margin-left: 24px;
+  border-style: dashed;
+}
+.own-import-row[data-readable="false"] {
+  opacity: 0.7;
+}
+.own-import-row-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.own-import-row-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--own-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.own-import-row-title:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.own-import-row-meta {
+  display: flex;
+  min-width: 0;
+  max-width: 55%;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.own-import-row-prompt {
+  min-height: 18px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-import-row .own-import-tags {
+  min-width: 0;
+  flex: 1;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.own-import-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+.own-import-fold {
+  flex: none;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+.own-import-fold:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+
+.own-import-heading {
+  display: flex;
+  height: 100%;
+  align-items: flex-end;
+  margin: 0;
+  padding: 0 4px 6px;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.own-import-hits {
+  display: flex;
+  height: calc(100% - 6px);
+  flex-direction: column;
+  padding: 6px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+}
+.own-import-hits-title {
+  display: flex;
+  min-width: 0;
+  height: 22px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.own-import-hit {
+  display: flex;
+  min-width: 0;
+  height: 26px;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--own-text);
+  font-size: 12.5px;
+  text-align: left;
+}
+.own-import-hit:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-import-status {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+
+/* Viewer */
+.own-import-viewer {
+  max-width: none;
+}
+
+.own-import-band {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+
+.own-import-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  margin: 0;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+.own-import-meta > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-import-meta > span + span::before {
+  content: "·";
+  padding: 0 6px;
+  color: var(--own-text-faint);
+}
+.own-import-meta > span[data-item="folderMissing"] {
+  color: var(--own-warn);
+}
+
+.own-import-find {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 28px 8px;
+  padding: 8px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+}
+.own-import-find-results {
+  display: flex;
+  width: 100%;
+  max-height: 220px;
+  flex-direction: column;
+  overflow: auto;
+  font-size: 12.5px;
+}
+
+.own-import-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--own-border);
+}
+.own-import-timeline {
+  min-width: 0;
+}
+
+.own-import-outline {
+  display: flex;
+  width: 280px;
+  flex: none;
+  flex-direction: column;
+  border-left: 1px solid var(--own-border);
+}
+.own-import-outline .own-import-heading {
+  height: 32px;
+  padding: 0 12px 6px;
+}
+.own-import-outline-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.own-import-outline-turn,
+.own-import-outline-child,
+.own-import-outline-state {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--own-text);
+  font-size: 12.5px;
+  text-align: left;
+  text-decoration: none;
+}
+.own-import-outline-turn:hover,
+.own-import-outline-child:hover {
+  background: var(--own-bg-hover);
+}
+.own-import-outline-turn[aria-current="true"] {
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+}
+.own-import-outline-child {
+  padding-left: 24px;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-import-outline-state {
+  color: var(--own-text-faint);
+}
+
+/* Narrow windows: the outline lies over the conversation while it is shown. */
+.own-app[data-tier="phone"] .own-import-body,
+.own-app[data-tier="tablet"] .own-import-body,
+.own-app[data-tier="compact"] .own-import-body {
+  position: relative;
+}
+.own-app[data-tier="phone"] .own-import-outline,
+.own-app[data-tier="tablet"] .own-import-outline,
+.own-app[data-tier="compact"] .own-import-outline {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(300px, 85%);
+  background: var(--own-bg);
+  box-shadow: -4px 0 16px rgb(0 0 0 / 0.12);
+}
+
+.own-import-compaction-note {
+  margin: 0 auto 8px;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+.own-import-compaction-summary {
+  max-height: 360px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-subtle);
+  color: var(--own-text);
+  font-family: var(--own-font-sans);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.own-import-footer {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  border-top: 1px solid var(--own-border);
+}
+.own-app[data-tier="phone"] .own-import-footer {
+  padding: 8px 12px;
+}

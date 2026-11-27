@@ -1,0 +1,209 @@
+/* Attachment chips, drop overlay and preview (03 §4.6, §18.10). own tokens only (13.2). */
+/* Inside the composer box, inset like the mention chips (.own-mc). */
+.own-at {
+  margin: 0;
+  padding: 10px 12px 0;
+}
+.own-at-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.own-at-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 260px;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg-subtle);
+  overflow: hidden;
+  contain: content;
+}
+.own-at-chip[data-state="failed"] {
+  border-color: var(--own-danger);
+}
+.own-at-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px 0 4px;
+  border: 0;
+  background: none;
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+/* Transparent images sit on a light checkerboard in both schemes: dark strokes vanish on the dark chip otherwise. */
+.own-at-thumb {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: repeating-conic-gradient(#e6e6e6 0 25%, #ffffff 0 50%) 0 0 / 8px 8px;
+}
+.own-at-kind {
+  flex: none;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--own-meter-track);
+  color: var(--own-text-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+.own-at-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-at-size {
+  flex: none;
+  color: var(--own-text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.own-at-x {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.own-at-x:hover {
+  background: var(--own-bg-hover);
+}
+.own-at-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--own-accent);
+  transition: width 0.2s linear;
+}
+.own-at-note {
+  margin: 4px 0 0;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-at-note[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-at-add {
+  display: inline-grid;
+  place-items: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  /* One line at its fixed height: in a narrow pane the toolbar shrinks the model pill, not this label. */
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.own-at-add:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-at-add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.own-at-drop {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--own-accent);
+  border-radius: var(--own-radius-card);
+  background: color-mix(in srgb, var(--own-accent) 8%, transparent);
+  color: var(--own-accent-text);
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.own-at-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--own-scrim);
+}
+.own-at-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  padding: 14px 16px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  transform: translate(-50%, -50%);
+  overflow: auto;
+}
+.own-at-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.own-at-dialog-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.own-at-dialog-image {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: repeating-conic-gradient(#e6e6e6 0 25%, #ffffff 0 50%) 0 0 / 16px 16px;
+}
+.own-at-dialog-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.own-at-dialog-facts dt {
+  color: var(--own-text-muted);
+}
+.own-at-dialog-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.own-at-dialog-path {
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+}

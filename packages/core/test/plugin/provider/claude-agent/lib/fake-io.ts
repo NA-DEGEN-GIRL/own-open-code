@@ -14,7 +14,10 @@ export function make(input: {
     which: () => EXECUTABLE,
     env: () => input.env ?? {},
     sessionExists: async () => true,
-    fork: input.claude.fork,
-    remove: input.claude.remove,
+    // OWN-PATCH(P-045) begin
+    // own's IO names a folder by its account folder and directory; the fake keeps upstream's folder path.
+    fork: (sessionID, messageID, folder) => input.claude.fork(sessionID, messageID, folder?.configDir),
+    remove: (sessionID, folder) => input.claude.remove(sessionID, folder?.configDir),
+    // OWN-PATCH(P-045) end
   }
 }

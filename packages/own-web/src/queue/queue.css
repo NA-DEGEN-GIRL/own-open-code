@@ -1,0 +1,174 @@
+/* `≡ 대기 {n}` dock (03 §4.6, §18.9). own tokens only (13.2). */
+.own-q {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  font-size: 12.5px;
+}
+.own-q[aria-busy="true"] {
+  opacity: 0.85;
+}
+.own-q-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.own-q-hint {
+  margin-left: auto;
+  color: var(--own-text-faint);
+  font-size: 11px;
+}
+.own-q-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 172px;
+  overflow-y: auto;
+}
+.own-q-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px 0;
+  border-radius: 6px;
+  background: var(--own-bg-raised);
+  contain: layout style;
+}
+.own-q-row[data-dragging] {
+  z-index: 1;
+  box-shadow: var(--own-shadow-float);
+}
+.own-q-row[data-drop="before"] {
+  box-shadow: inset 0 2px 0 var(--own-accent-text);
+}
+.own-q-row[data-drop="after"] {
+  box-shadow: inset 0 -2px 0 var(--own-accent-text);
+}
+.own-q-grip,
+.own-q-grip-space {
+  flex: none;
+  width: 18px;
+}
+.own-q-grip {
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--own-text-faint);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -4px;
+  cursor: grab;
+  touch-action: none;
+}
+.own-q-grip:hover:not(:disabled),
+.own-q-grip:focus-visible {
+  background: var(--own-bg-hover);
+  color: var(--own-text-muted);
+}
+.own-q-row[data-dragging] .own-q-grip {
+  cursor: grabbing;
+}
+.own-q-badge {
+  flex: none;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--own-radius-chip);
+  border: 1px solid var(--own-accent-text);
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.own-q-badge[data-delivery="queue"] {
+  border-color: var(--own-border-strong);
+  background: none;
+  color: var(--own-text-muted);
+}
+.own-q-badge[data-delivery="held"],
+.own-q-badge[data-delivery="control"] {
+  border-style: dashed;
+  border-color: var(--own-border-strong);
+  background: none;
+  color: var(--own-text-muted);
+  cursor: default;
+}
+.own-q-badge:disabled {
+  cursor: default;
+}
+.own-q-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-q-meta {
+  margin-left: 6px;
+  color: var(--own-text-faint);
+  font-size: 11px;
+}
+.own-q-note {
+  flex: none;
+  color: var(--own-text-faint);
+  font-size: 11px;
+}
+.own-q-note[data-note="afterSwitch"],
+.own-q-note[data-note="steerNow"] {
+  color: var(--own-warn);
+}
+.own-q-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+.own-q-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-q-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.own-q-link:disabled,
+.own-q-x:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.own-q-x {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.own-q-x:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+/* Phone (03 §4.2): notes fold away, actions stay. */
+@media (max-width: 599px) {
+  .own-q-note,
+  .own-q-hint {
+    display: none;
+  }
+}

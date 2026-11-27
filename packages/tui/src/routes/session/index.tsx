@@ -2222,9 +2222,15 @@ function CompactionMessage(props: { message: Extract<SessionMessageInfo, { type:
             </Match>
           </Switch>
           <text fg={color()}>
-            {props.message.status === "completed" && props.message.native?.messages
-              ? "Provider compaction"
-              : "Compaction"}
+            {/* OWN-PATCH(P-035) begin: a context reset is a completed compaction without a summary */}
+            {props.message.status === "completed" && props.message.reason === "reset"
+              ? props.message.undone
+                ? "Context reset · undone"
+                : "Context reset"
+              : /* OWN-PATCH(P-035) end */
+                props.message.status === "completed" && props.message.native?.messages
+                ? "Provider compaction"
+                : "Compaction"}
           </text>
           <Show when={cancelled()}>
             <text fg={color()}>· cancelled</text>

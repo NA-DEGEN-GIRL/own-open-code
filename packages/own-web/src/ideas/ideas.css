@@ -1,0 +1,549 @@
+/* Idea notes (03 §4.4.1 아이디어 노트): the header button, the quick capture popover and the sticky board. Paper colors
+   come from the theme tokens --own-sticky-<color> (styles/tokens.css); text on paper stays --own-text. */
+
+.own-ideas-faint {
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+
+.own-ideas-grow {
+  flex: 1;
+}
+
+.own-ideas-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--own-text-muted);
+}
+
+.own-ideas-note[data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+/* ---- quick capture (popover, top layer) ---- */
+.own-ideas-capture {
+  position: fixed;
+  inset: calc(var(--own-header-h) + 8px) 0 auto 0;
+  margin: 0 auto;
+  width: min(520px, calc(100vw - 32px));
+  padding: 12px 14px 14px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-float);
+  z-index: 60;
+}
+
+.own-ideas-capture-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+
+.own-ideas-capture-head > svg,
+.own-ideas-board-head > svg,
+.own-ideas-empty > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.own-ideas-capture-head > .own-ideas-faint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- capture form (popover and board) ---- */
+.own-ideas-form {
+  padding: 10px;
+  border: 1px solid var(--own-sticky-edge);
+  border-radius: var(--own-radius-card);
+  background: var(--own-sticky-yellow);
+}
+
+.own-ideas-form[data-color="pink"] {
+  background: var(--own-sticky-pink);
+}
+.own-ideas-form[data-color="green"] {
+  background: var(--own-sticky-green);
+}
+.own-ideas-form[data-color="blue"] {
+  background: var(--own-sticky-blue);
+}
+.own-ideas-form[data-color="purple"] {
+  background: var(--own-sticky-purple);
+}
+
+.own-ideas-field {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  max-height: 40vh;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--own-bg-raised) 55%, transparent);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.own-ideas-field:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+.own-ideas-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.own-ideas-hint {
+  flex: 1;
+  min-width: 0;
+}
+
+.own-ideas-count {
+  font-size: 12px;
+  color: var(--own-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.own-ideas-count[data-over] {
+  color: var(--own-danger);
+}
+
+.own-ideas-colors {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.own-ideas-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--own-border-input);
+  border-radius: 50%;
+  background: var(--own-sticky-yellow);
+  cursor: pointer;
+}
+
+.own-ideas-swatch[data-color="pink"] {
+  background: var(--own-sticky-pink);
+}
+.own-ideas-swatch[data-color="green"] {
+  background: var(--own-sticky-green);
+}
+.own-ideas-swatch[data-color="blue"] {
+  background: var(--own-sticky-blue);
+}
+.own-ideas-swatch[data-color="purple"] {
+  background: var(--own-sticky-purple);
+}
+
+.own-ideas-swatch[aria-checked="true"] {
+  outline: 2px solid var(--own-text);
+  outline-offset: 1px;
+}
+
+.own-ideas-swatch:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}
+
+/* ---- board (modal dialog; the whole screen on the phone, kit.css) ---- */
+.own-dialog.own-ideas-board {
+  width: min(1120px, calc(100vw - 32px));
+  height: min(88vh, 960px);
+  max-height: min(88vh, 960px);
+}
+
+.own-ideas-board-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 8px 20px;
+}
+
+.own-ideas-board-head > h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 650;
+}
+
+/* Wraps instead of an ellipsis on a narrow board: cut short, `모델에게 보내지 않아요` lost its "not" (2026-10-18). */
+.own-ideas-where {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.own-ideas-board-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.own-ideas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.own-ideas-search {
+  width: min(280px, 100%);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.own-ideas-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.own-ideas-chip {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 999px;
+  background: var(--own-bg);
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.own-ideas-chip[aria-pressed="true"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+}
+
+.own-ideas-state {
+  margin: 12px 0;
+  color: var(--own-text-muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.own-ideas-empty {
+  margin: 24px auto;
+  max-width: 460px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--own-text-muted);
+  font-size: 13.5px;
+  line-height: 21px;
+}
+
+.own-ideas-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.own-ideas-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  padding: 12px 12px 6px;
+  border: 1px solid var(--own-sticky-edge);
+  border-radius: 4px 4px 12px 4px;
+  background: var(--own-sticky-yellow);
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-raised);
+}
+
+.own-ideas-card[data-color="pink"] {
+  background: var(--own-sticky-pink);
+}
+.own-ideas-card[data-color="green"] {
+  background: var(--own-sticky-green);
+}
+.own-ideas-card[data-color="blue"] {
+  background: var(--own-sticky-blue);
+}
+.own-ideas-card[data-color="purple"] {
+  background: var(--own-sticky-purple);
+}
+
+.own-ideas-pin-mark {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--own-text-muted);
+}
+
+.own-ideas-pin-mark svg,
+.own-ideas-card-foot svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.own-ideas-text {
+  flex: 1;
+  margin: 0;
+  padding-right: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 21px;
+  max-height: 16em;
+  overflow: auto;
+}
+
+.own-ideas-tag {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--own-accent-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.own-ideas-tag:hover {
+  text-decoration: underline;
+}
+
+.own-ideas-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.own-ideas-card-foot .own-icon-button {
+  width: 28px;
+  height: 28px;
+  color: var(--own-text-muted);
+}
+
+.own-ideas-card-foot .own-icon-button:hover {
+  background: color-mix(in srgb, var(--own-text) 8%, transparent);
+}
+
+.own-ideas-menu-wrap {
+  position: relative;
+}
+
+.own-ideas-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  z-index: 5;
+  min-width: 200px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-ideas-menu > .own-ideas-colors {
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--own-border);
+  margin-bottom: 4px;
+}
+
+.own-ideas-menu > [role="menuitem"] {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-ideas-menu > [role="menuitem"]:hover,
+.own-ideas-menu > [role="menuitem"]:focus-visible {
+  background: var(--own-bg-hover);
+}
+
+.own-ideas-menu > [data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+.own-ideas-editor {
+  flex: 1;
+}
+
+.own-ideas-bar {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 0 20px;
+  font-size: 13px;
+}
+
+.own-ideas-bar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--own-text);
+  color: var(--own-bg);
+}
+
+.own-ideas-bar > span .own-link {
+  color: var(--own-bg);
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.own-ideas-bar > span[data-tone="danger"] {
+  background: var(--own-danger);
+  color: var(--own-on-danger);
+}
+
+.own-ideas-fab {
+  position: absolute;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: var(--own-shadow-float);
+  cursor: pointer;
+}
+
+.own-ideas-fab:disabled {
+  opacity: 0.45;
+}
+
+.own-ideas-projects {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.own-ideas-projects button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-ideas-projects button:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-ideas-projects button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.own-ideas-projects .own-ideas-faint {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 599px) {
+  .own-dialog.own-ideas-board {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .own-ideas-where {
+    display: none;
+  }
+
+  .own-ideas-board-head {
+    justify-content: flex-start;
+  }
+
+  .own-ideas-board-head > h2 {
+    flex: 1;
+  }
+
+  .own-ideas-board-body {
+    padding: 4px 12px 96px;
+  }
+
+  .own-ideas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .own-ideas-hint {
+    display: none;
+  }
+
+  .own-ideas-capture {
+    inset: calc(var(--own-header-h) + 4px) 0 auto 0;
+    width: calc(100vw - 16px);
+  }
+}
+
+/* The destructive item sits under a divider (03 §4.4.1, like the session `⋯` menu's `삭제…`). */
+.own-ideas-menu > [role="menuitem"][data-tone="danger"] {
+  margin-top: 4px;
+  border-top: 1px solid var(--own-border);
+  border-radius: 0 0 6px 6px;
+}

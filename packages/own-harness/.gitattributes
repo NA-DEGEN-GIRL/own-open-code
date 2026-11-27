@@ -1,0 +1,4 @@
+# codex-data is generated from Codex git objects (script/codex-data.ts): keep the bytes Codex ships.
+codex-data/** -text
+# own's model-facing prompt text: the same bytes on every checkout, so the cached prefix and the tests agree.
+src/codex/variant-base.md text eol=lf

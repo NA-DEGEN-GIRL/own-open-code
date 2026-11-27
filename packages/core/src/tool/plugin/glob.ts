@@ -84,13 +84,33 @@ export const Plugin = {
                 )
               const root = target.absolute
               const result = yield* ToolSearch.bounded(input.limit ?? FileSystem.DEFAULT_SEARCH_LIMIT, (limit) =>
-                ripgrep.glob({
-                  environment: target.environment,
-                  cwd: root,
-                  pattern: input.pattern,
-                  hidden: input.hidden,
-                  limit,
-                }),
+                ripgrep
+                  .glob({
+                    environment: target.environment,
+                    cwd: root,
+                    pattern: input.pattern,
+                    hidden: input.hidden,
+                    limit,
+                  })
+                  .pipe(
+                    // OWN-PATCH(P-031) begin
+                    // A path shows only when `read` would not deny it (own's protected paths); a name that asks (`.env`)
+                    // shows. Filtered before the limit, so hidden paths neither fill it nor mark the result truncated.
+                    Effect.flatMap((entries) =>
+                      access
+                        .readable(
+                          entries.map((entry) => path.resolve(root, entry.path)),
+                          context,
+                          ["allow", "ask"],
+                        )
+                        .pipe(
+                          Effect.map((readable) =>
+                            entries.filter((entry) => readable.has(path.resolve(root, entry.path))),
+                          ),
+                        ),
+                    ),
+                    // OWN-PATCH(P-031) end
+                  ),
               )
               return {
                 entries: result.items.map((entry) =>

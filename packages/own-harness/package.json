@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/harness",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: harness plugin (own.harness): per-session harness binding, OpenCode and Codex-style harnesses",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" test --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**' --timings=test/timings.json",
+    "test:quick": "\"$npm_execpath\" test --changed=main --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**'",
+    "test:e2e": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --parallel=3 --timeout=30000 test/e2e",
+    "codex-data": "\"$npm_execpath\" script/codex-data.ts",
+    "prompt-manual": "\"$npm_execpath\" script/prompt-manual.ts"
+  },
+  "dependencies": {
+    "@opencode/ai": "workspace:*",
+    "@opencode/codemode": "workspace:*",
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "diff": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

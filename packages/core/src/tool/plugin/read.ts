@@ -145,6 +145,11 @@ export const Plugin = {
               // skipped, and discovery failures never fail the read.
               yield* Effect.gen(function* () {
                 if (result.target.externalDirectory !== undefined) return
+                // OWN-PATCH(P-059) begin
+                // Nested AGENTS.md files are project instructions: a server started without project instruction
+                // discovery injects none.
+                if (!discovery.project) return
+                // OWN-PATCH(P-059) end
                 const resolved = yield* fs.resolve(result.target.absolute)
                 const root = yield* fs.resolve(workingDirectory.absolute)
                 // The Location and its ancestors are already supplied by initial instructions,

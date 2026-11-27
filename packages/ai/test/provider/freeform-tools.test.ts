@@ -184,6 +184,9 @@ describe("freeform tools", () => {
       expect(replay.body.input[0]).toEqual({
         type: "custom_tool_call",
         id: "ctc_1",
+        // OWN-PATCH(P-020) begin
+        status: "completed",
+        // OWN-PATCH(P-020) end
         call_id: "call_1",
         name: "run",
         input: 'ZZ"1\n',
@@ -259,7 +262,9 @@ describe("freeform tools", () => {
       const custom = { itemId: "ctc_1", custom: true }
 
       expect(yield* input(lark, custom)).toEqual([
-        { type: "custom_tool_call", id: "ctc_1", call_id: "call_1", name: "run", input: "ZZ123" },
+        // OWN-PATCH(P-020) begin
+        { type: "custom_tool_call", id: "ctc_1", status: "completed", call_id: "call_1", name: "run", input: "ZZ123" },
+        // OWN-PATCH(P-020) end
         { type: "custom_tool_call_output", call_id: "call_1", output: '"ok"' },
       ])
       expect(yield* input(plain, custom)).toEqual([
@@ -267,7 +272,9 @@ describe("freeform tools", () => {
         { type: "function_call_output", call_id: "call_1", output: '"ok"' },
       ])
       expect(yield* input(lark, { itemId: "fc_1" })).toEqual([
-        { type: "custom_tool_call", call_id: "call_1", name: "run", input: "ZZ123" },
+        // OWN-PATCH(P-020) begin
+        { type: "custom_tool_call", status: "completed", call_id: "call_1", name: "run", input: "ZZ123" },
+        // OWN-PATCH(P-020) end
         { type: "custom_tool_call_output", call_id: "call_1", output: '"ok"' },
       ])
       expect(yield* input(plain, { itemId: "fc_1" })).toEqual([

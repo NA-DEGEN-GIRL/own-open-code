@@ -9,6 +9,18 @@ import { SessionMessage } from "../message.js"
 import type { SessionSchema } from "../schema.js"
 import type { SessionStore } from "../store.js"
 import { SubagentCompletion } from "../subagent-completion.js"
+// OWN-PATCH(P-035) begin
+import { SessionSynthetic } from "../synthetic.js"
+// OWN-PATCH(P-035) end
+
+// OWN-PATCH(P-063) begin
+/**
+ * Session metadata a plugin sets to `false` on a child it creates and collects itself (own-harness' Codex agents,
+ * own-omo's children): such a child's idle settles report nothing to its parent. Work started through a Job still
+ * reports.
+ */
+export const QUIET_KEY = "own.report"
+// OWN-PATCH(P-063) end
 
 export type Outcome =
   | { readonly type: "succeeded" }
@@ -26,6 +38,9 @@ export type Deps = {
   readonly inbox: Inbox
   readonly wake: (sessionID: SessionSchema.ID) => Effect.Effect<void>
   readonly draining: Effect.Effect<ReadonlySet<SessionSchema.ID>>
+  // OWN-PATCH(P-035) begin: a report is a background notice that follows a context reset
+  readonly resets?: SessionSynthetic.Resets
+  // OWN-PATCH(P-035) end
 }
 
 /** Narrow inbox admission so delivery does not depend on the full lifecycle service shape. */
@@ -78,23 +93,37 @@ export const make = (deps: Deps) => {
       yield* deps.jobs.completeBackground(report.notificationID)
       return
     }
+    // OWN-PATCH(P-035) begin: the reset the report comes after (SessionSynthetic.resetBefore), read under the inbox
+    // lock; after an applied one it is passive and wakes nothing
+    const reset: { current?: { readonly id: SessionMessage.ID; readonly delivered: boolean } } = {}
     const delivered = yield* SubagentCompletion.deliver(
       {
         synthetic: (notice) =>
-          deps.inbox.admit({
-            id: notice.id ?? report.notificationID,
-            sessionID: notice.sessionID,
-            item: {
-              type: "synthetic",
-              payload: SessionInbox.SyntheticPayload.make({
-                text: notice.text,
-                description: notice.description,
-                metadata: notice.metadata,
-              }),
-              delivery: "steer",
-            },
-          }),
+          SessionInbox.serialized(
+            notice.sessionID,
+            Effect.gen(function* () {
+              reset.current = deps.resets
+                ? yield* SessionSynthetic.resetBefore(deps.resets, notice.sessionID, report.startedAt)
+                : undefined
+              return yield* deps.inbox.admit({
+                id: notice.id ?? report.notificationID,
+                sessionID: notice.sessionID,
+                item: {
+                  type: "synthetic",
+                  payload: SessionInbox.SyntheticPayload.make({
+                    text: notice.text,
+                    description: notice.description,
+                    metadata: notice.metadata,
+                    background: true,
+                    ...(reset.current ? { beforeReset: reset.current.id } : {}),
+                  }),
+                  delivery: "steer",
+                },
+              })
+            }),
+          ),
       },
+      // OWN-PATCH(P-035) end
       deps.jobs,
       report,
     ).pipe(
@@ -124,6 +153,9 @@ export const make = (deps: Deps) => {
       ),
     )
     if (!delivered) return
+    // OWN-PATCH(P-035) begin
+    if (reset.current?.delivered) return
+    // OWN-PATCH(P-035) end
     const parent = yield* deps.store.get(parentID)
     if (parent && !parent.revert) yield* deps.wake(parentID)
   })
@@ -137,7 +169,14 @@ export const make = (deps: Deps) => {
     const jobState = yield* deps.jobs.prepareSubagentReport(sessionID, period?.boundGeneration)
     const initial = yield* deps.store.get(sessionID)
     // An automation run's child finishes quietly; only a follow-up the parent sent through a Job reports back.
-    if ((!initial?.parentID || Automation.isRunSession(sessionID)) && jobState.mode === "none") {
+    if (
+      (!initial?.parentID ||
+        Automation.isRunSession(sessionID) ||
+        // OWN-PATCH(P-063) begin: a child its creator collects itself (`own.report: false`) never wakes its parent
+        initial.metadata?.[QUIET_KEY] === false) &&
+      // OWN-PATCH(P-063) end
+      jobState.mode === "none"
+    ) {
       return {
         commit: () => deps.store.release(sessionID),
         deliver: Effect.void,

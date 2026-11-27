@@ -44,6 +44,9 @@ const withTools = <A, E, R>(
   directory: string,
   body: (registry: Tool.Interface) => Effect.Effect<A, E, R>,
   assertions?: Permission.AssertInput[],
+  // OWN-PATCH(P-031) begin
+  check?: Permission.Interface["check"],
+  // OWN-PATCH(P-031) end
 ) =>
   Effect.gen(function* () {
     const registry = yield* Tool.Service
@@ -61,6 +64,7 @@ const withTools = <A, E, R>(
               Effect.sync(() => {
                 assertions?.push(input)
               }),
+            ...(check ? { check } : {}),
           }),
         ),
       ]),
@@ -408,4 +412,55 @@ describe("search tools", () => {
         ),
     ),
   )
+
+  // OWN-PATCH(P-031) begin
+  it.live("grep leaves out lines of files read would deny or ask about; glob leaves out only denied paths", () =>
+    Effect.acquireUseRelease(
+      Effect.promise(() => tmpdir()),
+      (tmp) =>
+        Effect.promise(() =>
+          Promise.all(
+            ["open.txt", ".env", "vault/key.json"].map((file) =>
+              fs
+                .mkdir(path.dirname(path.join(tmp.path, file)), { recursive: true })
+                .then(() => fs.writeFile(path.join(tmp.path, file), "needle\n")),
+            ),
+          ),
+        ).pipe(
+          Effect.andThen(
+            withTools(
+              tmp.path,
+              (registry) =>
+                Effect.gen(function* () {
+                  const grep = yield* executeTool(registry, call("grep", { pattern: "needle" }))
+                  expect(grep).toMatchObject({ status: "completed", metadata: { matches: 1, truncated: false } })
+                  if (grep.status !== "completed") return
+                  expect(grep.output).toEqual([
+                    expect.objectContaining({ entry: expect.objectContaining({ path: "open.txt" }) }),
+                  ])
+                  const text = grep.content?.[0]?.type === "text" ? grep.content[0].text : ""
+                  expect(text).toContain("Matches in 2 file(s) are left out")
+                  expect(text).not.toContain("key.json")
+
+                  const glob = yield* executeTool(registry, call("glob", { pattern: "**/*", hidden: true }))
+                  expect(glob.status).toBe("completed")
+                  if (glob.status !== "completed") return
+                  expect(glob.output.map((entry: FileSystem.Entry) => entry.path).sort()).toEqual([".env", "open.txt"])
+                }),
+              undefined,
+              (input) =>
+                Effect.succeed(
+                  input.resources.some((resource) => resource.startsWith("vault/"))
+                    ? ("deny" as const)
+                    : input.resources.some((resource) => resource.endsWith(".env"))
+                      ? ("ask" as const)
+                      : ("allow" as const),
+                ),
+            ),
+          ),
+        ),
+      (tmp) => Effect.promise(() => tmp[Symbol.asyncDispose]()),
+    ),
+  )
+  // OWN-PATCH(P-031) end
 })

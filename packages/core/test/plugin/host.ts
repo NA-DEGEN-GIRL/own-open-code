@@ -127,6 +127,9 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       get: () => Effect.die("unused permission.get"),
       reply: () => Effect.die("unused permission.reply"),
       assert: () => Effect.die("unused permission.assert"),
+      // OWN-PATCH(P-019) begin
+      paths: () => Effect.die("unused permission.paths"),
+      // OWN-PATCH(P-019) end
     },
     plugin: overrides.plugin ?? {
       list: () => Effect.die("unused plugin.list"),
@@ -149,6 +152,9 @@ export function host(overrides: Overrides = {}): Plugin.Context {
     },
     shell: overrides.shell ?? {
       hook: () => Effect.die("unused shell.hook"),
+      // OWN-PATCH(P-019) begin
+      authorize: () => Effect.die("unused shell.authorize"),
+      // OWN-PATCH(P-019) end
     },
     tool: overrides.tool ?? {
       transform: () => Effect.die("unused tool.transform"),
@@ -199,6 +205,12 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       interrupt: overrides.session?.interrupt ?? (() => Effect.die("unused session.interrupt")),
       wait: overrides.session?.wait ?? (() => Effect.die("unused session.wait")),
       context: overrides.session?.context ?? (() => Effect.die("unused session.context")),
+      // OWN-PATCH(P-054) begin
+      messages: overrides.session?.messages ?? (() => Effect.die("unused session.messages")),
+      // OWN-PATCH(P-054) end
+      // OWN-PATCH(P-061) begin
+      side: overrides.session?.side ?? (() => Effect.die("unused session.side")),
+      // OWN-PATCH(P-061) end
       instructions: overrides.session?.instructions ?? {
         entry: {
           list: () => Effect.die("unused session.instructions.entry.list"),

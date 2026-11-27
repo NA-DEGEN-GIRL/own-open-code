@@ -500,3 +500,80 @@ it.effect(
     }),
   { timeout: 15_000 },
 )
+
+// OWN-PATCH(P-061) begin
+it.effect("answers a side question on the history with the side thread after it, recording nothing", () =>
+  Effect.gen(function* () {
+    instruction = "Initial context"
+    const { db, bus, instructions, session, instances } = yield* setup
+    yield* InstructionState.prepare(db, bus, instructions, sessionID)
+    const existing = SessionMessage.ID.create()
+    yield* bus.publish(SessionEvent.InboxEnqueued, {
+      sessionID,
+      inboxID: existing,
+      item: { type: "user", payload: { text: "Main question" }, delivery: "steer" },
+    })
+    yield* bus.publish(SessionEvent.InboxDelivered, { sessionID, inboxID: existing })
+    const hooks = yield* PluginHooks.Service
+    const seen: Array<boolean | undefined> = []
+    let contexts = 0
+    yield* hooks.register("session", "context", () => Effect.sync(() => contexts++))
+    yield* hooks.register("session", "generate", (event) => Effect.sync(() => void seen.push(event.side)))
+    const before = yield* durableState(db, sessionID)
+    const llm = yield* TestLLM.Test
+    yield* llm.push(TestLLM.textWithUsage("Side answer", "side", 120))
+    const deltas: string[] = []
+
+    const result = yield* SessionGenerate.side({
+      session,
+      turns: [
+        { role: "user", text: "First side question" },
+        { role: "assistant", text: "First side answer" },
+        { role: "user", text: "Follow-up" },
+      ],
+      toolChoice: "none",
+      onText: (text) => void deltas.push(text),
+    }).pipe(Effect.provideService(Instance.Service, instances), Effect.provideService(LLMClient.Service, llm))
+
+    expect(result.text).toBe("Side answer")
+    expect(deltas.join("")).toBe("Side answer")
+    expect(result.finish).toBe("stop")
+    expect(result.model.id).toBe(ID.make("generate-model"))
+    expect(result.tokens?.input).toBeGreaterThan(0)
+    expect(seen).toEqual([true])
+    expect(contexts).toBe(0)
+    const requests = yield* llm.requests()
+    expect(requests).toHaveLength(1)
+    expect(userTexts(requests[0]!)).toEqual(["Main question", "First side question", "Follow-up"])
+    expect(requests[0]?.toolChoice?.type).toBe("none")
+    expect(requests[0]?.tools).toMatchObject([{ name: "lookup" }])
+    expect(yield* durableState(db, sessionID)).toEqual(before)
+  }).pipe(Effect.provide(TestLLM.testLayer())),
+)
+
+it.effect("ends a side answer at a tool call without running it", () =>
+  Effect.gen(function* () {
+    instruction = "Initial context"
+    const { db, bus, instructions, session, instances } = yield* setup
+    yield* InstructionState.prepare(db, bus, instructions, sessionID)
+    const before = yield* durableState(db, sessionID)
+    const llm = yield* TestLLM.Test
+    yield* llm.push(
+      TestLLM.toolCalls(
+        LLMEvent.textStart({ id: "side" }),
+        LLMEvent.textDelta({ id: "side", text: "Let me look." }),
+        LLMEvent.textEnd({ id: "side" }),
+        LLMEvent.toolCall({ id: "call", name: "lookup", input: {} }),
+      ),
+    )
+    const result = yield* SessionGenerate.side({ session, turns: [{ role: "user", text: "Which file?" }] }).pipe(
+      Effect.provideService(Instance.Service, instances),
+      Effect.provideService(LLMClient.Service, llm),
+    )
+    expect(result.text).toBe("Let me look.")
+    expect(result.finish).toBe("tool-calls")
+    expect((yield* llm.requests())[0]?.toolChoice).toBeUndefined()
+    expect(yield* durableState(db, sessionID)).toEqual(before)
+  }).pipe(Effect.provide(TestLLM.testLayer())),
+)
+// OWN-PATCH(P-061) end

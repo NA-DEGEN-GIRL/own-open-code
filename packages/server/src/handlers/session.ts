@@ -390,6 +390,10 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
               metadata: ctx.payload.metadata,
               delivery: ctx.payload.delivery,
               resume: ctx.payload.resume,
+              // OWN-PATCH(P-035) begin
+              background: ctx.payload.background,
+              startedAt: ctx.payload.startedAt,
+              // OWN-PATCH(P-035) end
             })
             .pipe(
               Effect.catchTag("Session.NotFoundError", missingSession),
@@ -433,6 +437,48 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
               ),
           }
         }),
+      )
+      .handle(
+        // OWN-PATCH(P-035) begin
+        "session.reset.create",
+        Effect.fn(function* (ctx) {
+          return {
+            data: yield* session.reset({ sessionID: ctx.params.sessionID, id: ctx.payload.id }).pipe(
+              Effect.catchTag("Session.NotFoundError", missingSession),
+              Effect.catchTag("Session.ResetConflictError", (error) =>
+                error.reason === "subagent"
+                  ? new ConflictError({
+                      message: "A subagent session's context cannot be reset (subagent)",
+                      resource: error.sessionID,
+                    })
+                  : new ConflictError({
+                      message: `Reset ID conflicts with an existing durable record: ${error.resetID}`,
+                      resource: error.resetID,
+                    }),
+              ),
+            ),
+          }
+        }),
+      )
+      .handle(
+        "session.reset.undo",
+        Effect.fn(function* (ctx) {
+          yield* session.undoReset(ctx.params).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag("Session.MessageNotFoundError", missingMessage),
+            Effect.catchTag("Session.BusyError", busySession),
+            Effect.catchTag(
+              "Session.ResetConflictError",
+              (error) =>
+                new ConflictError({
+                  message: `Context reset cannot be undone (${error.reason})`,
+                  resource: error.resetID,
+                }),
+            ),
+          )
+          return HttpApiSchema.NoContent.make()
+        }),
+        // OWN-PATCH(P-035) end
       )
       .handle(
         "session.wait",

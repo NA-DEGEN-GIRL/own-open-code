@@ -1,0 +1,32 @@
+/* `브라우저 사용 중 · 보기` (dock.tsx): over the conversation's top right corner while the agent uses the browser. */
+.own-rb-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 999px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-rb-hint > span {
+  color: var(--own-accent-text);
+  font-size: 9px;
+}
+
+@media (pointer: coarse) {
+  .own-rb-hint {
+    min-height: 44px;
+  }
+}

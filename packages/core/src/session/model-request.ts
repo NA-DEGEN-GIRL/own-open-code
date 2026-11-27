@@ -4,6 +4,9 @@ import {
   ai,
   AssistantMessage,
   type ContentPart,
+  // OWN-PATCH(P-020) begin
+  type Freeform,
+  // OWN-PATCH(P-020) end
   GENERATION_KEYS,
   type GenerationOptionsFields,
   LanguageModel,
@@ -33,6 +36,9 @@ import type { Content } from "@opencode/schema/tool"
 import { Cause, Context, Effect, Layer, Result, Stream } from "effect"
 import { HttpClientRequest, HttpClientResponse } from "effect/http"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
+// OWN-PATCH(P-020) begin
+import { isRecord } from "@opencode/util/record"
+// OWN-PATCH(P-020) end
 import { App } from "../app.js"
 import { Instructions } from "../instructions/index.js"
 import { Permission } from "../permission.js"
@@ -90,11 +96,27 @@ export interface Input {
   readonly webSocket?: "session"
   /** Prompt size, measured by the provider or estimated. The default output limit leaves room for it. */
   readonly inputTokens?: { readonly measured: number; readonly estimated: number }
+  // OWN-PATCH(P-034) begin
+  /** A summary that keeps a tail: the hooks of its run over the whole history see where the kept part starts. */
+  readonly kept?: SessionCompaction["kept"]
+  // OWN-PATCH(P-034) end
+  // OWN-PATCH(P-061) begin
+  /** A side question (`SessionGenerate.side`): its hooks see `side: true`. */
+  readonly side?: true
+  // OWN-PATCH(P-061) end
 }
 
 /** The default output limit: the catalog limit, fitted to the room the prompt leaves in the context window. */
-export const outputLimit = (limit: Model.Info["limit"], inputTokens?: Input["inputTokens"], headroom = 0) => {
-  const requested = Math.min(limit.output > 0 ? limit.output : OUTPUT_TOKEN_FALLBACK, OUTPUT_TOKEN_MAX)
+export const outputLimit = (
+  limit: Model.Info["limit"],
+  inputTokens?: Input["inputTokens"],
+  headroom = 0,
+  // OWN-PATCH(P-032) begin
+  // The cap. `Infinity` gives the hooks' `outputCeiling`: the same default without core's 256,000 cap.
+  max = OUTPUT_TOKEN_MAX,
+) => {
+  const requested = Math.min(limit.output > 0 ? limit.output : OUTPUT_TOKEN_FALLBACK, max)
+  // OWN-PATCH(P-032) end
   if (inputTokens === undefined || limit.context <= 0) return requested
   const room =
     Math.floor(limit.context * (1 - headroom)) -
@@ -273,7 +295,9 @@ export const layer = Layer.effect(
     >(kind: SessionRequestKind, input: Input, shape: (draft: SessionRequest, tools: Definitions) => Effect.Effect<S>) {
       const session = input.session
       const model = input.model
-      const scope = { sessionID: session.id, agent: input.agent, model: model.ref, kind }
+      // OWN-PATCH(P-061) begin
+      const scope = { sessionID: session.id, agent: input.agent, model: model.ref, kind, ...(input.side ? { side: true as const } : {}) }
+      // OWN-PATCH(P-061) end
       const tools = input.tools ?? {
         definitions: [],
         execute: () => new Tool.Error({ message: "Tools are not available for this request" }),
@@ -301,6 +325,18 @@ export const layer = Layer.effect(
               : kind === "compaction"
                 ? { maxTokens: outputLimit(model.limit, input.inputTokens) }
                 : {},
+          // OWN-PATCH(P-032) begin
+          ...(kind === "primary" || kind === "compaction"
+            ? {
+                outputCeiling: outputLimit(
+                  model.limit,
+                  input.inputTokens,
+                  kind === "primary" ? WINDOW_HEADROOM : 0,
+                  Number.POSITIVE_INFINITY,
+                ),
+              }
+            : {}),
+          // OWN-PATCH(P-032) end
         },
         Object.fromEntries(Array.from(given, ([d, t]) => [t.name, d])),
       )
@@ -310,7 +346,9 @@ export const layer = Layer.effect(
       const hooked = new Map(
         Object.entries(shaped.tools ?? {}).flatMap(([name, d]) => {
           const t = given.get(d) ?? byName.get(name)
-          return t ? [[name, { ...t, description: d.description, inputSchema: d.input }] as const] : []
+          // OWN-PATCH(P-020) begin
+          return t ? [[name, { ...t, description: d.description, inputSchema: d.input, ...freeformOf(d.input) }] as const] : []
+          // OWN-PATCH(P-020) end
         }),
       )
       const entries = Object.entries(shaped.options)
@@ -348,7 +386,14 @@ export const layer = Layer.effect(
         tools: Array.from(hooked, ([name, t]) => ({
           ...t,
           name,
-          freeform: t.freeform && model.capabilities.freeform?.includes(t.freeform.type) ? t.freeform : undefined,
+          // OWN-PATCH(P-020) begin: a hook's marker makes a tool freeform whatever the model's capabilities list
+          freeform:
+            t.freeform &&
+            (model.capabilities.freeform?.includes(t.freeform.type) ||
+              freeformOf(shaped.tools?.[name]?.input).freeform !== undefined)
+              ? t.freeform
+              : undefined,
+          // OWN-PATCH(P-020) end
         })),
         toolChoice: input.toolChoice,
         ...generation,
@@ -464,8 +509,28 @@ export const layer = Layer.effect(
 
     return Service.of({
       primary: (input) => prepare("primary", input, agentHook("context", input.agent)),
-      compaction: (input) => prepare("compaction", input, agentHook("compaction", input.agent)),
-      generate: (input) => prepare("generate", input, agentHook("generate", input.agent)),
+      // OWN-PATCH(P-034) begin
+      compaction: (input) =>
+        prepare("compaction", input, (draft, tools) =>
+          hooks.trigger("session", "compaction", {
+            ...draft,
+            agent: input.agent,
+            tools,
+            ...(input.kept === undefined ? {} : { kept: input.kept }),
+          }),
+        ),
+      // OWN-PATCH(P-034) end
+      // OWN-PATCH(P-061) begin
+      generate: (input) =>
+        prepare("generate", input, (draft, tools) =>
+          hooks.trigger("session", "generate", {
+            ...draft,
+            agent: input.agent,
+            tools,
+            ...(input.side ? { side: true as const } : {}),
+          }),
+        ),
+      // OWN-PATCH(P-061) end
       title: (input) => prepare("title", input, (draft) => hooks.trigger("session", "title", draft)),
     })
   }),
@@ -476,3 +541,18 @@ export const node = makeLocationNode({
   layer,
   deps: [PluginHooks.node, SessionModelTransport.node, App.node],
 })
+
+// OWN-PATCH(P-020) begin
+/**
+ * A request hook marks a freeform tool with `x-opencode-freeform: {syntax, definition}` (a lark or regex grammar) on its
+ * input schema, whose one required string parameter the raw text fills (own-harness: Codex's apply_patch and Code
+ * Mode's exec, both `input`). OpenAI routes then send it as a custom tool (@opencode/ai's `freeform`).
+ */
+const freeformOf = (schema: unknown): { readonly freeform?: Freeform } => {
+  const value = isRecord(schema) ? schema["x-opencode-freeform"] : undefined
+  if (!isRecord(value) || typeof value.definition !== "string") return {}
+  if (value.syntax === "lark") return { freeform: { type: "lark", grammar: value.definition } }
+  if (value.syntax === "regex") return { freeform: { type: "regex", pattern: value.definition } }
+  return {}
+}
+// OWN-PATCH(P-020) end

@@ -32,6 +32,10 @@ export interface ToolHooks {
     readonly messageID: SessionMessage.ID
     readonly id: Tool.CallID
     input: unknown
+    // OWN-PATCH(P-028) begin
+    /** The registered tool the call runs when the request listed that tool under another name (an alias). */
+    readonly registered?: string
+    // OWN-PATCH(P-028) end
   }
   readonly "execute.after": {
     readonly tool: string

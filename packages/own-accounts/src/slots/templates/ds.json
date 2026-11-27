@@ -1,0 +1,168 @@
+{
+  "kind": "ds",
+  "sourceProvider": "deepseek",
+  "source": "bundled",
+  "capturedAt": "2026-10-29T21:33:01Z",
+  "models": [
+    {
+      "id": "deepseek-flash",
+      "modelID": "deepseek-flash",
+      "type": "chat",
+      "family": "deepseek-flash",
+      "name": "DeepSeek V4.1 Flash 1017",
+      "compatibility": {
+        "reasoningField": "reasoning_content",
+        "maxTokensField": "max_tokens"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "body": {
+            "thinking": {
+              "type": "disabled"
+            }
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        }
+      ],
+      "time": {
+        "released": 1792195200000
+      },
+      "cost": [
+        {
+          "input": 0.15,
+          "output": 0.6,
+          "cache": {
+            "read": 0.003,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "package": "@opencode/ai/providers/deepseek"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "modelID": "deepseek-v4-pro",
+      "type": "chat",
+      "family": "deepseek-thinking",
+      "name": "DeepSeek V4 Pro",
+      "compatibility": {
+        "reasoningField": "reasoning_content",
+        "maxTokensField": "max_tokens"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "body": {
+            "thinking": {
+              "type": "disabled"
+            }
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max"
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            }
+          }
+        }
+      ],
+      "time": {
+        "released": 1786579200000
+      },
+      "cost": [
+        {
+          "input": 0.66,
+          "output": 1.98,
+          "cache": {
+            "read": 0.022,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "package": "@opencode/ai/providers/deepseek"
+    }
+  ]
+}

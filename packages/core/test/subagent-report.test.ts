@@ -76,6 +76,32 @@ describe("SubagentReport settlement", () => {
     }),
   )
 
+  // OWN-PATCH(P-063) begin
+  it.effect("keeps a child its creator marked `own.report: false` quiet", () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service
+      const parent = sessionID("ses_quiet_parent")
+      const child = sessionID("ses_quiet_child")
+      yield* seedSessions(database, [parent])
+      yield* seedSessions(database, [child], {
+        parent_id: parent,
+        agent: "explore",
+        metadata: { [SubagentReport.QUIET_KEY]: false },
+      })
+      yield* seedAssistant(database, child, 100, "Collected by its creator")
+
+      const scope = yield* Scope.make()
+      yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void))
+      const execution = Context.get(yield* buildExecution(scope, () => Effect.void), SessionExecution.Service)
+      yield* execution.wake(child)
+      yield* execution.awaitIdle(child)
+
+      expect(yield* claims(database)).toEqual({ [parent]: false, [child]: false })
+      expect(yield* SessionInbox.list(database.db, parent)).toEqual([])
+    }),
+  )
+  // OWN-PATCH(P-063) end
+
   it.effect("keeps an automation run's child quiet unless the parent followed up through a Job", () =>
     Effect.gen(function* () {
       const database = yield* Database.Service
@@ -750,7 +776,12 @@ function buildExecution(scope: Scope.Scope, drain: Drain) {
 }
 
 type SeedValues = Partial<
-  Pick<typeof SessionTable.$inferInsert, "time_suspended" | "resume_attempts" | "parent_id" | "title" | "revert">
+  Pick<
+    typeof SessionTable.$inferInsert,
+    // OWN-PATCH(P-063) begin: metadata
+    "time_suspended" | "resume_attempts" | "parent_id" | "title" | "revert" | "metadata"
+    // OWN-PATCH(P-063) end
+  >
 > & { readonly agent?: string }
 
 function seedSessions(

@@ -40,6 +40,9 @@ const Background = Schema.Struct({
   status: Schema.Literals(["running", "completed", "error", "cancelled"]),
   output: Schema.optionalKey(Schema.String),
   error: Schema.optionalKey(Schema.String),
+  // OWN-PATCH(P-035) begin: when the job first started, so its notice recovered after a restart can name a reset since
+  started_at: Schema.optionalKey(Schema.Number),
+  // OWN-PATCH(P-035) end
 })
 
 export type Background = typeof Background.Type
@@ -138,6 +141,9 @@ export type StartInput = {
   notificationID?: SessionMessage.ID
   background?: boolean
   run: Effect.Effect<string, unknown>
+  // OWN-PATCH(P-035) begin: a job recovered after a restart keeps the start of the work it continues
+  started_at?: number
+  // OWN-PATCH(P-035) end
   // Runs when the job is cancelled (`cancel`, `cancelSession`), before its work is interrupted. Teardown, such as
   // a server shutdown, interrupts the work without it.
   cancel?: Effect.Effect<void>
@@ -370,7 +376,9 @@ export const make = Effect.gen(function* () {
   const start: Interface["start"] = Effect.fnUntraced(function* (input) {
     return yield* Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {
-        const started_at = yield* Clock.currentTimeMillis
+        // OWN-PATCH(P-035) begin
+        const started_at = input.started_at ?? (yield* Clock.currentTimeMillis)
+        // OWN-PATCH(P-035) end
         const done = yield* Deferred.make<Info>()
         const backgrounded = yield* Deferred.make<Info>()
         const result = yield* SynchronizedRef.modifyEffect(
@@ -628,6 +636,9 @@ export const make = Effect.gen(function* () {
         status: row.status,
         ...(row.output !== null ? { output: row.output } : {}),
         ...(row.error !== null ? { error: row.error } : {}),
+        // OWN-PATCH(P-035) begin: the job table's creation time is the job's first start
+        started_at: row.time_created,
+        // OWN-PATCH(P-035) end
       }),
     )
   }).pipe(Effect.withSpan("Job.pendingBackground"))

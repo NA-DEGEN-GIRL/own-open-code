@@ -171,7 +171,14 @@ function info(file: string, options?: Options, bin?: string): Item {
 export function args(file: string, command: string) {
   const n = name(file)
   if (n === "cmd") return ["/c", command]
-  if (ps(file)) return ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command]
+  // OWN-PATCH(P-015) begin
+  // Console-less Windows PowerShell writes the OEM code page, which the UTF-8 output reader turns into U+FFFD.
+  const utf8 =
+    process.platform === "win32"
+      ? "try{[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$OutputEncoding=[Text.UTF8Encoding]::new($false)}catch{}; "
+      : ""
+  if (ps(file)) return ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", utf8 + command]
+  // OWN-PATCH(P-015) end
   // zsh aborts the whole line on an unmatched glob; pass it through literally as bash does.
   if (n === "zsh") return ["+o", "nomatch", "-c", command]
   return ["-c", command]

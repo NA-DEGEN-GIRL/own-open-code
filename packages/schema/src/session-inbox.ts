@@ -29,6 +29,14 @@ export const SyntheticPayload = Schema.Struct({
   text: Schema.String,
   description: Schema.String.pipe(optional),
   metadata: Schema.Record(Schema.String, Schema.Unknown).pipe(optional),
+  // OWN-PATCH(P-035) begin: the context reset a background job started before. While that reset waits or applies, the
+  // notice is passive: it never promotes on its own and rides with the next promoted input. Cancelling or undoing the
+  // reset drops it from the pending item, which is then an ordinary notice.
+  beforeReset: SessionMessage.ID.pipe(optional),
+  // The notice reports background work (a shell job, a subagent): a reset delivered ahead of it while it is pending
+  // (a stop, an idle reset, a restart) ends the context that work belongs to, so the notice then precedes that reset.
+  background: Schema.Boolean.pipe(optional),
+  // OWN-PATCH(P-035) end
 }).annotate({ identifier: "Session.Inbox.SyntheticPayload" })
 
 export interface CompactionPayload extends Schema.Schema.Type<typeof CompactionPayload> {}
@@ -49,8 +57,13 @@ const CompactionItem = Schema.Struct({
   delivery: Delivery,
 })
 const MoveItem = Schema.Struct({ type: Schema.tag("move"), payload: MovePayload, delivery: Delivery })
+// OWN-PATCH(P-035) begin: a context reset, admitted as a queued control item that delivers between turns
+export interface ResetPayload extends Schema.Schema.Type<typeof ResetPayload> {}
+export const ResetPayload = Schema.Struct({}).annotate({ identifier: "Session.Inbox.ResetPayload" })
+const ResetItem = Schema.Struct({ type: Schema.tag("reset"), payload: ResetPayload, delivery: Delivery })
 
-export const Item = Schema.Union([UserItem, SyntheticItem, CompactionItem, MoveItem]).pipe(
+export const Item = Schema.Union([UserItem, SyntheticItem, CompactionItem, MoveItem, ResetItem]).pipe(
+  // OWN-PATCH(P-035) end
   Schema.toTaggedUnion("type"),
   Schema.annotate({ identifier: "Session.Inbox.Item" }),
 )
@@ -84,14 +97,21 @@ export const Compaction = Schema.Struct({ ...Enqueued, ...CompactionItem.fields 
 export interface Move extends Schema.Schema.Type<typeof Move> {}
 export const Move = Schema.Struct({ ...Enqueued, ...MoveItem.fields }).annotate({ identifier: "Session.Inbox.Move" })
 
-export const Info = Schema.Union([User, Synthetic, Compaction, Move]).pipe(
+// OWN-PATCH(P-035) begin
+export interface Reset extends Schema.Schema.Type<typeof Reset> {}
+export const Reset = Schema.Struct({ ...Enqueued, ...ResetItem.fields }).annotate({ identifier: "Session.Inbox.Reset" })
+
+export const Info = Schema.Union([User, Synthetic, Compaction, Move, Reset]).pipe(
+  // OWN-PATCH(P-035) end
   Schema.toTaggedUnion("type"),
   Schema.annotate({ identifier: "Session.Inbox.Info" }),
 )
 export type Info = typeof Info.Type
 
 /** {@link Info} with {@link MediaUser} for clients that opt into `experimental-media-uri`. */
-export const MediaInfo = Schema.Union([MediaUser, Synthetic, Compaction, Move]).pipe(
+// OWN-PATCH(P-035) begin
+export const MediaInfo = Schema.Union([MediaUser, Synthetic, Compaction, Move, Reset]).pipe(
+  // OWN-PATCH(P-035) end
   Schema.toTaggedUnion("type"),
   Schema.annotate({ identifier: "Session.Inbox.MediaInfo" }),
 )

@@ -195,17 +195,75 @@ const bodyTimeoutError = (response: HttpClientResponse.HttpClientResponse, messa
 // A response with one of these statuses has no body to re-wrap.
 const NO_BODY = new Set([101, 204, 205, 304])
 
+// OWN-PATCH(P-018) begin
+/**
+ * A route without a chunk timeout (own compat slots: local servers that may read a long prompt in silence) gets no
+ * progress limit by default (route/client.ts watchProgress), so a stream of nothing but SSE comments would hold the
+ * step for as long as the server keeps it open. Such a stream is queued, not computing: DeepSeek sends `: keep-alive`
+ * comments until inference starts (real-host phase E, 2026-11-27: a team member waited on one for over 10 minutes,
+ * another got its first token 1 s into the retry 15 minutes later). After this long with only comment lines since the
+ * last other byte, the read fails with the chunk timeout's retryable error. Silence never arms it, and an explicit
+ * `progress` setting replaces it.
+ */
+const KEEPALIVE_ONLY_TIMEOUT_MS = 300_000
+
+const watchKeepalives = <E>(
+  raw: HttpClientResponse.HttpClientResponse,
+  body: Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError>,
+  limit: Duration.Duration,
+) =>
+  Stream.unwrap(
+    Effect.sync(() => {
+      const ms = Duration.toMillis(limit)
+      const decoder = new TextDecoder()
+      const state = { since: undefined as number | undefined }
+      const watch = Effect.gen(function* () {
+        while (true) {
+          const now = yield* Clock.currentTimeMillis
+          if (state.since !== undefined && now - state.since >= ms)
+            return yield* Effect.fail(
+              bodyTimeoutError(raw, `The response sent only keepalives for ${Math.round(ms / 1000)} seconds`),
+            )
+          yield* Effect.sleep(
+            Duration.millis(state.since === undefined ? 1_000 : Math.min(1_000, state.since + ms - now)),
+          )
+        }
+      })
+      const observe = (chunk: Uint8Array) =>
+        Effect.map(Clock.currentTimeMillis, (now) => {
+          const lines = decoder
+            .decode(chunk, { stream: true })
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line !== "")
+          if (lines.some((line) => !line.startsWith(":"))) state.since = undefined
+          else if (lines.length > 0) state.since ??= now
+        })
+      return body.pipe(Stream.tap(observe), Stream.interruptWhen(watch))
+    }),
+  )
+// OWN-PATCH(P-018) end
+
 /**
  * Re-wraps the body behind the chunk and whole-request limits, so every way of reading it (`stream`, `text`, `json`,
  * `formData`, ...) fails cleanly once it stalls.
  */
 const withBodyTimeouts = (
   raw: HttpClientResponse.HttpClientResponse,
-  limits: { readonly chunk: Duration.Duration; readonly deadline: number | undefined },
+  limits: {
+    readonly chunk: Duration.Duration
+    readonly deadline: number | undefined
+    // OWN-PATCH(P-018) begin
+    readonly keepalives: Duration.Duration
+    // OWN-PATCH(P-018) end
+  },
 ): Effect.Effect<HttpClientResponse.HttpClientResponse> => {
-  if (NO_BODY.has(raw.status) || (!Duration.isFinite(limits.chunk) && limits.deadline === undefined))
+  if (
+    NO_BODY.has(raw.status) ||
+    (!Duration.isFinite(limits.chunk) && limits.deadline === undefined && !Duration.isFinite(limits.keepalives))
+  )
     return Effect.succeed(raw)
-  const chunked = raw.stream.pipe(
+  const timed = raw.stream.pipe(
     Stream.catchIf(
       (error) => error.reason._tag === "EmptyBodyError",
       () => Stream.empty,
@@ -215,6 +273,9 @@ const withBodyTimeouts = (
       orElse: () => Stream.fail(bodyTimeoutError(raw, "Timed out waiting for response data")),
     }),
   )
+  // OWN-PATCH(P-018) begin
+  const chunked = Duration.isFinite(limits.keepalives) ? watchKeepalives(raw, timed, limits.keepalives) : timed
+  // OWN-PATCH(P-018) end
   const deadline = limits.deadline
   const body =
     deadline === undefined
@@ -281,6 +342,12 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient> = Layer.e
         const response = yield* withBodyTimeouts(raw, {
           chunk: timeoutDuration(limits.chunk, DEFAULT_CHUNK_TIMEOUT_MS),
           deadline,
+          // OWN-PATCH(P-018) begin
+          keepalives:
+            limits.chunk === false && limits.progress === undefined
+              ? Duration.millis(KEEPALIVE_ONLY_TIMEOUT_MS)
+              : Duration.infinity,
+          // OWN-PATCH(P-018) end
         })
         return yield* statusError(response)
       })

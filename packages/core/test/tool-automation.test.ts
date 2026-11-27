@@ -98,11 +98,13 @@ const setup = (automationsEnabled?: boolean) =>
       command: {
         list: () => Effect.die("unused command.list"),
         reload: () => Effect.void,
+        // OWN-PATCH(P-038) begin
         transform: (callback) =>
           Effect.sync(() => {
-            callback({ add: (definition) => commands.push(definition) })
+            callback({ add: (definition) => commands.push(definition), get: () => undefined })
             return { dispose: Effect.void }
           }),
+        // OWN-PATCH(P-038) end
       },
       session: { prompt: (input) => Effect.sync(() => prompts.push(input)).pipe(Effect.as(undefined as never)) },
     }).pipe(

@@ -1,0 +1,918 @@
+/*
+ * App shell (03 §4.1–4.2). One DOM for every tier: switching tiers changes only attributes and CSS, so the composer
+ * and transcript are never re-created (4.2, IME rule 5). Widths come from CSS variables set by the shell; dragging
+ * changes only those variables (R7).
+ */
+.own-app {
+  --own-sidebar-w: 272px;
+  --own-panel-w: 420px;
+  --own-panel-col: 0px;
+  display: grid;
+  grid-template-columns: var(--own-sidebar-w) minmax(0, 1fr) var(--own-panel-col);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  position: relative;
+  background: var(--own-bg);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Off-screen columns (the phone's hidden conversation, drawers, sheets) never widen the page: a phone cannot pan
+     sideways into them (05 §13.1-4; iOS pans past `body { overflow: hidden }`). */
+  overflow: clip;
+}
+
+.own-app[data-panel-mode="push"][data-panel="open"] {
+  --own-panel-col: var(--own-panel-w);
+}
+
+/* Fixed cells: a sidebar or panel that becomes a fixed drawer leaves the grid flow, and auto-placement would then
+   put the main area into the zero-width sidebar column (tablet, 600–1099 px). */
+.own-app > .own-sidebar {
+  grid-area: 1 / 1;
+}
+
+.own-app > .own-main {
+  grid-area: 1 / 2;
+}
+
+.own-app > .own-panel {
+  grid-area: 1 / 3;
+}
+
+/* A zero-width column must not leave its 1 px border (no horizontal scroll at any tier, 11장). */
+.own-app[data-panel-mode="push"][data-panel="closed"] .own-panel,
+.own-app[data-sidebar-mode="column"][data-sidebar="closed"] .own-sidebar {
+  border-width: 0;
+  visibility: hidden;
+}
+
+.own-sidebar,
+.own-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--own-bg-subtle);
+  contain: layout paint;
+}
+
+.own-sidebar {
+  border-right: 1px solid var(--own-border);
+  overflow: hidden;
+}
+
+.own-panel {
+  border-left: 1px solid var(--own-border);
+  overflow: hidden;
+}
+
+.own-main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--own-bg);
+}
+
+.own-header {
+  container: own-header / inline-size;
+  height: var(--own-header-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--own-border);
+  min-width: 0;
+}
+
+[data-wco] .own-header {
+  -webkit-app-region: drag;
+  padding-right: calc(12px + var(--own-wco-right, 0px));
+}
+
+[data-wco] .own-header :is(button, a, input, [role="button"]) {
+  -webkit-app-region: no-drag;
+}
+
+/* The manual viewer covers the whole window, so its bar is the band too: Windows draws its buttons over the bar's right
+   end, where `닫기` would sit under the window's own close button (2026-10-18). The bar's height and padding live
+   here, not in Tailwind classes: own-web's utilities are a later layer than this one and won (the layout audit found
+   `닫기` under the buttons after the first fix). */
+.own-manual-bar {
+  height: 44px;
+  padding: 0 12px;
+}
+
+[data-wco] .own-manual-bar {
+  height: var(--own-header-h);
+  padding-right: calc(12px + var(--own-wco-right, 0px));
+  -webkit-app-region: drag;
+}
+
+[data-wco] .own-manual-bar button {
+  -webkit-app-region: no-drag;
+}
+
+/* A large shrink factor: in a crowded header the title gives way before the pills (switcher.css), down to its
+   minimum. The minimum is never more than the title itself (`calc-size`, after a plain fallback): a short title such as
+   `팀 메인` kept a floor wider than its text, and that blank room cut the pills (`Cla… @ Claude 구…` at 1366–1440 px
+   with the sidebar and the work panel open, merge round 7). */
+.own-header-title {
+  flex: 1 1000 8rem;
+  min-width: 5rem;
+  min-width: calc-size(max-content, min(size, 5rem));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.own-header .own-sw-pill {
+  overflow: hidden;
+}
+.own-header .own-sw-pill-cache {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 03 §4.4 header fit: as the header narrows (sidebar and work panel open, a small window), the least needed items go
+   first so the title and the pills never paint over each other. Each one stays reachable elsewhere: the theme in
+   설정 > 일반 and the palette, the cache in the switcher, the 에이전트 방식 in the session ⋯, the Git chip in the work
+   panel's review tab, the manual in 설정. Only a conversation's header hides items: the new-conversation screen and
+   the pages have few. The 에이전트 방식 pill first shrinks to its short name; it never hides on the new-conversation
+   screen, the only place for the one-time pick. */
+.own-header-harness-short {
+  display: none !important;
+}
+/* `!important`: these items carry Tailwind display utilities, a later cascade layer than this one. */
+@container own-header (max-width: 999px) {
+  .own-header[data-route="session"] [data-testid="theme-toggle"] {
+    display: none !important;
+  }
+}
+/* The cache text goes before the theme toggle (P2-06b): at 1024–1280 px with the sidebar open it left the title a few
+   characters. The switcher still shows it. */
+@container own-header (max-width: 1099px) {
+  .own-header .own-sw-pill-cache {
+    display: none !important;
+  }
+}
+/* The title keeps about seven Korean characters before its ellipsis from a 640 px header (UX 2026-10-27: 1366–1440 px
+   with the sidebar and the work panel open had left it 80 px), eight from 1000 px. */
+@container own-header (min-width: 640px) {
+  .own-header-title {
+    min-width: 7.5rem;
+    min-width: calc-size(max-content, min(size, 7.5rem));
+  }
+}
+@container own-header (min-width: 1000px) {
+  .own-header-title {
+    min-width: 9rem;
+    min-width: calc-size(max-content, min(size, 9rem));
+  }
+}
+@container own-header (max-width: 819px) {
+  .own-header .own-header-harness-full {
+    display: none !important;
+  }
+  .own-header .own-header-harness-short {
+    display: inline !important;
+  }
+  .own-header[data-route="session"] [data-testid="git-status-branch"],
+  .own-header[data-route="session"] .own-git-sep {
+    display: none !important;
+  }
+  .own-header[data-route="session"] [data-testid="header-manual"] {
+    display: none !important;
+  }
+  /* The approval pill keeps its mark, its mode still in its name and tooltip, so the title and the account keep their
+     room (UX 2026-10-27); a mode that allows everything keeps its warning text. The phone's second row has the room. */
+  .own-app:not([data-tier="phone"])
+    .own-header[data-route="session"]
+    [data-testid="approval-pill"]:not([data-mode="full"]) {
+    padding-inline: 8px !important;
+  }
+  .own-app:not([data-tier="phone"])
+    .own-header[data-route="session"]
+    [data-testid="approval-pill"]:not([data-mode="full"])
+    > :last-child {
+    display: none !important;
+  }
+}
+@container own-header (max-width: 639px) {
+  .own-header[data-route="session"] [data-testid="harness-pill"],
+  .own-header[data-route="session"] [data-testid="git-status-chip"] {
+    display: none !important;
+  }
+}
+/* An unfolded foldable (Fold8 pass, 2026-11-20): at 44 px they took `모델 @ 계정`'s model on the 704 px Fold8 upright, so
+   a handheld conversation's header goes without them at every width, as the phone's does. */
+.own-app[data-handheld]
+  .own-header[data-route="session"]
+  :is([data-testid="harness-pill"], [data-testid="git-status-chip"]) {
+  display: none !important;
+}
+
+/* 03 §4.4 give-way order (shell/header-fit.ts, MR7-17): what is left gives way by the room it has, in the steps the
+   fit names in `data-give`, so the running-on pill keeps its account whole: its cache text goes (as under 1100 px),
+   the computer-use chip folds to its icon and 멈추기 to a mark, the team pill drops its first words, the approval pill
+   keeps its mark (as under 820 px), the 에이전트 방식 pill its icon, the Git chip goes (as under 640 px), the title's
+   floor drops to 5rem (as under 640 px) and then to 3em, and the Stop mark goes last. The chip has both forms in
+   the DOM; each item keeps its whole text in its name and tooltip. */
+.own-give-short {
+  display: none !important;
+}
+.own-header[data-give~="cache"] .own-sw-pill-cache,
+.own-header[data-give~="computer"] [data-testid="computer-chip"] .own-give-full,
+.own-header[data-give~="team"] [data-testid="team-pill"] .own-give-lead,
+.own-header[data-give~="harness"] [data-testid="harness-pill"] > span,
+.own-header[data-give~="git"] [data-testid="git-status-chip"],
+.own-header[data-give~="stop"] [data-testid="computer-stop"] {
+  display: none !important;
+}
+.own-header[data-give~="computer"] [data-testid="computer-chip"] .own-give-short {
+  display: block !important;
+}
+.own-header[data-give~="computer"] [data-testid="computer-chip"] > button,
+.own-header[data-give~="approval"] [data-testid="approval-pill"]:not([data-mode="full"]),
+.own-header[data-give~="harness"] [data-testid="harness-pill"] {
+  padding-inline: 8px !important;
+}
+.own-header[data-give~="approval"] [data-testid="approval-pill"]:not([data-mode="full"]) > :last-child {
+  display: none !important;
+}
+/* More specific than the container queries' floors above, and never more than the title itself (`calc-size`). The
+   last floor keeps two Korean characters and the ellipsis (`장바…`, 40 px at 14 px). */
+.own-header[data-give~="title"] .own-header-title {
+  min-width: 5rem;
+  min-width: calc-size(max-content, min(size, 5rem));
+}
+.own-header[data-give~="title-min"] .own-header-title {
+  min-width: 3em;
+  min-width: calc-size(max-content, min(size, 3em));
+}
+
+/* phone (03 §4.2 phone tier, 05 §13.1-4, checked at 375 px by e2e/gateway): two lines instead of a squeezed one —
+   back · title · ⋯ · panel first, then the host badge and the pills; the theme lives in 설정 > 일반. */
+.own-app[data-tier="phone"] .own-header {
+  height: auto;
+  min-height: var(--own-header-h);
+  flex-wrap: wrap;
+  row-gap: 2px;
+  gap: 4px;
+  padding: 2px 4px 6px;
+}
+.own-app[data-tier="phone"] .own-header > * {
+  order: 3;
+}
+.own-app[data-tier="phone"] .own-header > button:first-child {
+  order: 0;
+}
+.own-app[data-tier="phone"] .own-header-title {
+  order: 1;
+  flex: 1 1 0;
+}
+.own-app[data-tier="phone"] .own-header > [data-testid="session-menu"],
+.own-app[data-tier="phone"] .own-header > [data-testid="chat-view-menu"],
+.own-app[data-tier="phone"] .own-header > [data-testid="panel-toggle"] {
+  order: 2;
+}
+.own-app[data-tier="phone"] .own-header::after {
+  content: "";
+  order: 2;
+  flex-basis: 100%;
+  height: 0;
+}
+/* Pages (계정, 한도, 설정 …) have no pills (P2-15): back · title · bulb, cog and ? share one row about the header's
+   height, the title ellipsized. A conversation and the new-conversation screen (its pills) keep the second row. */
+.own-app[data-tier="phone"] .own-header:not([data-route="session"], [data-route="home"], [data-route="project"]) {
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+.own-app[data-tier="phone"]
+  .own-header:not([data-route="session"], [data-route="home"], [data-route="project"])::after {
+  content: none;
+}
+/* Kept beside the container rules above for WebViews without container queries. */
+.own-app[data-tier="phone"] .own-header > [data-testid="theme-toggle"] {
+  display: none;
+}
+/* The phone's ‹ back button already returns to the conversation. */
+.own-app[data-tier="phone"] .own-header > [data-testid="return-to-chat"] {
+  display: none;
+}
+/* The second row of a conversation (S23 pass, 2026-11-19, 384 px): `모델 @ 계정` is the phone's one model control (the
+   composer hides its button, composer.css), so the pill takes the row and its parts give way as on the desktop (the
+   model first); before, a 194 px cap left `Dee… @ local-flash-mo…` and the settings button fell to a third row. */
+/* From a zero basis, like the composer's button: a wrapping row breaks by an item's whole width before it shrinks
+   anything, so `모델 @ 계정 · 캐시 …` at its full width pushed the approval mark onto a third row. It grows back to its
+   text and gives way from there (the cache state first, then the model); below 12rem other items wrap instead. */
+.own-app[data-tier="phone"] .own-header .own-sw-pill-wrap {
+  flex: 1 1 0;
+  min-width: min(12rem, 100%);
+  max-width: max-content !important;
+}
+/* The approval pill keeps its mark (`⚠` in the warning colour for 전체 허용, `⛉` otherwise); the mode stays in its name
+   and tooltip and the menu it opens names it. The idea notes and settings buttons move into the conversation `⋯`
+   (shell/session-menu.tsx), as a team conversation already had them out of its header. */
+.own-app[data-tier="phone"] .own-header[data-route="session"] [data-testid="approval-pill"] {
+  padding-inline: 8px !important;
+}
+/* An unfolded foldable's one-row header (Fold8 pass): 4 px between its 44 px controls and at its ends, as the phone's,
+   so `모델 @ 계정` keeps `DeepSeek V4.1 Flash 1017 @ DeepSeek` whole beside the list on the Fold8 Ultra upright
+   (619 px). Beside the list, which shows the conversation's whole title, the title may go down to two characters: an
+   area owner's `게임 로직 · 담당` and `GPT-5.6 Sol @ ChatGPT 01` then fit there too. */
+.own-app[data-handheld]:not([data-tier="phone"]) .own-header[data-route="session"] {
+  gap: 4px;
+  padding-inline: 4px;
+}
+.own-app[data-handheld][data-sidebar-mode="column"] .own-header[data-route="session"] .own-header-title {
+  min-width: 3em;
+  min-width: calc-size(max-content, min(size, 3em));
+}
+/* While nothing gives way (shell/header-fit.ts), the title alone shrinks: the pill's share of a shrinking line, a
+   fraction of a pixel beside the title's large factor, still put an ellipsis on its model (`GPT-5.6 S… @ ChatGPT 01`
+   with 30 px of title to spare). Once the header needs a give-way step, the pill shrinks again as on the desktop. */
+.own-app[data-handheld]:not([data-tier="phone"]) .own-header[data-route="session"]:not([data-give]) .own-sw-pill-wrap {
+  flex-shrink: 0 !important;
+}
+/* The mark alone sat at the left of its 44 px circle (Fold8 pass). */
+.own-app[data-handheld] .own-header[data-route="session"] [data-testid="approval-pill"] {
+  justify-content: center;
+}
+.own-app[data-tier="phone"] .own-header[data-route="session"] [data-testid="approval-pill"] > :last-child,
+.own-app[data-handheld]
+  .own-header[data-route="session"]
+  :is([data-testid="header-ideas"], [data-testid="header-settings"], [data-testid="header-manual"]) {
+  display: none !important;
+}
+/* The team pill drops its first words (`영역: 게임 로직 · 담당` → `게임 로직 · 담당`, `팀 메인 · 영역 3개` → `영역 3개`) as a
+   crowded desktop header does (the give-way step `team`): the title above already says them, and `모델 @ 계정` beside
+   it had kept only `GPT-5.6 …` of its model. An unfolded foldable's one row too (Fold8 pass: `GPT-5.6 …` beside the
+   list on the Fold8 on its side). */
+.own-app[data-handheld] .own-header [data-testid="team-pill"] .own-give-lead {
+  display: none !important;
+}
+/* The keyboard up (384×420 on the S23 Ultra): the conversation's header keeps its first row, so the transcript keeps
+   the room; `모델 @ 계정` and the approval mark come back when the keyboard goes down. */
+@media (max-height: 500px) {
+  .own-app[data-tier="phone"] .own-header[data-route="session"] {
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .own-app[data-tier="phone"]
+    .own-header[data-route="session"]
+    > :not(
+      button:first-child,
+      .own-header-title,
+      [data-testid="session-menu"],
+      [data-testid="chat-view-menu"],
+      [data-testid="panel-toggle"],
+      [popover]
+    ),
+  .own-app[data-tier="phone"] .own-header[data-route="session"]::after {
+    display: none !important;
+  }
+}
+.own-app[data-tier="phone"] .own-header .own-sw-pill {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* With the row to itself the pill has room for its cache state again (`· 캐시 따뜻함`), which gives way first. */
+.own-app[data-tier="phone"] .own-header .own-sw-pill-cache {
+  display: inline !important;
+  flex: 0 100000 auto;
+}
+
+.own-session,
+.own-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.own-page {
+  overflow: auto;
+}
+
+/* The new-conversation screen on desktop and tablet (03 §4.3.1, P2-14): `대화를 고르거나 새 대화를 시작하세요.` was an
+   orphan line at the pane's top left with the hints and the composer at its bottom. Now the line (centred, muted), the
+   알아 두면 좋은 것 card and the composer are one column at the composer's width, centred in the pane: the transcript
+   keeps its content height and grows like the spacer after the composer, its line at its bottom. Banners stay on top.
+   The phone keeps its layout, and the first message brings back the session's (no `data-home`). `!important`: the
+   column's own classes are Tailwind utilities, a later layer than this one. */
+.own-app:not([data-tier="phone"]) .own-session[data-home] > .own-transcript {
+  flex: 1 1 auto !important;
+  justify-content: flex-end;
+}
+.own-app:not([data-tier="phone"]) .own-session[data-home]::after {
+  content: "";
+  flex: 1 1 0;
+}
+.own-app:not([data-tier="phone"]) .own-session[data-home] > .own-transcript > .own-placeholder {
+  padding: 0 24px 14px;
+  color: var(--own-text-muted);
+  text-align: center;
+}
+/* The composer's side padding (24 px from 600 px up, composer.css) instead of the card's 16 px. */
+.own-app:not([data-tier="phone"]) .own-session[data-home] > [data-testid="discover-hints"] {
+  width: calc(100% - 48px) !important;
+}
+
+.own-icon-button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--own-text-muted);
+  cursor: pointer;
+}
+
+.own-icon-button:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+
+.own-icon-button[aria-pressed="true"] {
+  color: var(--own-accent-text);
+  background: var(--own-accent-soft);
+}
+
+.own-icon-button svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.own-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--own-scrim);
+  z-index: 40;
+}
+
+.own-skip {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 100;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-skip:not(:focus) {
+  clip-path: inset(50%);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* Resize handles (@opencode/ui/resize-handle markup; its CSS lives in the full ui stylesheet we do not load). */
+[data-component="resize-handle"] {
+  position: absolute;
+  z-index: 10;
+  inset-block: 0;
+  width: 8px;
+  cursor: col-resize;
+}
+
+.own-sidebar > [data-component="resize-handle"] {
+  inset-inline-end: -4px;
+}
+
+.own-panel > [data-component="resize-handle"] {
+  inset-inline-start: -4px;
+}
+
+[data-component="resize-handle"]:hover,
+[data-component="resize-handle"]:active {
+  background: linear-gradient(to right, transparent 3px, var(--own-accent) 3px 5px, transparent 5px);
+}
+
+/* ---- Work panel tabs (4.7) ---- */
+.own-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 6px 0;
+  border-bottom: 1px solid var(--own-border);
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.own-tab {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--own-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.own-tab[aria-selected="true"] {
+  color: var(--own-text);
+  box-shadow: inset 0 -2px 0 var(--own-accent);
+}
+
+.own-tab:hover {
+  color: var(--own-text);
+}
+
+.own-tabpanel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The bottom terminal dock stays mounted while hidden (scrollback, 4.7.3); hidden = not visible (inert). */
+.own-session > .own-terminal-dock[inert],
+.own-pane-stack > .own-terminal-dock[inert] {
+  display: none;
+}
+
+/* Restore bar and subagent strip between the transcript and the composer (4.5). */
+.own-session-foot {
+  flex: none;
+  padding: 0 12px;
+}
+
+@media (min-width: 600px) {
+  .own-session-foot {
+    padding: 0 24px;
+  }
+}
+
+.own-session-foot > * {
+  max-width: var(--own-content-max);
+  margin-inline: auto;
+}
+
+/* Tabs that fill the panel (review, terminal) size themselves in a column. */
+.own-tabpanel:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+}
+
+.own-tab-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+  font-size: 10.5px;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.own-panel-head {
+  display: flex;
+  align-items: center;
+}
+
+.own-panel-head .own-tabs {
+  flex: 1;
+}
+
+.own-placeholder {
+  padding: 24px;
+  color: var(--own-text-faint);
+  font-size: 13px;
+}
+
+/* ---- Banners (8장) ---- */
+.own-banner {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  background: color-mix(in srgb, var(--own-warn) 14%, var(--own-bg));
+  color: var(--own-text);
+  border-bottom: 1px solid var(--own-border);
+}
+
+.own-banner[data-tone="ok"] {
+  background: color-mix(in srgb, var(--own-ok) 14%, var(--own-bg));
+}
+
+.own-banner[data-tone="danger"] {
+  background: color-mix(in srgb, var(--own-danger) 14%, var(--own-bg));
+}
+
+/* In the desktop shell a banner is the window's first row while it shows (it pushes the header down), so it stops
+   short of the window's own buttons, as the header does. The layout audit found `다시 연결됨` under them when a
+   reconnect happened to flash during its settings pass (2026-11-20). */
+[data-wco] .own-main > .own-banner {
+  margin-right: var(--own-wco-right, 0px);
+}
+
+.own-center {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--own-text-muted);
+}
+
+.own-card {
+  background: var(--own-bg-raised);
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  padding: 20px 24px;
+  max-width: 520px;
+}
+
+.own-button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--own-border-strong);
+  background: var(--own-bg-raised);
+  cursor: pointer;
+}
+
+.own-button:hover {
+  background: var(--own-bg-hover);
+}
+
+/* ---- Tiers (4.2) ---- */
+
+/* compact: panel becomes an overlay drawer, width min(420, 60vw). */
+.own-app[data-panel-mode="drawer"] .own-panel,
+.own-app[data-panel-mode="sheet"] .own-panel,
+.own-app[data-panel-mode="fullscreen"] .own-panel {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 60vw);
+  border-left-color: var(--own-border-strong);
+  box-shadow: var(--own-shadow-float);
+  transition: transform 0.18s ease;
+}
+
+.own-app[data-panel-mode="sheet"] .own-panel {
+  width: min(560px, 90vw);
+}
+
+.own-app[data-panel-mode="fullscreen"] .own-panel {
+  width: 100vw;
+  border-left: 0;
+}
+
+.own-app:not([data-panel-mode="push"])[data-panel="closed"] .own-panel {
+  transform: translateX(100%);
+  box-shadow: none;
+}
+
+/* tablet: sidebar becomes a drawer from the left. */
+.own-app[data-sidebar-mode="drawer"] {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+
+.own-app[data-sidebar-mode="drawer"] .own-sidebar {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 272px;
+  /* Over the scrim the drawer's dark sidebar color is close to the dimmed page: a stronger edge separates them. */
+  border-right-color: var(--own-border-strong);
+  box-shadow: var(--own-shadow-float);
+  transition: transform 0.18s ease;
+}
+
+.own-app[data-sidebar-mode="drawer"][data-sidebar="closed"] .own-sidebar {
+  transform: translateX(-100%);
+  box-shadow: none;
+}
+
+/* phone: the session list is its own screen; opening a session shows the conversation (4.2 "목록 화면"). */
+.own-app[data-sidebar-mode="list"] {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+
+.own-app[data-sidebar-mode="list"][data-phone-view="list"] {
+  grid-template-columns: minmax(0, 1fr) 0 0;
+}
+
+.own-app[data-sidebar-mode="list"][data-phone-view="list"] .own-main {
+  visibility: hidden;
+}
+
+.own-app[data-sidebar-mode="list"][data-phone-view="session"] .own-sidebar {
+  visibility: hidden;
+}
+
+.own-app[data-sidebar-mode="list"] .own-sidebar {
+  border-right: 0;
+}
+
+.own-app[data-sidebar-mode="list"] > .own-sidebar > [data-component="resize-handle"],
+.own-app[data-sidebar-mode="drawer"] > .own-sidebar > [data-component="resize-handle"],
+.own-app:not([data-panel-mode="push"]) > .own-panel > [data-component="resize-handle"] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-panel,
+  .own-sidebar {
+    transition: none !important;
+  }
+}
+
+/* The phone (MUX 2026-11-06) and an unfolded foldable (Fold8 pass): the note about the browser tools would repeat on
+   every conversation and new screen, and a handheld header and conversation have no line to give it. A device does
+   reach the conversation's browser (05 §8.10: the PC's pane, shown by the conversation `⋯` > 브라우저), and that view
+   says what the note would: the PC's desktop app must be running, or the conversation started without the tools and
+   how to turn them on. `!important`: the note's own classes are Tailwind utilities, a later layer. */
+.own-app[data-handheld] [data-testid="browser-tool-notice"] {
+  display: none !important;
+}
+
+/* A touch screen (MUX 2026-11-06): the list's and the menus' keyboard shortcuts (`Alt+N`, `Ctrl+O`) name keys the
+   phone does not have. */
+@media (pointer: coarse) {
+  .own-sidebar kbd,
+  [role="menu"] kbd {
+    display: none !important;
+  }
+}
+
+/* A touch screen (MUX 2026-11-06): the team list's `한 번 허용` and `거절` on a waiting ask (06 §9.4) are 44 px tall in
+   the 60 px row, and the file line under the ask leaves them room. `!important`: the buttons' and the line's own classes
+   are Tailwind utilities, a later layer. */
+@media (pointer: coarse) {
+  .own-team-req-btn {
+    min-height: 44px !important;
+    padding-inline: 12px !important;
+    font-size: 13px !important;
+  }
+  .own-team-req-line,
+  .own-team-req-subject {
+    padding-right: 172px !important;
+  }
+}
+
+/* The phone (MUX 2026-11-06): a team conversation's header carries the team pill too, and the idea notes and settings
+   buttons pushed the second row onto a third (150 px of header). In a team conversation they give way; both stay on
+   the conversation list's screens (settings in the list's footer, idea notes in every page's header). */
+.own-app[data-tier="phone"]
+  .own-header[data-route="session"]:has([data-testid="team-pill"])
+  :is([data-testid="header-ideas"], [data-testid="header-settings"]) {
+  display: none !important;
+}
+
+/* A phone with its keyboard up (MUX, the G7: 471 px left of 816) or on its side: the new-conversation screen's
+   `알아 두면 좋은 것` card gives its room to the composer, whose account and `전송` line had gone under the keyboard
+   and whose card overlapped the screen's first line. */
+@media (max-height: 560px) {
+  .own-app[data-tier="phone"] [data-testid="discover-hints"] {
+    display: none !important;
+  }
+}
+
+/* A menu taller than the window scrolls inside it (S23 pass, 2026-11-19): a phone conversation's `⋯` holds about
+   fifteen 44 px items, more than the 420 px a raised keyboard leaves. */
+[popover][role="menu"] {
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The conversation list on a touch screen (visual polish, 2026-11-20). A row's `⋯` is a 44 px target from the row's
+   top: its mark sat between the title and the account line, 10 px under the title it belongs to; it now sits on the
+   title's line (the target is unchanged). The project header's `⑂` drew at its 44 px button's left edge. */
+@media (pointer: coarse) {
+  .own-sidebar :is([data-testid="row-menu-button"], [data-testid="area-menu-button"]).top-1 {
+    align-items: start;
+    padding-top: 3.5px;
+  }
+  .own-sidebar [data-testid="project-worktree-button"] {
+    justify-content: center;
+  }
+}
+/* The list beside an unfolded foldable's conversation is 240 px (Fold8 pass): 설정 with its name, three icons and
+   `● 연결됨` were 20 px wider, and `연결됨` was cut at the column's edge. There 설정 keeps its gear and the status its
+   dot (both names stay in their labels; the status opens its panel as before). */
+.own-app[data-handheld][data-sidebar-mode="column"]
+  :is([data-testid="sidebar-settings"], [data-testid="server-status-button"]) {
+  justify-content: center;
+  /* `!important`: the button's text size is a Tailwind utility, a later layer. */
+  font-size: 0 !important;
+}
+
+/* Server sections (03 §4.3): the header of each one is ruled off, the one that sticks over its list too. */
+.own-server-head {
+  border-top: 1px solid var(--own-border);
+}
+/* What adds a server, on one line: the words in full where they fit (272 px), short in a narrower list. */
+.own-side-add {
+  container: own-side-add / inline-size;
+}
+.own-add-short {
+  display: none;
+}
+@container own-side-add (max-width: 250px) {
+  .own-add-long:not(:last-child) {
+    display: none;
+  }
+  .own-add-short {
+    display: inline;
+  }
+}
+/* On a touch screen the headers' 44 px buttons overlap their empty edges, so the names keep their room (a 240 px list). */
+@media (pointer: coarse) {
+  .own-sidebar [data-reorder] .own-icon-button {
+    margin-left: -8px;
+  }
+}
+/* A list header being moved (sidebar/reorder.ts): pressed long enough, its place in the list, the copy under the
+   pointer and the line where it lands. */
+.own-sidebar [data-armed] {
+  background: var(--own-bg-hover);
+  border-radius: 6px;
+}
+.own-sidebar [data-dragged] {
+  opacity: 0.35;
+}
+.own-sidebar [data-reorder] {
+  -webkit-touch-callout: none;
+  scroll-margin-block: 44px;
+}
+:root[data-reordering] body * {
+  cursor: grabbing !important;
+}
+.own-drag-ghost {
+  position: fixed !important;
+  z-index: 70;
+  margin: 0 !important;
+  border: 1px solid var(--own-border-strong) !important;
+  border-radius: 8px;
+  background: var(--own-bg-raised) !important;
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-float);
+  opacity: 0.92;
+  pointer-events: none;
+}
+.own-drag-line {
+  position: fixed;
+  z-index: 71;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--own-accent);
+  pointer-events: none;
+}
+/* A very low window (a phone on its side, the keyboard up): the list keeps its room. */
+@media (max-height: 520px) {
+  .own-sidebar [data-testid="accounts-in-use"] {
+    display: none;
+  }
+}
+
+/* Swipe surfaces on a touch screen (../shell/swipe.ts sets `data-swipe` on the root): the browser keeps vertical
+   scrolling and leaves a sideways move to the swipe. A scroll container starts afresh for what it holds, so the
+   vertical ones the swipes start in say it again; code blocks, diffs, tables and tab strips keep panning sideways. */
+:root[data-swipe] .own-app,
+:root[data-swipe] .own-app :is(
+    [data-slot="session-timeline-scroll"] > .scroll-view__viewport,
+    .own-page,
+    .own-settings-nav,
+    .own-settings-content,
+    .own-tabpanel,
+    [data-testid="sidebar-scroll"]
+  ) {
+  touch-action: pan-y pinch-zoom;
+}
+/* The model sheet is dragged down to close: its head and footer leave every move to the swipe, its lists scroll and,
+   while at their top, leave a downward drag to it. */
+:root[data-swipe] .own-sw-sheet {
+  touch-action: none;
+}
+:root[data-swipe] .own-sw-sheet .own-sw-col {
+  touch-action: pan-down pinch-zoom;
+}
+:root[data-swipe] .own-sw-sheet .own-sw-col[data-scrolled] {
+  touch-action: pan-y pinch-zoom;
+}

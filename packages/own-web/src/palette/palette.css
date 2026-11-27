@@ -1,0 +1,169 @@
+/*
+ * Command palette (03 §3, §10): loaded with its lazy chunk. Colors are own tokens only, so dark (default) and light
+ * both follow the theme; row heights are fixed because the list is windowed (palette.tsx ITEM/HEADER heights).
+ */
+
+.own-pal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  background: var(--own-scrim);
+}
+
+.own-pal {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 12vh - 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-pal-search {
+  display: block;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--own-border);
+}
+.own-pal-search input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 14px;
+  outline: none;
+}
+.own-pal-search input::placeholder {
+  color: var(--own-text-faint);
+}
+.own-pal-search input:focus {
+  border-color: var(--own-focus);
+  box-shadow: 0 0 0 1px var(--own-focus);
+}
+
+.own-pal-list {
+  position: relative;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 6px;
+}
+.own-pal-space {
+  position: relative;
+  margin: 6px 0;
+}
+
+.own-pal-header,
+.own-pal-item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  contain: strict;
+}
+
+.own-pal-header {
+  padding: 8px 8px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--own-text-muted);
+}
+
+.own-pal-item {
+  gap: 10px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.own-pal-item[data-active] {
+  background: var(--own-accent-soft);
+  box-shadow: inset 2px 0 0 var(--own-accent-text);
+}
+
+.own-pal-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.own-pal-hit {
+  background: transparent;
+  color: var(--own-accent-text);
+  font-weight: 600;
+}
+.own-pal-detail {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+.own-pal-end {
+  margin-left: auto;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+.own-pal-group {
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-pal-kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--own-border);
+  border-radius: 5px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+}
+
+.own-pal-empty {
+  margin: 0;
+  padding: 18px 16px;
+  color: var(--own-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.own-pal-foot {
+  padding: 6px 12px;
+  border-top: 1px solid var(--own-border);
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+
+/* 03 §4.2 phone: near the top edge, full width; the on-screen keyboard takes the lower half. */
+@media (max-width: 599px) {
+  .own-pal-scrim {
+    padding: 8px;
+  }
+  .own-pal {
+    max-height: calc(100dvh - 16px);
+  }
+  .own-pal-detail {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .own-pal-item[data-active] {
+    outline: 2px solid Highlight;
+  }
+}

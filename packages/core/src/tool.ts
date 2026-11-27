@@ -158,7 +158,13 @@ const layer = Layer.effect(
       ]
     })
 
-    const beforeExecute = (name: string, info: Tool.Info | undefined, input: unknown, context: Tool.Context) =>
+    const beforeExecute = (
+      name: string,
+      info: Tool.Info | undefined,
+      input: unknown,
+      context: Tool.Context,
+      registered?: string,
+    ) =>
       hooks.trigger("tool", "execute.before", {
         tool: name,
         ...(info === undefined ? {} : { info }),
@@ -168,6 +174,9 @@ const layer = Layer.effect(
         messageID: context.messageID,
         id: context.id,
         input,
+        // OWN-PATCH(P-028) begin
+        ...(registered === undefined || registered === name ? {} : { registered }),
+        // OWN-PATCH(P-028) end
       })
 
     const executeTool = Effect.fn("Tool.execute")(function* (
@@ -387,7 +396,15 @@ const layer = Layer.effect(
               }
               const initialName = input.definitions?.get(input.call.name)?.name ?? input.call.name
               const initial = initialName === "execute" && codemode ? codemode.tool : direct.get(initialName)
-              const event = yield* beforeExecute(input.call.name, initial, input.call.input, context)
+              const event = yield* beforeExecute(
+                input.call.name,
+                initial,
+                input.call.input,
+                context,
+                // OWN-PATCH(P-028) begin
+                input.definitions?.get(input.call.name)?.name,
+                // OWN-PATCH(P-028) end
+              )
               const requested = input.definitions?.get(event.tool)
               // Preserve session context removal and alias resolution, now after the repair hook.
               if (!requested && input.definitions && (direct.has(event.tool) || codemode?.tool.name === event.tool))

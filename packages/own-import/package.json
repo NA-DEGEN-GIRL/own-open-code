@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/import",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: read-only discovery, viewing and migration of Codex and Claude Code conversations (own.import, 09)",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" test",
+    "test:unit": "\"$npm_execpath\" test test/unit",
+    "test:e2e": "\"$npm_execpath\" test --timeout 900000 test/e2e",
+    "test:perf": "OWN_IMPORT_PERF=1 \"$npm_execpath\" test --timeout 900000 test/perf"
+  },
+  "dependencies": {
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "effect": "catalog:",
+    "gray-matter": "4.0.3"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

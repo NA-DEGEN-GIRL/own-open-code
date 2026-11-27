@@ -1,0 +1,156 @@
+/* Voice input control (03 §4.6 받아쓰기): the mic button, the recording bar and its messages. */
+.own-vc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.own-vc-mic {
+  display: inline-grid;
+  place-items: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text-muted);
+  cursor: pointer;
+}
+.own-vc-mic:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+.own-vc-mic:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.own-vc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12.5px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.own-vc-error {
+  border-color: color-mix(in srgb, var(--own-danger) 45%, var(--own-border));
+  color: var(--own-danger);
+  white-space: normal;
+}
+
+.own-vc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--own-danger);
+  animation: own-vc-pulse 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .own-vc-dot,
+  .own-vc-spin {
+    animation: none;
+  }
+}
+@keyframes own-vc-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Its own spinner: the kit's lives in a lazy chunk, and this control is in the composer's first chunk. */
+.own-vc-spin {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--own-border-strong);
+  border-top-color: var(--own-accent);
+  border-radius: 50%;
+  animation: own-vc-turn 0.8s linear infinite;
+}
+@keyframes own-vc-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.own-vc-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--own-text-muted);
+}
+
+.own-vc-meter {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--own-meter-track);
+  overflow: hidden;
+}
+.own-vc-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--own-meter-fill);
+  transition: width 60ms linear;
+}
+
+.own-vc-btn {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border);
+  border-radius: 6px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-vc-btn:hover {
+  background: var(--own-bg-hover);
+}
+.own-vc-btn[data-variant="primary"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+
+.own-vc-note {
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+
+/* 4.2.2: touch screens get 44 px targets, like the composer's other tools. */
+@media (pointer: coarse) {
+  .own-vc-mic,
+  .own-vc-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* 설정 > 음성 입력: the shortcut as a key cap. */
+.own-vc-kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 5px;
+  background: var(--own-bg-subtle);
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+}
+
+/* The workspace note editor is a column: the control sits under the text, at the right. */
+.own-note-editor > .own-vc {
+  align-self: flex-end;
+  margin: 4px 14px 8px;
+}

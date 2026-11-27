@@ -91,6 +91,9 @@ const permissionLayer = Layer.succeed(
     close: Effect.void,
     ask: (input) => Effect.succeed({ id: input.id ?? Permission.ID.create(), effect: "ask" }),
     assert: () => Effect.void,
+    // OWN-PATCH(P-031) begin
+    check: () => Effect.succeed("allow" as const),
+    // OWN-PATCH(P-031) end
     assertNotDenied: () => Effect.void,
     allows: () => Effect.succeed(false),
     reply: () => Effect.void,

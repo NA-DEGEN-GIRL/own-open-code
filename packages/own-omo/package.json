@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@own/omo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "own-open-code: oh-my-opencode (omo) on OpenCode v2 (own.omo): a v1 plugin host that runs the vendored omo runtime in omo-bound sessions",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "\"$npm_execpath\" check --no-script -p tsconfig.json",
+    "typecheck:tsc": "tsc --noEmit -p tsconfig.json",
+    "test": "\"$npm_execpath\" test --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**' --timings=test/timings.json",
+    "test:quick": "\"$npm_execpath\" test --changed=main --parallel --timeout=30000 --path-ignore-patterns='test/e2e/**'",
+    "test:e2e": "\"$npm_execpath\" ../../own/scripts/test/heavy.ts bun test --parallel=3 --timeout=30000 test/e2e",
+    "bundle": "\"$npm_execpath\" script/bundle.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@opencode/ai": "workspace:*",
+    "@opencode/plugin": "workspace:*",
+    "@opencode/schema": "workspace:*",
+    "@own/protocol": "workspace:*",
+    "@own/runtime": "workspace:*",
+    "diff": "9.0.0",
+    "effect": "catalog:",
+    "js-yaml": "5.4.2",
+    "jsonc-parser": "3.3.1",
+    "picocolors": "1.1.1",
+    "picomatch": "4.0.7",
+    "proper-lockfile": "4.1.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:",
+    "typescript": "catalog:"
+  }
+}

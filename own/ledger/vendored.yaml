@@ -1,0 +1,1201 @@
+# Upstream code we use without changing it (own/FORK.md §7): copies (`vendor`), build-time replacements
+# (`substitute`, own-web `vite/plugins.ts` `substitute()` fails the build when a key stops matching) and direct deep
+# imports (`deep-import`).
+#
+# Entry shape:
+# - dest: packages/own-web/src/vendor/virtualizer.tsx
+#   source: packages/app/src/session/timeline/virtualizer.tsx
+#   kind: vendor | substitute | deep-import
+#   upstream_commit: 00d179015f
+#   source_sha256: "<sha256 of the source file at copy time, LF-normalized>"
+#   local_changes: "removed useLanguage dependency"
+#   not_ported: "upstream changes a drift review left out of the copy (optional)"
+#   removed_upstream: <sha that deleted the source with no successor; the copy is ours from then on (optional)>
+#   license: MIT (upstream LICENSE)
+#
+# The copy's first line is `// Vendored from <source> @ <commit> (MIT). See own/ledger/vendored.yaml` (`Substitutes`
+# for a substitute). node own/scripts/check-surface.mjs reports drift (warning, not failure) when the source's current
+# hash differs from source_sha256; `node own/scripts/check-surface.mjs --hash <path>` prints the hash to record.
+# Candidates (03 §16): composer/suggestions/machine.ts, prompt-parts.ts.
+- dest: packages/own-web/src/vendor/timeline/virtualizer.tsx
+  source: packages/app/src/session/timeline/virtualizer.tsx
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "2e058bd4aff3b7f22cf5fba7ea2a7be39d976d8858fa7cca3de6d5bb79291ca8"
+  local_changes: "generic row type (Input<Row>.rowKey/isGap/isUserMessage/partIndex) instead of session-ui TimelineRow, so own-web turn-footer rows share the list; the collapsed-context-group case of the initial-tail range moved into canRenderImmediately; own-web useI18n (own.transcript.jumpToLatest) instead of @/runtime/i18n/language; headerHeight input instead of the fixed 64 px and a 16 px top spacer at every width (no @solid-primitives/media); workspace-session data attributes removed; the hidden jump-to-latest (맨 아래로) button takes no clicks or focus, so it no longer swallows clicks meant for the composer's popovers (2026-10-16, 5886c4f3c1), and carries `data-testid=\"transcript-jump-latest\"` for its 44 px touch target (2026-11-19, the S23 pass). Marked \"own:\" in the file. Merge round 8 (2026-10-31, the v2.2.1 drift review, MR8-19) ported #60034 (the reachable end under desktop zoom: zoomSlack, atReachableEnd, endPending, pinColdBottom's result; without the anchor checks, the copy has no tool reveal) and #57831 (pointerdown on the ScrollView root in the capture phase, so a scrollbar thumb drag stops following the end). The known and added row keys keep only the rows in the list (2026-11-15, big-session: a long transcript's window and its dropped pages pass every row of a session through them). TanStack's measured sizes keep only the rows in the list too, and a disclosure key nobody set is read behind one signal (canRenderImmediately gets that reader instead of the store), since Solid's store keeps a signal for every key read (2026-11-15, renderer memory)."
+  not_ported: "the route's tool-call reveal (input.reveal, revealPart) and the Predicate.isTagged refactor; reviewed at 79349e840f and left out: the activity capsule, turn navigator, composer bottom inset and visible area, folded long user messages (#59435), the reduce-motion setting and the jump-to-latest glide, the sidebar spring's landing width (#58013, #59878: own-web has no panel spring), #59160's pin handover (anchor code); reviewed at 4878a0e30f (v2.2.5 sync) and left out: the 32 px activity pill's tailSize (#59979, no activity capsule), paging from the composer (setPage, #59426: own-web's composer has no PageUp hand-off), the non-inherited inset variable (#60216, no composer bottom inset), and #60481's onContentResize in place of setContentRef (the content height reported from the virtualizer instead of a ResizeObserver on the content, which Chrome logs as a ResizeObserver loop): it needs own-web transcript/follow.ts, session.tsx and import/viewer.tsx to drop their content observer, so it is a follow-up; reviewed at 33f94fce96 (v2.2.6 sync) and left out: timeline follow mode, kept views and touch as state machines (#61588, #62017, #62112), the cold timeline's bounded reveal (#61591), the removed new-messages divider (#61878, own-web never had it), the return-to-first-unread experiment (#61663), the activity pill's touch spacing (#61794, no activity capsule) and the larger tail size (#61236): the copy keeps its own follow logic (own-web transcript/follow.ts); reviewed at 698800f59c (v2.4.1 sync, MR18): ported #64565 (a row leaving mid-update no longer throws: keys without a projection row are dropped and deduplicated); left out keepsDisclosure, tailExtra and focusComposer, the header outside the scroll view and the 5 px clip margin, the focus-ring changes and Key-based mounting (@solid-primitives/keyed is no own-web dependency)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/timeline/observe-element-offset.ts
+  source: packages/app/src/session/timeline/observe-element-offset.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "587fbd6603856d3d034d4f102e5d047b8a04edd2ca7b985203189aca9fbf43d5"
+  local_changes: >-
+    17229d24f5's settled-scroll fix ported in the v2.0.32 sync (a settled scroll reports the live offset, so a
+    virtualizer write whose scroll event is still pending, such as prepend anchoring or size compensation, is not
+    undone); the live offset keeps the copy's horizontal/RTL branch (`live`, marked "own:"), shared with the
+    reconnect check
+  not_ported: "upstream dropped the horizontal/RTL offset branch and the mutationNodesContainElement export; the copy keeps both; reviewed at 33f94fce96: the timeline sync and scroll reconnect as a state machine (#62008), upstream's v2.2.6 state-machine rewrite of the same offset rules; the copy keeps its live offset and RTL branch"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/timeline/observe-element-offset.test.ts
+  source: packages/app/src/session/timeline/observe-element-offset.test.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "57ffdaf44d966a6b8010c42c57119422e80d0a5243ca48aad5d30e1a1683554c"
+  local_changes: "none (header comment only); runs against the own-web copy (5 tests, the live-offset one fails without the port)"
+  not_ported: "reviewed at 33f94fce96: the new cases test the state machine (#62008), which the copy does not have"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/timeline/virtual-items.ts
+  source: packages/app/src/session/timeline/virtual-items.ts
+  kind: vendor
+  upstream_commit: 00d179015f
+  source_sha256: "d54e5256e288e4aa4fea81c0c95019d5068f6b07302f217459aedc43b971348f"
+  local_changes: "none (header comment only)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/session-ui/markdown-cache.tsx
+  source: packages/session-ui/src/components/markdown-cache.tsx
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "c085871eed047c5364f099a8b7bbb08dc2670b11bcccac87ddb40e311433b65f"
+  local_changes: >-
+    LRU size 200 -> 2000 (a streaming answer touches every one of its blocks per update; with more blocks than the
+    cache holds every update re-parsed and re-sanitized all of them, 40-60 ms long tasks per frame: PF4);
+    sibling imports by path: markdown-image to the upstream file, markdown-worker to own-web's substitute (below, so
+    one worker client in the build and in tests). Marked "own:". Swapped in by packages/own-web/vite/plugins.ts
+    `substitute()` for every importer (session-ui markdown.tsx and the own-web adapter). Upstream PR candidate: the
+    LRU size. v2.2.5 sync: own's DOMPurify `setConfig` once is upstream since #60549 (cfdb9dabe8); the copy now
+    takes upstream's form of it. Telemetry audit (decisions TLM, 2026-11-25): an `<img>` on another host (http,
+    https, protocol-relative) becomes a link to it with its alt text, and a remote video `poster` is dropped, so
+    showing a message never fetches from a host its text names (the PC UI's CSP allows `img-src https:`).
+  not_ported: "reviewed at 33f94fce96: parse jobs as a state machine with start/abort by id (#61980), upstream's v2.2.6 state-machine rewrite; the copy keeps its AbortSignal parses through the substituted worker client's parseMarkdown, which upstream still exports; reviewed at 698800f59c (v2.4.1 sync, MR18): the sanitizer block taken whole (#63002: class/data-*/aria/popover/command attributes dropped, `data-markdown-contain`, app-scheme links inert as `data-app-link`; own-web never calls enableMarkdownAppLinks); the LRU size and AbortSignal parses stay own's"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/session-ui/markdown.tsx
+  source: packages/session-ui/src/components/markdown.tsx
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "447a93e0548aa335aa9105b84f99b47d277fa492639777e9b642e313e9ee80ab"
+  local_changes: >-
+    a streamed answer renders incrementally (own-web src/markdown/stream.ts): the worker runs upstream's patchmark
+    projection (src/markdown/tail.ts, v2.2) and answers with the blocks from the first changed one (a settled block
+    whose source gained a reference definition included), only changed blocks are rendered
+    and written, at most once per animation frame, a finished fence renders as the one-shot answer does (the
+    worker's highlighted HTML), and images, previews and favicons are looked at in the written blocks only (upstream:
+    the whole answer re-projected, every block mapped and walked, the container scanned three times per update);
+    the live block is patched in place with a fade on its newest text (src/markdown/morph.ts) instead of
+    markdown-solid.tsx's one span per word; while it streams the blocks sit in one `display: contents` wrapper
+    (`createStreamView`, rules in src/transcript/transcript.css) so upstream's `> [data-markdown-block]:last-child > *:last-child`
+    does not restyle the answer on every new block, and move out once the finished answer is ready; a failing worker
+    falls back to one block and escaped text as upstream; an answer that never streamed keeps upstream's path. DOM
+    writes of a streamed answer in `commitMarkdownBlocks`/`createStreamView` (exported for its tests) and an
+    injectable copy-button maker. Sibling imports by path. Marked "own:". Many-sessions bench and PF numbers: own/handoff/decisions-2026-10.md
+    "Streaming render speed (SR, 2026-10-20)". Telemetry audit (decisions TLM, 2026-11-25): external links get the
+    stylesheet's link mark only, never an `<img>` from Google's favicon service (www.google.com/s2/favicons), which
+    upstream asked for every public link host as soon as a message showed.
+  not_ported: >-
+    v2.2 review (2026-10-30): taken from upstream are the abort reason (#58432), the table frame (`wrapTables`), the
+    GitHub link mark, copying a selection as markdown HTML (`markdownClipboardHtml`) and patchmark's block sources.
+    Left out: upstream's own streaming path (patchmark projection in the component, `settledMarkdown`,
+    `renderedBlocks`, per-key code disposal), which own's stream renderer replaces; the asynchronous inline-code path
+    checks with `markdownReady` waiting for them (own checks as before); session titles on session links (own has no
+    title source). v2.2.5 review (4878a0e30f): taken are fragment links that scroll to their heading
+    (`setupFragmentLinks`, #59550) and relabelling copy buttons only when the language changes (#60538, the
+    non-streamed path; a streamed answer already labelled its buttons when made). Left out: the streaming path's
+    block reuse (`lastRender`, #60562) and `renderer.update(source)` (#60549), both in the streaming path own's
+    renderer replaces.
+    reviewed at 33f94fce96 and left out: markdown readiness, paced text, copy feedback and the worker as state machines (#61977, #61869, #61930), GUI plugins rendering code blocks (#61533: no GUI plugins run in own-web), the newest Mermaid render winning when renders finish out of order (#61821), triple-click selection across link icons (#61538) and the link globe as its own element (#61417): the copy's streaming path is own's (src/markdown/stream.ts); a follow-up may port #61821 and #61538
+    reviewed at 698800f59c (v2.4.1 sync, MR18): ported the code toolbar wrapper (copy button only), #63587 (links whose label holds inline code) and the copied tooltip's forceOpen (#63834); left out the wrap-lines button and codeWrap (#64545), Mermaid maximize and the diagram preview (#59250), copying session references (#63083), the app-link reviewer and the session-link menu (#63002)
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/session-ui/markdown-worker.ts
+  source: packages/session-ui/src/components/markdown-worker.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "6e0688ee2492a32f73956d6031307b80903b0804fc108a51a94e4ccc50613b19"
+  local_changes: >-
+    starts own-web's worker (src/markdown/worker.ts: upstream's markdown.worker.ts plus the incremental `tail`
+    projection) and adds `projectMarkdownTail`, latest-wins per key like `project`. Sibling imports by path. Marked
+    "own:". Only the substituted markdown.tsx and markdown-cache.tsx import it, so its `substitute()` key is optional
+    (it still takes any upstream importer that appears, so the build never starts two workers). v2.2.5 sync: #60562's
+    `project` answer (`from` + changed `blocks`, applied with `applyProjectionBlocks` onto the key's last blocks)
+    ported, since own's worker runs upstream's markdown.worker.ts.
+    v2.2.6 sync: rebased on upstream's worker client and state machine (#61930), which own the worker and every response. own's `tail` projection moved to a worker of its own (src/markdown/worker.ts, tail only) with the per-key latest-wins transport upstream removed (kept as src/markdown/transport.ts); a disposed projection disposes its tail too. Upstream's worker is loaded by path.
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): parse results take upstream's MarkdownHTML ({html, fragments}) type; nothing left out"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/e2e/performance/benchmark.ts
+  source: packages/app/e2e/performance/benchmark.ts
+  kind: vendor
+  upstream_commit: bd55d4895f
+  source_sha256: "95905d9971130d7d9b696d73e644447c8a92467c172e0514ac8fe1ec216079e7"
+  local_changes: >-
+    records are also appended to $OWN_PERF_RESULTS (JSONL) for run.ts; a skipped benchmark emits a record with its
+    reason; records carry their wall-clock span (`timing`, for the machine-load samples of run.ts); the console line
+    abbreviates raw sample arrays. Marked "OWN".
+  removed_upstream: fe04656465
+  not_ported: "upstream moved every benchmark to strobe (fe04656465, v2.2.6) and deleted this file; the copy is own-web's from then on"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/e2e/performance/chrome-trace.ts
+  source: packages/app/e2e/performance/chrome-trace.ts
+  kind: vendor
+  upstream_commit: bd55d4895f
+  source_sha256: "0378215aa3f0c2a41e1c904176a3cd2ec99e987313689d8d23573c72ec88fc95"
+  local_changes: "none (header comment only)"
+  removed_upstream: fe04656465
+  not_ported: "upstream moved every benchmark to strobe (fe04656465, v2.2.6) and deleted this file; the copy is own-web's from then on"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/vite/theme-preload.js
+  source: packages/app/public/oc-theme-preload.js
+  kind: vendor
+  upstream_commit: 00d179015f
+  source_sha256: "0ef8db54b482aa0b702fb6e744b7df38300fa56eb75f88a757e8159d0059c01c"
+  local_changes: >-
+    rewritten with the same behavior and storage keys (opencode-theme-id, opencode-color-scheme,
+    opencode-theme-css-light|dark; surface entry ui-theme-storage-keys); localStorage reads guarded; own window
+    background colors (03 §13.1 --own-bg-subtle); dark is the default color scheme: only a stored "light" or
+    "system" paints otherwise (upstream falls back to "system"; own-web src/shell/theme-default.ts seeds the same
+    default before ThemeProvider starts). Inlined by vite/plugins.ts themePreload() as the only inline script
+    (id oc-theme-preload-script, surface web-ui-serving-csp).
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/vite.config.ts
+  source: packages/app/vite.js
+  kind: vendor
+  upstream_commit: 79349e840f
+  source_sha256: "6487e250c317b20d5fe56999c0b2678ec203e3c04a515eab5feabef224d3bd9f"
+  local_changes: "partial copy: only the Tailwind 4.3.3 `hotUpdate` server workaround and the markdown-worker dependency list (optimizeDeps exclude + nested-worker resolver) and the mermaid/katex optimizeDeps include; the rest of the config is own-web's. Merge round 8 (MR8-19): workerDeps follow v2.2's markdown worker (@pierre/highlights and marked, c2736fc9fa, f2735ef79b) and match their subpaths (bdf757209f); the mermaid/katex pre-bundle went with upstream's (06dc6a0c73, diagrams by Pele)."
+  not_ported: "the components lab skip (own-web has no lab; its FileIcon skip is MR8-5's), the gui-plugins font alias and the Office dependencies (own-web has no Office preview)"
+  license: MIT (upstream LICENSE)
+# own-web P5 (03 §18): request docks (src/requests) and the integrated terminal (src/terminal). The request docks'
+# frame is session-ui ./dock-prompt through src/adapter/dock-prompt.ts (not copied); upstream
+# session/requests/session-question-dock.tsx is only a reference for the option rows of src/requests/form-dock.tsx.
+- dest: packages/own-web/src/requests/vendor/session-request-tree.ts
+  source: packages/app/src/session/requests/session-request-tree.ts
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "762ee328821918db317396b6e0d879e416e4408b54aeaad016a0cbfcf3751a32"
+  local_changes: "none (header comment only) Recopied at 79349e840f in merge round 8 (MR8-19): `instanceof Function`, MCP elicitations as form requests."
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): recopied (adds sessionMayHoldRequests); no local changes"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/requests/vendor/session-request-tree.test.ts
+  source: packages/app/src/session/requests/session-request-tree.test.ts
+  kind: vendor
+  upstream_commit: 79349e840f
+  source_sha256: "6fc5647e4ef8e278d84913c70c05cb476d67973c3e2c8b6eaf51f0107f9beaab"
+  local_changes: "none (header comment only) Recopied at 79349e840f in merge round 8 (MR8-19)."
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/requests/vendor/websearch.ts
+  source: packages/app/src/session/requests/websearch.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "7b7f80602f37b1d41182d498d9a8da83a1e276d293314a6c8b07fbea23980702"
+  local_changes: >-
+    the event-stream type import points at own-web's data layer types instead of the upstream app runtime.
+  not_ported: "reviewed at 33f94fce96: the web search consent dock as one state machine (#61962), upstream's v2.2.6 state-machine rewrite of the same consent flow"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/markdown/stream.ts
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); the streaming render aborts its lifetime on dispose.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/session-ui/markdown.tsx
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); the substitute aborts its lifetime on cleanup (upstream #58432 in its source).
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/vendor/session-ui/markdown-cache.tsx
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); the substitute aborts a shared parse when its last consumer leaves (upstream #58439 in its source).
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/attachments/store.ts
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); pending uploads are aborted on cleanup.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/controller.ts
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); file loads are aborted on cleanup.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/import/list.tsx
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); the list read and the content search are aborted on cleanup.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/import/viewer.tsx
+  source: packages/util/src/abort.ts
+  kind: deep-import
+  upstream_commit: 80ea2130e7
+  source_sha256: "3193f9160c254985220bd0c5a09a5521ab0ecf89d14e235609a48cef6e527b1e"
+  local_changes: >-
+    none (import only: `abort`, upstream #58432/#58439, so a cleanup-time abort records no stack that pins the
+    disposed Solid batch and its detached DOM); the find request is aborted on cleanup.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/requests/vendor/websearch.test.ts
+  source: packages/app/src/session/requests/websearch.test.ts
+  kind: vendor
+  upstream_commit: bd55d4895f
+  source_sha256: "81d8b03f000bd87a6eed62304b82781bdb5e1065dfa08b181658335d1e6398bb"
+  local_changes: "none (header comment only)"
+  removed_upstream: 12c371e08d
+  not_ported: "upstream replaced this test with its state machine's (12c371e08d, v2.2.6); the copy is own-web's from then on"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/writer.ts
+  source: packages/gui-plugins/src/terminal/writer.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "4894b2c1fd9d51c7d5251e3013146239993d6f59e640133c46f0be589b4a5d03"
+  local_changes: "none (header comment only)"
+  not_ported: >-
+    v2.2.5 review (4878a0e30f): #60346 (ef712d3a78, the desktop terminal on persistent PTYs) rewrote the writer for
+    byte frames (`push(Uint8Array | step)`, steps such as resizes run in order with the output, no `flush`). own-web's
+    terminal (src/terminal/view.tsx) still speaks the string-frame PTY socket and drains the writer with `flush` before
+    its cleanups, so the copy keeps the dae4077a96 string writer; port it with a move to persistent PTYs.
+    reviewed at 33f94fce96: the terminal attachment as one state machine (#61940), upstream's v2.2.6 state-machine rewrite
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/runtime-adapters.ts
+  source: packages/gui-plugins/src/terminal/runtime-adapters.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "480900ea70209ad1c7475c43d0ba64ad34eed94e5069978ac30c2ddea3084e49"
+  local_changes: "none (header comment only)"
+  not_ported: "upstream dropped getSpeechRecognitionCtor and the isDisposable/hasSetOption exports; the copy keeps them"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/terminal-key-event.ts
+  source: packages/gui-plugins/src/terminal/terminal-key-event.ts
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "7968f30883e291aee21de236ccb5e35d4d7ba36ca071475834f1181695920678"
+  local_changes: "none (header comment only)"
+  not_ported: >-
+    upstream added consumeTerminalMetaKey (macOS Command chords for ghostty-web); own's terminal runs on Windows hosts and keeps its own key handling.
+    reviewed at 698800f59c (v2.4.1 sync, MR18): left out the new terminalLinkTarget
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/writer.test.ts
+  source: packages/gui-plugins/src/terminal/writer.test.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "da48ed9a9c806a31c172a0ec55b24e82a4e53ada1b8e8e0c4a40c9d780fbb75a"
+  local_changes: "none (header comment only)"
+  not_ported: "upstream dropped cases the copy keeps; v2.2.5's byte-frame writer tests (#60346) left out with the writer itself (see writer.ts above); reviewed at 33f94fce96: the new cases test the attachment state machine (#61940)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/runtime-adapters.test.ts
+  source: packages/app/src/session/terminal/runtime-adapters.test.ts
+  kind: vendor
+  upstream_commit: 00d179015f
+  source_sha256: "a89846d09c95ae8f4e984863305b27ba6cc5cd14ee4904ca4d33660693e7cc01"
+  local_changes: "none (header comment only)"
+  removed_upstream: f406d93a66
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/terminal/upstream/terminal-key-event.test.ts
+  source: packages/app/src/session/terminal/terminal-key-event.test.ts
+  kind: vendor
+  upstream_commit: 00d179015f
+  source_sha256: "2e2db70023da0deac3d94aa67198a934b33f31c78fab53f5be60f1f7d05efea0"
+  local_changes: "none (header comment only)"
+  removed_upstream: f406d93a66
+  license: MIT (upstream LICENSE)
+# own-desktop (05 §4.7): vendored entry, layers and preload; build-time substitutes (build/overrides.ts fails the build
+# when a key stops matching); the upstream main modules own code imports directly (deep-import, by package path
+# @opencode/desktop/src/...; `dest` is the importing file). The rest of upstream's main process comes along transitively through these and is
+# watched through own/upstream-surface.json (desktop-*, browser-*). resources/icons is copied from
+# packages/desktop/icons/dev at build time (scripts/resources.ts), not committed.
+- dest: packages/own-desktop/src/main/index.ts
+  source: packages/desktop/src/main/index.ts
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "5e49f76138e3dd627649082ffe8f0b0d1648839e6abd418ce7bc3cc46980cf59"
+  local_changes: >-
+    ./own-env as the first import (env snapshot, shell start time, 05 §5.2); right after configureApplication():
+    configureOwnApplication() (CPU raster switches 05 §9.2 R-D13, fixed toast activator CLSID 7.4); before the first
+    window: Windows application menu cleared (7.7), own IPC channels registered (5.6), oc://renderer registered first
+    with the installed version's web (app\current.json, followed on every page load) or the fallback page (5.5,
+    first-wins), and rendererAssetsServed() imported from that handler (./renderer-protocol) instead of upstream's
+    windows/protocol.ts, whose handler never runs; right before createEarlyWindow():
+    prepareWindowAppearance() (stored background as #rrggbb, own-web's dark #080808 on a first start, nativeTheme in
+    that tone; own-shell.ts, window-tone.ts); startSidecarProbe() removed; upstream modules by package path. Marked
+    "own:".
+    v2.2.6 sync: ported #61800's check that the first window was closed before the layers load (`earlyWindowClosed`)
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): upstream added captureLaunchLinks; own's entry does not need it"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/desktop.ts
+  kind: vendor
+  upstream_commit: 79349e840f
+  source_sha256: "3d5aafb49428963905c692abaf46617b00659863e787b960599787f350090edd"
+  local_changes: >-
+    BackgroundService.layer and DesktopCli.layer replaced by BackgroundServiceOwn / DesktopCliOwn (05 §5.3, §5.4);
+    wireRendererWindows added (close confirmation 7.2, manifest re-check 5.5); wireBrowserDownloads added before the
+    IPC handlers (browser-pane downloads to the owning window and PC에 저장, 8.4, own-browser.ts), wireBrowserViews
+    (split panes' view focus and chords) and wireRemoteBrowser (the bridge that shows a pane on a paired device, 8.10,
+    remote-browser.ts); the tray icon after the first paint (7.3); upstream modules by package path.
+    `plugins.start` is upstream's (forked with the first window) but runs own's GUI plugin list: the build
+    substitutes the host's built-ins (src/overrides/gui-plugins.ts: the browser pane alone, no updater, SSH, WSL or
+    pairing), its enable state (src/overrides/plugin-manager.ts: built-ins only) and its bundle evaluation
+    (src/overrides/plugin-module.ts: no plugin of the service runs its GUI bundle), 05 §8.1. Marked "own:".
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/preload/index.ts
+  source: packages/desktop/src/preload/index.ts
+  kind: vendor
+  upstream_commit: 79349e840f
+  source_sha256: "d22ba8c886c321d56346d213f753a774a820c654ce7b50b3870566dc39e80260"
+  local_changes: >-
+    window.own (05 §5.6: shell.{rpcHash, version, startedAt, controlDir, renderer}, service.{status, restart}; 8.4 and
+    7.2: browser.{onDownload, saveDownload, guardClose}; 5.5 mismatch screens: support.{openLogs, openInBrowser};
+    08 §4.1: remotePcs.{list, pair, waitPairing, cancelPairing, open, remove, onChange}; 08 §4.3:
+    mobilePreview.{status, pair, waitPairing, cancelPairing, open, remove, onChange}; 7.9: zoom.{get, set, step,
+    onChange}) next to the unchanged window.electron; main's MessagePort is
+    posted when the page asks (OwnIpc.portRequest) instead of on arrival, because own-web loads upstream's ipc-client
+    lazily after T0-0. Marked "own:".
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/constants.ts
+  source: packages/desktop/src/main/constants.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "3f62424e991f462bfed9bffc9ee31e8a82952c45f84507552eba8fdee7808657"
+  local_changes: >-
+    CHANNEL=prod, VERSION=app.getVersion(), APP_NAME=Own OpenCode (dev: Own OpenCode Local),
+    APP_ID=dev.own.opencode.desktop (dev: dev.own.opencode.desktop.local). Same four exports (upstream dropped
+    UPDATER_ENABLED in f406d93a66; the updater extension reads CHANNEL and stays off because no GUI extension starts).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): APP_USER_MODEL_ID added as APP_ID (the build needs it; the taskbar and toast id stay own's)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/environment.ts
+  source: packages/desktop/src/main/lifecycle/environment.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "16d9ae568db0a113c92d06ac5178d2980e800debbaf06a06339629c875ca59f3"
+  local_changes: >-
+    setAsDefaultProtocolClient("opencode") removed (G-D2); preferApplicationEnvironment is a no-op (XDG_STATE_HOME
+    kept, no OPENCODE_CLIENT/experimental flags); imports by package path. Same five exports. v2.2.5's spellcheck
+    (context-menu items, applySpellcheck in prepareDesktop) and merged NO_PROXY/no_proxy list are taken as upstream.
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): takes upstream's translated context-menu labels; removeCollidingDevShortcut left out (repairs a collision own's ids never had)"
+  license: MIT (upstream LICENSE)
+# Voice input's microphone (02 §3.9, 05 §7.8): upstream grants the renderer's main frame `media` with audio only since
+# v2.2 (windows/security.ts), so own-desktop no longer substitutes that file (upstream-surface.json
+# desktop-renderer-permissions-substitute).
+# `폴더 열기…` single flight (03 §18.3): the file IPC handlers swapped in at build time like constants.ts, so the folder
+# dialog is modal to the window that asked and one per window; the copy imports the rest by package path.
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/ipc-handlers/files.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "dfa27cebfedda732fdc91fe405ee557353d0303a11c8c4ef33d5fc120ab0bd04"
+  local_changes: >-
+    FilesOpenDirectoryPicker takes the RPC context and opens the folder dialog itself (upstream DesktopFiles
+    openDirectoryPicker's options, title and result, from main/files/index.ts) with the asking window
+    (BrowserWindow.fromWebContents of the sender) as its owner, so it is modal; a request while that window's dialog
+    is open shares its answer (one dialog per window). Imports by package path. Same single export; the other
+    handlers are upstream's text.
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): FilesOpenLocalFile removed and FilesStartDrag added as upstream did; own's modal folder dialog starts in upstream's pickerStarts folder"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/ipc-files.ts <- packages/desktop/src/main/files/index.ts: reviewed at 33f94fce96: picked files as a state machine (#61926); own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/files/index.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "4fe832586d1e67203378ead503035ade473bb2125024e0bf8d029798fb97710d"
+  local_changes: >-
+    none (import only: DesktopFiles, openExternalURL, as upstream ipc-handlers/files.ts; openLocalFileURL until v2.4.1; the folder
+    dialog body of openDirectoryPicker is restated in the substitute with an owner window)
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): openLocalFileURL is gone upstream (the import dropped); an open without an app now fails with shell.openPath's error"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/files/picker-start.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "631626e431c1744d96aaf0e5a1f9e528151a8929b97f9b5a2d68cb3d70f67579"
+  local_changes: "none (import only: pickerStarts, the folder dialog's start folder, as upstream files/index.ts; since v2.4.1, MR18)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/ipc-handlers/context.ts
+  kind: deep-import
+  upstream_commit: bd55d4895f
+  source_sha256: "9b3ce246c4a66b558df9d2c570084f08ea35a77dde8358ade9610719187922d6"
+  local_changes: "none (import only: sender, as upstream ipc-handlers/files.ts)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/ipc-files.ts <- packages/desktop/src/main/ipc-transport.ts: reviewed at 33f94fce96: the IPC port handshake and event stream as state machines (#61953), each deep link once to its window (#61648); own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/ipc-transport.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "85897e66d624a4db9cf6130aeaf59d9d9e07592ed63003f9aba62ddd4f898c66"
+  local_changes: "none (import only: IpcPortHandoff, as upstream ipc-handlers/files.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/main/native/translations.ts
+  kind: deep-import
+  upstream_commit: 4878a0e30f
+  source_sha256: "6e20d274122fb6f9adf200917951f50cec105f0d8731f7be2f2f35dd30bd2642"
+  local_changes: "none (import only: nativeT for the dialog title desktop.dialog.chooseFolder, as upstream files/index.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/shared/ipc-contract.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "d84086a169d811e7368b176e67580b9e5a09d92ed5fc94f9223537b4d14390fa"
+  local_changes: "none (type import only: DirectoryPickerOptions, as upstream files/index.ts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/ipc-files.ts
+  source: packages/desktop/src/shared/ipc-rpc.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "767d39bc764150d3b38e50be415f4eb9ae75fe23e69f68f29ed6aec65e336e3e"
+  local_changes: "none (import only: FileRpcs, as upstream ipc-handlers/files.ts)"
+  license: MIT (upstream LICENSE)
+# This PC's window zoom (05 §7.9): the window appearance swapped in at build time like security.ts, so every app window
+# starts at the zoom kept in the shell's settings file and Ctrl+wheel steps it; the copy imports the rest by package
+# path. The kept factor itself is src/main/zoom.ts.
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/windows/appearance.ts
+  kind: substitute
+  upstream_commit: 79349e840f
+  source_sha256: "86bdd4f755ea29935811d9fd466825575a0ecdce1bc2616d3bcd5d4debbfb318"
+  local_changes: >-
+    wireZoom joins the window to the kept zoom factor (src/main/zoom.ts joinZoom: applied at once and on every
+    top-frame commit, overlay and WindowZoomChanged through updateZoom) instead of upstream's saved level
+    (`zoomLevel`, 100–200 %); `zoom-changed` (Ctrl+wheel) steps the kept factor of every window one level instead of
+    resetting to the saved level or moving this window ±0.2; setZoomLevel (macOS menu, WindowSetZoomLevel) sets the
+    kept factor; setPinchZoomEnabled stores and announces the setting without touching the zoom; the frame's overlay
+    is sized to the kept factor; WindowZoomChanged names the kept factor's level (100 % between levels). The
+    per-window pinch flag and the 0.2–10 clamp are gone. Imports by package path. Same thirteen exports; the rest is
+    upstream's text.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/shared/ipc-contract.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "d84086a169d811e7368b176e67580b9e5a09d92ed5fc94f9223537b4d14390fa"
+  local_changes: "none (type import only: TitlebarTheme, as upstream appearance.ts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/appearance.ts <- packages/desktop/src/shared/ipc-rpc/events.ts: reviewed at 33f94fce96: the SidecarChanged event (part of the rpcHash change); own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/shared/ipc-rpc/events.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "697087c004f384540abc70e21633acdcb8c3c58772ebebbbf553d27d0bc44788"
+  local_changes: "none (import only: WindowFocusChanged, WindowFullscreenChanged, WindowPinchZoomChanged, WindowZoomChanged, as upstream appearance.ts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/appearance.ts <- packages/desktop/src/main/ipc-events.ts: reviewed at 33f94fce96: events for every window; own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/ipc-events.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "ee3e1f2d73695d52879d7a8fb85260d137adfad7cbf4c16675255807e151aafb"
+  local_changes: "none (import only: emitIpcEvent, as upstream appearance.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/paths.ts
+  kind: deep-import
+  upstream_commit: c5aabae288
+  source_sha256: "c0d76454d2108d63d7db2da909312d5e68c3515d850def228f7eb8e1cf1daad8"
+  local_changes: "none (type import only: DesktopPaths, as upstream appearance.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/storage/keys.ts
+  kind: deep-import
+  upstream_commit: 4878a0e30f
+  source_sha256: "e648a3f6268364277d2a1b3a2d5fd61a5307704924ff9e3aaf6ca22e5848f2a7"
+  local_changes: "none (import only: BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, as upstream appearance.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/storage/store.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "781632dacb4d315adb19639ce818e2aa2fef8d13004efe74f3fe0e3ebf266f1f"
+  local_changes: "none (import only: getStore, as upstream appearance.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/appearance.ts
+  source: packages/desktop/src/main/windows/defaults.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "9e916114a3cb790d4f22725f315c0d237c9cba0a768c50c413660a3d08b389fd"
+  local_changes: "none (import only: platformFrame, savedBackgroundColor, storedBackgroundColor, titlebarOverlay, tone, as upstream appearance.ts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/zoom.ts
+  source: packages/desktop/src/main/storage/store.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "781632dacb4d315adb19639ce818e2aa2fef8d13004efe74f3fe0e3ebf266f1f"
+  local_changes: "none (import only: getStore() read/write of ownZoomFactor in the shell's settings file)"
+  license: MIT (upstream LICENSE)
+# GUI plugin host (05 §8.1, v2.0.24 B1; renamed from GUI extensions in v2.1): own-desktop runs upstream's main-process
+# plugin host with its own built-in list, enable state and bundle evaluation, swapped in at build time like
+# constants.ts and environment.ts.
+- dest: packages/own-desktop/src/overrides/gui-plugins.ts
+  source: packages/gui-plugins/src/main.ts
+  kind: substitute
+  upstream_commit: 79349e840f
+  source_sha256: "ca29584f8286c1f902c234d95195f22bec3b3c81d6c2136a9bd3b8c9cefa3af4"
+  local_changes: >-
+    `builtins` composes the browser plugin alone (its definition and main entry by relative path), instead of
+    context, btw, debug, terminal, file, review, details, browser, pairing, updater, ssh, wsl, microsoft-office,
+    sources and goal: no updater (it enables itself in packaged builds), no SSH/WSL (own-remote), no pairing (own's
+    gateway pairing; its keep-screen-awake goes with it), and the window-only ones are own-web's business. Same single
+    export. Swapped in for plugin/host.ts's import of @opencode/gui-plugins/main.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/browser-pane.ts
+  source: packages/gui-plugins/src/browser/pane.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "3d8e4955351ea49c37d382074e07f6f95c17fde476caedc622939a504530b56f"
+  local_changes: >-
+    every attachment of one server shares one @opencode/client effect client (keyed by endpoint URL and headers, own
+    src/overrides/browser-clients.ts; a new credential replaces the older ones), so one /api/event stream through
+    the client's SharedEvents instead of one per attachment; own-web attaches every session a window has shown, so
+    main kept one stream per opened session and decoded every event once per attachment (many-sessions bench
+    2026-10, own/reports/ui-perf-many-sessions-2026-10.md). A confirmed attachment is also listed in
+    src/main/remote-panes.ts while it lasts (the local sidecar's by session, an SSH host's by host and session, 05
+    §8.10.8), for the bridge that shows a pane on a paired device (src/main/remote-browser.ts, 05 §8.10): its inventory, its focused page as a CDP driver
+    on the debugger upstream attached (its `kick` is upstream's capturePage, and when that finds no display surface the
+    tab's view is lent to src/main/remote-surface.ts's capture window until the app window is shown or the bridge is
+    done; `steady`/`rest` hold the page's text caret still while it is streamed, src/main/remote-caret.ts), the
+    focused page's open JavaScript dialog (the page's own `dialog get`), and `run`, the body of upstream's
+    `command` (address refusal, then execute), which `command` now calls; publishState tells the listing before its
+    duplicate check (a JavaScript dialog publishes the same inventory). An attachment of any server but the sidecar
+    (an SSH host, 05 §8.6) asks this PC's service for the host's names (src/main/browser-route.ts) and builds its
+    network with ./browser-network.ts instead of upstream's network.ts, which routes its tunnels by them. Imports of @opencode/plugin-browser, @opencode/schema,
+    @opencode/plugin and the browser plugin's modules point at their sources (not own-desktop dependencies). Marked
+    "own:". Tests: test/browser-clients.test.ts, test/remote-browser.test.ts, the
+    split-panes run (scripts/split-panes.ts) and the remote-browser run (scripts/remote-browser.ts).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): the substitute is now rebuilt on upstream's v2.4.1 pane (its pane machine, the persistent profile, prompts, find, activity) with own's shared client per server, paired-device listing (addRemotePane), SSH host routing, remotePage and `unshownAnswer` (permission, sign-in and device prompts dismissed and \"Leave site?\" left while own-web shows no pane prompt); own-web does not yet handle the new prompt, refusal, find, activity and hardReload events or the answer/notice/find/createTab/closeTab/reviewLink/setViewport/clearCache/reveal/openPage/forget calls"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/browser-network.ts
+  source: packages/gui-plugins/src/browser/network.ts
+  kind: substitute
+  upstream_commit: 698800f59c
+  source_sha256: "c40a43a3ff665743d510e15baf1e03a3ec9f5fc26bce1175a43c9c0d706ac64e"
+  local_changes: >-
+    imported by the pane substitute (./browser-pane.ts) in place of upstream's network.ts, which nothing else of the
+    shell imports. An optional `route` (an SSH host's attachment, 05 §8.6, decisions SB): the proxy's transport is
+    src/main/browser-route.ts `routedTransport`, which sends a target through the host's plugin-browser tunnel when
+    `route` says so (loopback and the host's names) and connects every other target from this PC with plugin-browser's
+    own BrowserTunnel; a tunnel open through the host is given up after 20 s. Without `route` (the sidecar) the
+    transport is upstream's as it was. Imports of the browser plugin's modules point at their sources. Marked "own:".
+    Tests: test/browser-route.test.ts; the real-host ssh-browser check (scripts/ssh-browser.ts).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): upstream's new network.ts taken (createDirectNetwork) with own's route/routedTransport"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/browser-route.ts
+  source: packages/plugin-browser/src/tunnel.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "7345fd5736e5484308c18d4cd95c7c328da7ffc435925f87a4b6de5cb7cc585c"
+  local_changes: "none (import only: BrowserTunnel.make for an SSH host's pane connections made from this PC, the code the server runs for its own end)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/browser-route.ts
+  source: packages/plugin-browser/src/proxy.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "87a073c19b8e7762affb9546caddfe06b38b441eda3d3ff8ce36badd08f8849c"
+  local_changes: "none (types only: BrowserProxy.Transport, the shape routedTransport keeps)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/plugin-manager.ts
+  source: packages/desktop/src/main/plugin/manager.ts
+  kind: substitute
+  upstream_commit: 79349e840f
+  source_sha256: "e5f86e578c350db9b480b0627a91c439b18e6f9467e0f1d0f078d0cb3376a5ed"
+  local_changes: >-
+    createManager keeps upstream's members, but only the built-ins are enabled (upstream enables every plugin of its
+    server without a saved row) and setEnabled saves nothing: PluginError "builtin" for a built-in (as upstream),
+    "unavailable" for any other id, so PluginEnable never records consent a later build could read.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/plugin-module.ts
+  source: packages/desktop/src/main/plugin/module.ts
+  kind: substitute
+  upstream_commit: 79349e840f
+  source_sha256: "46fe3e1bd06c7910f8804a4697e116043af769af7fbb63aa2ac7ddc98bfb1b89"
+  local_changes: >-
+    evaluateMain evaluates nothing: it fails with PluginError "unavailable" before any of the bundle's code runs.
+    Upstream evaluates every listed `./gui-experimental` bundle of the app's own server in main (electron and Node
+    built-ins reachable), enabled or not; own's service approves local plugins by their server entry only, and the
+    shell runs no GUI plugin but its built-ins (05 §8.1). Same single export.
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/desktop.ts <- packages/desktop/src/main/plugin/index.ts: reviewed at 33f94fce96: plugin host retries after a transient failure (#61720) and restarts when an update handoff fails (#61649); own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/plugin/index.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "e69d0b93fee2279bab7e0db824e5f93ef46dcb7ce47cdc3538751464082196ab"
+  local_changes: "none (import only: Plugins.Service for `plugins.start`; the layer comes with Ipc.layer)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/gui-plugins.ts
+  source: packages/gui-plugins/src/browser/index.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "8fd9a55d542d0f545b76de8c148ba3f685a6cb8657ee53485883b7e5e391b376"
+  local_changes: "none (relative import: the package's exports map has no ./browser)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/gui-plugins.ts <- packages/gui-plugins/src/browser/main.ts: reviewed at 33f94fce96: browser pane load, profiling, address field and dialogs as state machines (#62003); own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/gui-plugins.ts
+  source: packages/gui-plugins/src/browser/main.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "60718d0a226daca0f962f320fccefbc887622eb01f7d62c6bbaab0454f8b113f"
+  local_changes: "none (dynamic relative import as the browser built-in's main entry, like upstream main.ts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/gui-plugins.ts <- packages/plugin/src/gui/host.ts: reviewed at 33f94fce96: two lines of host typing; own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/gui-plugins.ts
+  source: packages/plugin/src/gui/host.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "5febbd03fc46dd625e6e62cffc10ca2689695def9bc599fd603cec787500f8f3"
+  local_changes: "none (compose, by relative path: own-desktop does not depend on @opencode/plugin)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/plugin-module.ts
+  source: packages/plugin/src/gui/main.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "5eefab2fa967dec4f1e84a8562f9ffba921caf0fed090691b3d2b87c90b76871"
+  local_changes: "none (type import only: Plugin.MainSetup; also Embeds, Persisted, ServerEndpoints, Windows in browser-pane.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/plugin-manager.ts
+  source: packages/desktop/src/main/plugin/error.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "89fa10dbc689074750e1bf15f8f960f85c7d4833e5194f7d3636393706ebef88"
+  local_changes: "none (import only: PluginError, also in plugin-module.ts; type Database from storage/database.ts)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/index.ts
+  source: packages/desktop/src/main/lifecycle/marks.ts
+  kind: deep-import
+  upstream_commit: 00d179015f
+  source_sha256: "522de076b9777217386e5b9fb78b91efa749e6b8a55fe669a3a73baf4d613d45"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/index.ts
+  source: packages/desktop/src/main/lifecycle/configure.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "c14b3a948fd6cfedfc72ec516b7d9f6d8b01d23bd8eac7f6cb21e8685842381f"
+  local_changes: "none (import only)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): a packaged release build now removes every remote-debugging switch; own-shell.ts/debug-port.ts put the port back on 127.0.0.1 only while OPENCODE_DESKTOP_TEST_ROOT is set"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/index.ts <- packages/desktop/src/main/storage/snapshot.ts: reviewed at 33f94fce96: the storage snapshot handler's machine wiring; own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/index.ts
+  source: packages/desktop/src/main/storage/snapshot.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "a36d4435acceee4d2c55a7020946907da7c048b9f79b7c16a9933e58ccb1a850"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/index.ts <- packages/desktop/src/main/windows/early.ts: reviewed at 33f94fce96: the early window's adoption as a state machine (#61800, earlyWindowClosed) and the startup asset gate (#62115); own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/index.ts
+  source: packages/desktop/src/main/windows/early.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "98bff23c035f9eb5a63080efa41431e24839b0c9de9aca510d5d10aa34550f04"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/renderer-protocol.ts
+  source: packages/desktop/src/main/windows/protocol.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "7c483a23f434f0edc9d066748c3daf02239422ef73d03ccf0cabe61edc5254ff"
+  local_changes: >-
+    registerRendererRoot(root) instead of registerRendererProtocol(rendererRoot: string): the oc://renderer root is a
+    function asked on every request (document requests may move it), so the installed UI follows app\current.json
+    (01 §5.1, §5.5 step 7; there is no app\current junction any more). serve(), addDocumentPolicy() and the request
+    bookkeeping behind rendererAssetsServed() are upstream's; reports go to the console (setProtocolReporter dropped).
+    own-shell.ts registers it first (upstream's registration is then a no-op) and index.ts waits on this copy's
+    rendererAssetsServed(). Marked "own:".
+  not_ported: >-
+    nothing since v2.1: upstream dropped its oc://extensions/ asset serving (setExtensionAssets) with the
+    installed GUI extensions
+    reviewed at 33f94fce96: the startup asset gate's burst count as a state machine (#62115), upstream's v2.2.6 state-machine rewrite of the same quiet/cap rule
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/renderer-protocol.ts
+  source: packages/desktop/src/main/windows/headers.ts
+  kind: deep-import
+  upstream_commit: bd55d4895f
+  source_sha256: "f69bd0a6c8cd261d549f1eebbe2e1e4674415ed5ed995fa7f8e1ddf9471aeee2"
+  local_changes: "none (import only: documentPolicyHeader, jsCallStacksDocumentPolicy)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/renderer-protocol.ts
+  source: packages/desktop/src/main/windows/scheme.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "235376f4d7aac7dbd738b3e0de2b8bdc7ca45dff0a712db7a78d24a354e9740a"
+  local_changes: "none (import only: rendererHost, rendererProtocol)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/own-shell.ts
+  source: packages/desktop/src/main/storage/keys.ts
+  kind: deep-import
+  upstream_commit: 4878a0e30f
+  source_sha256: "e648a3f6268364277d2a1b3a2d5fd61a5307704924ff9e3aaf6ca22e5848f2a7"
+  local_changes: "none (import only; BACKGROUND_COLOR_KEY for prepareWindowAppearance)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/own-shell.ts
+  source: packages/desktop/src/main/storage/store.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "781632dacb4d315adb19639ce818e2aa2fef8d13004efe74f3fe0e3ebf266f1f"
+  local_changes: "none (import only; getStore() read/write of the early window background in prepareWindowAppearance)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/own-shell.ts
+  source: packages/desktop/src/main/windows/scheme.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "235376f4d7aac7dbd738b3e0de2b8bdc7ca45dff0a712db7a78d24a354e9740a"
+  local_changes: "none (import only)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/own-browser.ts
+  source: packages/desktop/src/main/windows/scheme.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "235376f4d7aac7dbd738b3e0de2b8bdc7ca45dff0a712db7a78d24a354e9740a"
+  local_changes: "none (import only: isRendererUrl for the PC에 저장 sender check)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/remote-pcs/partition.ts
+  source: packages/desktop/src/main/windows/scheme.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "235376f4d7aac7dbd738b3e0de2b8bdc7ca45dff0a712db7a78d24a354e9740a"
+  local_changes: "none (import only: isRendererUrl for the 원격 PC list and 모바일 미리보기 broadcasts)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/desktop.ts <- packages/desktop/src/main/ipc.ts: reviewed at 33f94fce96: IPC handler wiring for the new machines; own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/ipc.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "f2e100a942c0cf7d95f00ae2db44b0c4285acfd8cf2189c7f67e2a0e0612b1aa"
+  local_changes: "none (import only)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/lifecycle/desktop-initialization.ts
+  kind: deep-import
+  upstream_commit: bd55d4895f
+  source_sha256: "99c32dc63a000c094e487f8458071e44f2c153aa2a879e4a0d669b3754b44f7e"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/desktop.ts <- packages/desktop/src/main/lifecycle/index.ts: reviewed at 33f94fce96: the lifecycle as a state machine (quit, restart, window-all-closed; surface desktop-window-all-closed-quits); own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/lifecycle/index.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "e481fff43a6310cff6e3cf75a628ad01d5bae229c29dbe3aa71d0aab55f2e9ee"
+  local_changes: "none (import only)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/desktop.ts <- packages/desktop/src/main/native/logging.ts: reviewed at 33f94fce96: OS session end and debug export as state machines (#62091); own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/desktop.ts
+  source: packages/desktop/src/main/native/logging.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "440aefa1db7ee211ec56da2ed17603a80f4068c2df4bd87cb8df80da5af4ebde"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/service/background-service-own.ts <- packages/desktop/src/main/service/background-service.ts: reviewed at 33f94fce96: the connection machine (BackgroundServiceMachine, #61748), which BackgroundServiceOwn now runs; own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/service/background-service-own.ts
+  source: packages/desktop/src/main/service/background-service.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "5c4177d0510e2701a1d05b7fff70da6b198824de27bccfeb2ff95b84d8c6f749"
+  local_changes: "none (only the BackgroundService.Service tag is used; its layer is never provided)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/service/background-service-own.ts
+  source: packages/desktop/src/main/service/background-service-machine.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "676cda741c395ffc46f54e0852aae0391619286e70f469465acff1920747e57e"
+  local_changes: "none (import only: BackgroundServiceMachine.make, since v2.2.6 in place of the removed BackgroundServiceState, 2047c0d4fd)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/main/service/background-service-own.ts
+  source: packages/desktop/src/main/service/sidecar-credentials.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "1e1b51fea7938d5618e6e16f4ef9084879ff330257c63ecf9c30c6541387ea9b"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/main/service/desktop-cli-own.ts <- packages/desktop/src/main/service/desktop-cli.ts: reviewed at 33f94fce96: CLI install as a state machine (#62091) and a retried load after a transient failure (#61720); own's import compiles and builds against it
+- dest: packages/own-desktop/src/main/service/desktop-cli-own.ts
+  source: packages/desktop/src/main/service/desktop-cli.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "591d1c431fa188e83dd50c2efe3db1893677c30b2c5d5e25fc4a144febeb2d94"
+  local_changes: "none (only the DesktopCli.Service tag and types are used; its layer is never provided)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/overrides/environment.ts
+  source: packages/desktop/src/main/paths.ts
+  kind: deep-import
+  upstream_commit: bd55d4895f
+  source_sha256: "c0d76454d2108d63d7db2da909312d5e68c3515d850def228f7eb8e1cf1daad8"
+  local_changes: "none (import only)"
+  license: MIT (upstream LICENSE)
+# packages/own-desktop/src/overrides/environment.ts <- packages/desktop/src/main/windows/index.ts: reviewed at 33f94fce96: hidden windows revealed on a bounded fallback (#61743), deep links once per window (#61648), the early window machine (#61800); own's import compiles and builds against it
+- dest: packages/own-desktop/src/overrides/environment.ts
+  source: packages/desktop/src/main/windows/index.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "64797054766408d96a92ac12145bacebcc6671fc011a69e201e84de191a92df4"
+  local_changes: "none (import only)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/preload/index.ts
+  source: packages/desktop/src/shared/ipc-transport.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "d21cfe70d05dc9270111c36533b766864e77259cf57096b335b81c86686adc88"
+  local_changes: "none (import only; rpcHash input)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/src/preload/index.ts
+  source: packages/desktop/src/shared/window-bootstrap.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "ab0fd1a0c445d8f4bf64317fb99691026508409deb9af8958de8b906b4278689"
+  local_changes: "none (import only; rpcHash input)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/electron.vite.config.ts
+  source: packages/desktop/electron.vite.config.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "58f703e8da25d3b4d14bb706906f2cefb84a9c7049a8de5b4134c4a12ce4d26d"
+  local_changes: >-
+    none in the file; its default export (an async config function since v2.2) is awaited and overridden: main
+    input = vendored index.ts, substitution plugin, rpcHash/shell-version defines for main and preload, preload
+    input = vendored preload, renderer = the fallback page (none while serving). It needs htmlparser2 (its beta notes),
+    so own-desktop lists it. Not type-checked, like upstream's own (packages/desktop/tsconfig.json covers src only).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/electron-builder.config.ts
+  source: packages/desktop/electron-builder.config.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "7328a4f442515400f812fd30dc5011c1ac4ac9c2123d2b86bd31871989716fac"
+  local_changes: >-
+    none in the file; its default export is spread and overridden: appId, productName, executableName,
+    artifactName, output directory, protocols [], publish null, extraResources [], no-op afterPack, renderer maps
+    excluded, win target nsis; mac/dmg/linux/deb/rpm sections dropped (Windows only).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): upstream's electronFuses come through `base` (cookie encryption, no RunAsNode, no --inspect); own unpacks the ffi-rs native binding chunk (out/main/chunks/*.node); verifyPreviewBinding does not run (own's afterPack is a no-op)"
+  license: MIT (upstream LICENSE)
+# packages/own-web/src/host/desktop.ts <- packages/desktop/src/renderer/ipc-client.ts: reviewed at 33f94fce96: the port handshake as a client state machine with a timeout (#61953); the handoff message is unchanged (surface desktop-ipc-port-handoff); own's import compiles and builds against it
+- dest: packages/own-web/src/host/desktop.ts
+  source: packages/desktop/src/renderer/ipc-client.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "3ae24119cd9a8fbdbedcdad267534bdb55d706aec54b030902bb826dc9f934c4"
+  local_changes: >-
+    none (dynamic import by relative path after the T0-0 rpcHash check; renderer/api.ts is not used because its types
+    pull all of @opencode/app; types from shared/ipc-rpc*.ts). Its chunk is fetched with the page through a
+    modulepreload link (own-web vite.config.ts preloadDesktopChunks, 05 R-D12) and still evaluated only on import.
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/vite.config.ts
+  source: packages/desktop/electron.vite.config.ts
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "58f703e8da25d3b4d14bb706906f2cefb84a9c7049a8de5b4134c4a12ce4d26d"
+  local_changes: >-
+    partial copy: initialChunk (the initial static graph as one chunk, upstream's renderer codeSplitting group; the
+    v2.0.28 plugin form) as the own-web "boot" group (05 R-D12). Added: preloadDesktopChunks (modulepreload links for the desktop host and
+    ipc-client chunks, data-own-desktop). v2.2.5 review (4878a0e30f): upstream changed only the main build (the CommonJS
+    shim banner replaced by a plugin that disables electron-vite's ESM shim); the renderer part own-web copies is
+    unchanged, so nothing to port here (own-desktop's electron.vite.config.ts entry covers the main build).
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): only the removal of the beta notes in the main build; nothing to port"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-desktop/build/installer.nsh
+  source: packages/desktop/resources/windows/installer.nsh
+  kind: vendor
+  upstream_commit: 79349e840f
+  source_sha256: "f10276dfdd2055118614a72439dc9fd0788697f4bd986afbe56d11fb0d694b28"
+  local_changes: >-
+    partial copy: its customInstall's icacls grant for the Chromium sandbox, verbatim, in own's customInstall. The file
+    is no longer !include'd: since v2.2 it defines customInit (a per-app-id install folder), customUnInstall,
+    customCheckAppRunning and the updater's staged-package macros, which clash with own's macros (NSIS refuses a
+    second macro of one name) or do not apply (no updater, one channel). own adds customInit (service preflight),
+    customUnInit/customUnInstall (service removal; toast activator CLSID, Electron's Start-menu shortcut and the AUMID
+    notification settings, not on --updated; 05 §7.4, §10.4). electron-builder.config.ts points nsis.include at it.
+  license: MIT (upstream LICENSE)
+# own-remote (04 §4.3): the upstream desktop SSH modules copied into the Bun service bundle (not imported: they must run
+# in the local service's process-lifetime runtime, not in Electron main). controller.ts and bootstrap.ts are rewritten
+# (own stages, tunnel-session ensure, -R broker, host loopback); their entries keep the upstream files under drift watch.
+- dest: packages/own-remote/src/vendor/ssh/command.ts
+  source: packages/gui-plugins/src/ssh/command.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "52f5e3438defd05a94c76d8f5aa99ca20c9021af0e0cb626ef081f9942e51721"
+  local_changes: >-
+    ssh.exe fixed to C:\Windows\System32\OpenSSH\ssh.exe (argv prefix override for settings/tests); runSsh spawns
+    with extendEnv:false and minimalEnv() (SystemRoot, ProgramData, PATH, USERPROFILE, HOMEDRIVE, HOMEPATH, TEMP, TMP + askpass);
+    parseTarget drops -F, -o proxycommand, -o identityagent; -i / -o identityfile only local drive paths under
+    %USERPROFILE%\.ssh (UNC, device paths, % and $ refused); -J / -o proxyjump only [user@]host[:port] hops; -l and
+    -o values validated; sshArgs() adds ForwardAgent=no and ForwardX11=no (so short commands and the tunnel do not
+    forward the agent or X11; the target parser refuses -o forwardagent/forwardx11*, -X and -Y, but upstream's -A,
+    which OpenSSH applies over the -o, stays as the user's explicit per-host choice, 04 §7.2); shortArgs() adds ClearAllForwardings=yes; tunnelArgs() binds -L to 127.0.<k>.2, adds the
+    broker -R (stream socket or TCP) and the Claude egress relay's second -R of the same form (04 §8.11.4.2), and runs
+    "sh -s"; tunnelArgs() puts ServerAliveInterval=4 and ServerAliveCountMax=2 ahead of sshArgs' upstream 15 and 3, so
+    a silent link ends the tunnel 12 s after its last received byte (04 §6.3, own.15). Marked "own:".
+  not_ported: "sshHosts left the module upstream (gui-extensions reads ~/.ssh/config elsewhere)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/src/vendor/ssh/askpass.ts
+  source: packages/gui-plugins/src/ssh/askpass.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "4a5182a720d3aa04a75e206f6d912564905607307636cc9e750ada804dac3b40"
+  local_changes: >-
+    prompts are classified (hostKey, confirm, passphrase, password, other; fingerprint and key type of host key
+    questions, src/prompt.ts); a reply may be null (cancel, the helper exits 1). The helper binary is injected by the
+    caller (our opencode.exe askpass mode). Marked "own:".
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/src/vendor/remote/cli.ts
+  source: packages/gui-plugins/src/ssh/remote-cli.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "0908614a03e9db14f74b841c50811f39d6b7806304c086d11dbab0e86075b9ec"
+  local_changes: >-
+    partial copy: quote, requireVersion (no "local"), probeScript, verifyScript (exported). installScript,
+    archiveUrl, latestBeta, discoverScript, versionScript/parseVersion and every download/installer branch dropped
+    (upload only, 04 §5.5).
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/src/controller.ts
+  source: packages/gui-plugins/src/ssh/controller.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "62f2a2a1023e7ff8c36dabbc3f24ae33ca6ba170fc3aaf4f58588c92c90b3db6"
+  local_changes: >-
+    rewritten (Promise style over the vendored Effect modules, process-lifetime singleton, 04 §4.1). Kept from
+    upstream: attempt ownership (another client never replaces an interactive attempt that is not ready), cancel
+    restores the previous stage, background attempts never prompt, pause after 5 failures / Permission denied /
+    host-key / input / ssh-missing, readiness polling of GET /api/info (100 ms, 2 s timeout, 30 s cap extended while
+    a prompt is open). Dropped: the ssh -G destination probe on every connect (only right before a tunnel, for
+    forwards), ControlMaster, bootstrap/download, the random 127.0.0.1 local port. Added: own stages
+    (needs_install, incompatible, updating, draining), clientId owners with heartbeat, inspect/install/tunnel+ensure,
+    host loopback address and fixed LP, epochs, broker -R and arm, hosts.json; since own.15 a silent link's handling
+    (04 §6.3): a wake probe after a clock gap (`recheck`) and ten minutes of connection retries after a drop before
+    the five-failure pause.
+  not_ported: "withSavedConfig and the narrowed state type (the own controller is a rewrite); reviewed at 33f94fce96: SSH connections and connect attempts as explicit machines (#61863), upstream's v2.2.6 state-machine rewrite; own-remote's controller keeps its own connection lifecycle (src/ssh)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/src/remote/model.ts
+  source: packages/gui-plugins/src/ssh/bootstrap.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "81ab266aa2ea2207ad16d2411c48b2697b0e462ee550ebfdba43aaa210f22183"
+  local_changes: >-
+    reference only (04 §4.3 "참고만"): parseRegistration's rule (only the registration block named by the last
+    OPENCODE_SSH_STATUS line) and the registration markers are reimplemented; connectionAddress narrowed to
+    127.0.0.1 and [::1] (0.0.0.0/[::] = service_not_loopback); no discover, no download, no service*.json glob, no
+    `service start` on a version mismatch (the ensure script in src/remote/scripts.ts).
+  not_ported: "reviewed at 33f94fce96: one line of #61863's machine wiring; the bootstrap rules the copy uses are unchanged"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/test/vendor/command.test.ts
+  source: packages/gui-plugins/src/ssh/command.test.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "5f552f71899de2df320889f1d500a00a2a0f4462d739476b0402dbe756e57d34"
+  local_changes: "adapted to the own command.ts (tunnelArgs signature, -F/-o proxycommand/identityagent refused, absolute ssh.exe). Marked \"own:\"."
+  not_ported: "upstream dropped cases the copy keeps"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/test/vendor/askpass.test.ts
+  source: packages/gui-plugins/src/ssh/askpass.test.ts
+  kind: vendor
+  upstream_commit: dae4077a96
+  source_sha256: "25735039fefc828a04ac700e4b28641b666365b2eac01b59c11d8b6850a5b49f"
+  local_changes: "prompt kinds asserted; a host-key prompt case and a null (cancel) reply added. Marked \"own:\"."
+  not_ported: "upstream dropped cases the copy keeps"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-remote/test/vendor/cli.test.ts
+  source: packages/desktop/src/main/remote/cli.test.ts
+  kind: vendor
+  upstream_commit: 00d179015f
+  source_sha256: "8162072e1ba4913a3b3002c150a297c162f67ea8c4cbb09add68657effef277a"
+  local_changes: >-
+    reduced to the kept functions; the probe runs in Git for Windows' sh with a uname shim instead of being skipped on
+    Windows.
+  removed_upstream: f406d93a66
+  license: MIT (upstream LICENSE)
+# ---- T3 (06 §4.13): git-lfs in the SSH remote release (a third-party binary, not upstream code) ----
+# Recorded as a comment: the list entries are upstream files that check-surface hashes. git-lfs ships unmodified for
+# hosts without it: packages/own-remote/script/native.ts GIT_LFS pins it, build-remote.ps1 (step 2b) checks each archive
+# against the pin before unpacking, and bundle.ts puts the binary with its license in
+# remote/tools/git-lfs/<version>/<target>/, next to <target>.tar.gz and not inside it (FORK §8.2 step 6, §10).
+# script/native.test.ts keeps this record equal to GIT_LFS.
+#   name:     git-lfs (Git LFS), the official static Linux build (CGO_ENABLED=0), unmodified
+#   source:   https://github.com/git-lfs/git-lfs/releases/tag/v3.8.1 (published 2026-10-22)
+#   version:  3.8.1 (was 3.8.0 of 2026-08-28; 3.8.1 fixes CVE-2026-69260 unquoted SSH remote command,
+#             CVE-2026-69261 Cookie headers sent to another host after a redirect, CVE-2026-105802 a submodule URL
+#             with a line feed runs a program, CVE-2026-105803 a custom transfer adapter in .lfsconfig runs a program)
+#   archives: git-lfs-linux-amd64-v3.8.1.tar.gz (linux-x64-baseline, 5,917,265 bytes)
+#               sha256 e72cf723a4a660438862282e8aecf3885fc8123e88bfcad534cf6b941a354b75
+#             git-lfs-linux-arm64-v3.8.1.tar.gz (linux-arm64, 5,350,198 bytes)
+#               sha256 67895dd77b63329796bc5efdd47b57f218e1f7b98717ebaf936a8238dbcaec0f
+#             (the release's published SHA-256: release notes, GitHub asset digests and sha256sums.asc agree,
+#             read from the release API on 2026-10-30)
+#   status:   bundling decided 2026-10-04 (work plan decision record); the user approved downloading 3.8.0 (HANDOFF
+#             §4) and, on 2026-10-31, 3.8.1. Both 3.8.1 archives were downloaded on 2026-10-31 and match the sha256
+#             and byte sizes above; native.ts lfs checked and unpacked them (git-lfs binaries: linux-x64-baseline
+#             13,959,328 bytes, sha256 8bf08ae9…597c; linux-arm64 12,910,752 bytes, b0868f6c…3ff4). The verified
+#             archives sit in the release worktree's -NativeDir (D:\own-integration\own\.out\remote\native\git-lfs\
+#             archives), where -Remote builds reuse them (decisions MR8-21).
+#   shipped:  git-lfs-<version>/git-lfs of each archive, with LICENSE.md beside it (the archives carry no license file;
+#             native.ts GIT_LFS_LICENSE is the repository's LICENSE.md)
+#   license:  MIT (Git LFS), with BSD-3-Clause parts copied from Go; its Go module dependencies keep their own licenses
+# ---- P7 (03 §19): review line comments (19.1) and the files tab (19.4, 19.5) ----
+- dest: packages/own-web/src/review/vendor/comment-note.ts
+  source: packages/app/src/composer/comment-note.ts
+  kind: vendor
+  upstream_commit: 4878a0e30f
+  source_sha256: "2faf2fb49c26135179d4c3a7fca0ec31a82802484ea030f23ea30fd5404b42d4"
+  local_changes: "the upstream `FileSelection` type (packages/app/src/workspaces/files/types.ts) inlined"
+  not_ported: "note and legacy browser comments (NoteComment, formatNoteComment, commentContextItem): own-web reads file comments only; v2.2's quote comments (QuoteComment, formatQuoteComment, reviewed at 79349e840f): own-web has no quote composer, so a message another client sent with a quote shows its text only; v2.2.5 (reviewed at 4878a0e30f): the uuid import move to @opencode/util/uuid and formatNoteComment's empty-comment text touch only parts the copy leaves out"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/upstream/artifact.ts
+  source: packages/app/src/workspaces/files/artifact.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "52ca7e0baff3bbbb0ad72b0ecd990a0321d8463ca8be3d22f9fd5e3289dcbf49"
+  local_changes: "`FileContent` type defined locally (the part of `@/runtime/server/types` these helpers read)"
+  not_ported: "upstream moved the kind/mime table to @opencode/util/artifact and the viewer helpers into gui-extensions; the copy keeps its own. 46e4695b96 (v2.0.32: media keep raw `bytes` instead of base64, MAX_MEDIA_BYTES 25 to 256 MiB, FileContent from @opencode/gui-extensions/sdk) is not ported: own-web's viewer reads base64 content and files/content.ts keeps the 25 MiB placeholder limit; porting it means changing the viewer with it. #57587 (stream previewed media from the server, reviewed at 79349e840f) is not ported: upstream streams only from a server that needs no password, since a credential never goes in a DOM URL, and own's services always have one, so own-web keeps reading media through the API; reviewed at 33f94fce96: the HEAD deadline for streamed files (#61818, headStreamedFile); own-web loads images, audio and video from the URL without a HEAD"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/upstream/file-tree-v2-model.ts
+  source: packages/gui-plugins/src/file/tree-model.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "53c8d14d205949402cff1dfd046fccbe0effb553c60087e3aae9ecd9cf1fdfc2"
+  local_changes: "`FileNode` type defined locally (same shape as `@/runtime/server/types` FileNode)"
+  not_ported: "upstream dropped sortFileTreeV2Paths; the copy keeps it; reviewed at 33f94fce96: the Pierre file tree as one state machine (#61954), upstream's v2.2.6 state-machine rewrite"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/upstream/file-tree-v2-model.test.ts
+  source: packages/gui-plugins/src/file/tree-model.test.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "8bcfaea51154d00d80d1224cb1c9276bbc9a35fd71c4ae9789876e906a3d653b"
+  local_changes: "`FileNode` imported from ./file-tree-v2-model"
+  not_ported: "upstream dropped cases the copy keeps; reviewed at 33f94fce96: the new cases test the tree state machine (#61954)"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/upstream/open-in-app-path.ts
+  source: packages/gui-plugins/src/file/path.ts
+  kind: vendor
+  upstream_commit: 698800f59c
+  source_sha256: "be0a8e48785c937934fb1f95125e725d666adcdb8858f9c553e94ee0f7a02f51"
+  local_changes: "none (header comment only)"
+  not_ported: "the file-tab and file:// URL helpers upstream added; reviewed at 33f94fce96: in-memory skill:// URIs (#60921), which own-web's file links never carry; reviewed at 698800f59c (v2.4.1 sync, MR18): upstream only removed workspaceFileUrl, which the copy never had"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/files/upstream/open-in-app-path.test.ts
+  source: packages/gui-plugins/src/file/path.test.ts
+  kind: vendor
+  upstream_commit: 33f94fce96
+  source_sha256: "e92940d28360c7a7470a6fdf3638fc09260ab010dd4721934e2b02a691c9218c"
+  local_changes: "none (header comment only)"
+  not_ported: "upstream dropped cases the copy keeps; reviewed at 33f94fce96: the skill:// cases (#60921)"
+  license: MIT (upstream LICENSE)
+# Voice input (02 §3.9): own-accounts runs one recognition per `voice.transcribe` through upstream @opencode/ai
+# Transcription by its export paths (`./*` → `src/*.ts`), never a copy. The bundle carries only these modules and
+# their imports (no provider facades).
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/protocols/openai-transcription.ts: reviewed at 33f94fce96: request objects and shared transport options (#60968, #60970); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/protocols/openai-transcription.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "f448082cb6c9305bc09bfec2f942e00bba0e82bd5d71a5daf7d9e21717fdc4b4"
+  local_changes: "none (import only: OpenAITranscription.model for `gpt-transcribe`; surface voice-openai-transcription)"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/protocols/deepgram-transcription.ts: reviewed at 33f94fce96: request objects and shared transport options (#60968, #60970); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/protocols/deepgram-transcription.ts
+  kind: deep-import
+  upstream_commit: 33f94fce96
+  source_sha256: "9295d90225a314e4f6531c29a0fd7f2773acff3d4d186633442c1a8a3b27fe4d"
+  local_changes: "none (import only: DeepgramTranscription.model for `nova-3`; surface voice-deepgram-transcription)"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/transcription.ts: reviewed at 33f94fce96: plain request objects and shared headers, fetch and timeout (#60968, #60970); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/transcription.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "8ce0cda447ca2f55d87f1725ee8fc24978fcfc11e70c207dce72a5a66e172d1e"
+  local_changes: "none (import only: Transcription.request and generate; from `@opencode/ai/experimental` since v2.2.5, ec64c1872e)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/transcription-client.ts: reviewed at 33f94fce96: plain request objects (#60968); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/transcription-client.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "aa7625398edc5b0420f17d5f6d88d13659fc5d1828cc70d596aa4b7d3adb210e"
+  local_changes: "none (import only: TranscriptionClient.layer; from `@opencode/ai/experimental` since v2.2.5)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/route/auth.ts
+  kind: deep-import
+  upstream_commit: 79349e840f
+  source_sha256: "c2d1eda060c9f2e566f2fe9f248151741307c7c00d801e02bf2ef4d469069a35"
+  local_changes: "none (import only: Auth.headers with the voice key's header, so no env or config credential is read; surface voice-auth-headers)"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/route/executor.ts: reviewed at 33f94fce96: shared transport options (#60970); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/route/executor.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "67921897a830eb19d8f4e9e632af9887681b18fc8e10461e4f09e6940a2c87a0"
+  local_changes: "none (import only: RequestExecutor.fetchLayer)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed; hash re-recorded 2026-11-27 for own's P-018 keepalive limit inside withBodyTimeouts (RL31), fetchLayer unchanged"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/media.ts: reviewed at 33f94fce96: bytes, URLs and strings as file input (#60963); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/media.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "54f65f701db3fe9c392ad882065bbfe007d3177ac0fa4146928cd918a5a3dd19"
+  local_changes: "none (import only: Media.bytes)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# packages/own-accounts/src/voice/voice.ts <- packages/ai/src/schema/errors.ts: reviewed at 33f94fce96: AIError status, code, isRetryable and retryAfterMs (#60808); own's import compiles and builds against it
+- dest: packages/own-accounts/src/voice/voice.ts
+  source: packages/ai/src/schema/errors.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "6a6b4d99398f3c7ba688f394b80dd3cc10cc5bad3c8c73ddd652de0eb9d42ea4"
+  local_changes: "none (import only: AIError, whose reason tags map to `voice_failed` reasons; v2.2.5 adds `partial` output, unused here)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): no own change needed"
+  license: MIT (upstream LICENSE)
+# own-web's first chunk (PF5, US5): data/server.ts imports these two client modules directly instead of
+# `@opencode/client/solid`, whose index also re-exports the persistent PTY client and with it core's session and event
+# schemas (about 5 KB gz since upstream v2.2.5). A module renamed or moved upstream fails own-web's typecheck and build.
+# packages/own-web/src/data/server.ts <- packages/client/src/solid/data.ts: reviewed at 33f94fce96: pending prompts the transcript shows delivered are cleared (#61679), which own-web gets with the import; own's import compiles and builds against it
+- dest: packages/own-web/src/data/server.ts
+  source: packages/client/src/solid/data.ts
+  kind: deep-import
+  upstream_commit: 698800f59c
+  source_sha256: "46c2ed03559ccc885006301dceb5c26b14cfe19b03f95e2d64724e2121ef147f"
+  local_changes: "none (import only: createData, locationKey, Data)"
+  not_ported: "reviewed at 698800f59c (v2.4.1 sync, MR18): createData gained a job slice; own-web's import is unchanged"
+  license: MIT (upstream LICENSE)
+- dest: packages/own-web/src/data/server.ts
+  source: packages/client/src/solid/connection.ts
+  kind: deep-import
+  upstream_commit: 4878a0e30f
+  source_sha256: "3b93c8ba83bd7b77bfb6901fa27d062f90e65007a8db0694731c0eab21c19d32"
+  local_changes: "none (import only: createClientConnection)"
+  license: MIT (upstream LICENSE)

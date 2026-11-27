@@ -1,0 +1,22 @@
+/** A least-recently-used cache: reading or writing a key makes it the most recent; the oldest goes past capacity. */
+export class LRU<K, V> {
+  private readonly map = new Map<K, V>()
+
+  constructor(private readonly capacity: number) {}
+
+  get(key: K): V | undefined {
+    return this.map.get(key)
+  }
+
+  set(key: K, value: V): void {
+    this.map.set(key, value)
+    if (this.map.size > this.capacity) {
+      const oldest = this.map.keys().next().value as K
+      this.map.delete(oldest)
+    }
+  }
+
+  get size() {
+    return this.map.size
+  }
+}

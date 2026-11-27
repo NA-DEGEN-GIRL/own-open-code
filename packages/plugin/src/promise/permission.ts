@@ -14,6 +14,13 @@ export interface PermissionEvaluation {
   readonly source?: Permission.Source
   effect: Permission.Effect
   message?: string
+  // OWN-PATCH(P-047) begin
+  /**
+   * The resources of the project's saved approvals (`항상 허용`) whose action matches this one, as they are saved
+   * now: a hook can tell an allow a saved rule gives from one the agent's or the session's rules give.
+   */
+  readonly saved?: ReadonlyArray<string>
+  // OWN-PATCH(P-047) end
 }
 
 export interface PermissionHooks {

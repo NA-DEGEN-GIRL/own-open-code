@@ -1,0 +1,217 @@
+/* Background job list and the output viewer (03 §19.7), lazy with their chunks. own tokens only (13.2). */
+.own-bj-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 200px;
+  margin: 0 0 4px;
+  padding: 4px 0 0;
+  border-top: 1px solid var(--own-border);
+  overflow-y: auto;
+  list-style: none;
+}
+.own-bj-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 32px;
+  contain: layout style;
+}
+.own-bj-kind {
+  flex: none;
+  min-width: 56px;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-bj-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-bj-item[data-kind="subagent"] .own-bj-label {
+  font-family: inherit;
+  font-size: 12.5px;
+}
+.own-bj-time {
+  flex: none;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-bj-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+.own-bj-btn {
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-bj-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-bj-btn:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-bj-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.own-bj-btn[data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+/* Output viewer: a modal over the session, the screen reads like the terminal (own-bg + mono, terminal.css). */
+.own-bj-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--own-scrim);
+}
+.own-bj-view {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(880px, calc(100vw - 32px));
+  height: min(640px, calc(100vh - 64px));
+  padding: 14px 16px 16px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  transform: translate(-50%, -50%);
+}
+@media (max-width: 599px) {
+  .own-bj-view {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    transform: none;
+  }
+}
+.own-bj-view-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.own-bj-view-titles {
+  flex: 1;
+  min-width: 0;
+}
+.own-bj-view-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-bj-view-kind {
+  color: var(--own-text-muted);
+  font-weight: 500;
+}
+.own-bj-view-command {
+  font-family: var(--own-font-mono);
+  font-size: 13px;
+}
+.own-bj-view-meta {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  margin: 2px 0 0;
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+.own-bj-view-status {
+  flex: none;
+  white-space: nowrap;
+}
+.own-bj-view-status[data-tone="running"] {
+  color: var(--own-accent-text);
+}
+.own-bj-view-status[data-tone="danger"] {
+  color: var(--own-danger);
+}
+.own-bj-view-status[data-tone="done"] {
+  color: var(--own-ok);
+}
+.own-bj-view-where {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--own-font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-bj-view-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+.own-bj-view-note {
+  margin: 0;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-bj-screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.own-bj-screen:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-bj-pre {
+  margin: 0;
+  color: var(--own-text);
+  font-family: var(--own-font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.own-bj-screen-empty {
+  margin: 0;
+  color: var(--own-text-faint);
+  font-size: 12.5px;
+}
+.own-bj-follow {
+  position: absolute;
+  right: 32px;
+  bottom: 30px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 14px;
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}

@@ -2526,6 +2526,26 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "background": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "startedAt": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": ["text"],
@@ -2734,6 +2754,203 @@
           },
           "required": true
         }
+      }
+    },
+    "/api/session/{sessionID}/reset": {
+      "post": {
+        "tags": ["session"],
+        "operationId": "session.reset.create",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Session.ID"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session.Inbox.Reset"
+                    }
+                  },
+                  "required": ["data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError | LocationNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocationNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Durably admit a context reset. It is queued: it delivers between turns, after the running turn and the input queued before it, as a marker the model's context starts after; input admitted after it, steered or queued, delivers after it. Stopping the turn delivers it at once. A request while one is pending returns that one. Commits a staged revert first. A subagent session is refused (Conflict).",
+        "summary": "Reset session context",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Session.Message.ID"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/session/{sessionID}/reset/{resetID}": {
+      "delete": {
+        "tags": ["session"],
+        "operationId": "session.reset.undo",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Session.ID"
+            },
+            "required": true
+          },
+          {
+            "name": "resetID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Session.Message.ID"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError | MessageNotFoundError | LocationNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MessageNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocationNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ConflictError | SessionBusyError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ConflictErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SessionBusyErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Cancel a pending context reset, or undo a delivered one: the model's context starts at the boundary before it again. Undo needs an idle session without a staged revert, and the reset must be the newest compaction or reset (Conflict otherwise).",
+        "summary": "Undo session context reset"
       }
     },
     "/api/experimental/session/{sessionID}/wait": {
@@ -3145,7 +3362,7 @@
             }
           }
         },
-        "description": "Retrieve the active context messages for a session (all messages after the last compaction).",
+        "description": "Retrieve the active context messages for a session (all messages after the last compaction or context reset).",
         "summary": "Get session context"
       }
     },
@@ -10314,6 +10531,7 @@
                     "session.revert.staged",
                     "session.revert.cleared",
                     "session.revert.committed",
+                    "session.reset.undone",
                     "filesystem.changed",
                     "reference.updated",
                     "permission.asked",
@@ -10426,6 +10644,7 @@
                           "session.revert.staged",
                           "session.revert.cleared",
                           "session.revert.committed",
+                          "session.reset.undone",
                           "filesystem.changed",
                           "reference.updated",
                           "permission.asked",
@@ -17974,6 +18193,28 @@
       "Config.Model.Settings": {
         "type": "object",
         "properties": {
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
           "compaction": {
             "$ref": "#/components/schemas/Provider.Compaction"
           },
@@ -18001,6 +18242,28 @@
       "Config.Model.VariantSettings": {
         "type": "object",
         "properties": {
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
           "compaction": {
             "$ref": "#/components/schemas/Provider.Compaction"
           },
@@ -18184,6 +18447,28 @@
             ]
           },
           "chunkTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
             "anyOf": [
               {
                 "type": "number"
@@ -22214,6 +22499,28 @@
       "Model.Settings": {
         "type": "object",
         "properties": {
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
           "compaction": {
             "$ref": "#/components/schemas/Provider.Compaction"
           },
@@ -22283,6 +22590,28 @@
       "Model.VariantSettings": {
         "type": "object",
         "properties": {
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
           "compaction": {
             "$ref": "#/components/schemas/Provider.Compaction"
           },
@@ -23454,6 +23783,28 @@
               }
             ]
           },
+          "progressTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
+          "toolInputTimeout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean",
+                "enum": [false]
+              }
+            ]
+          },
           "compaction": {
             "$ref": "#/components/schemas/Provider.Compaction"
           },
@@ -24013,6 +24364,9 @@
             "$ref": "#/components/schemas/session.revert.committed"
           },
           {
+            "$ref": "#/components/schemas/session.reset.undone"
+          },
+          {
             "$ref": "#/components/schemas/session.usage.recorded"
           },
           {
@@ -24111,6 +24465,9 @@
           },
           {
             "$ref": "#/components/schemas/Session.Inbox.Move"
+          },
+          {
+            "$ref": "#/components/schemas/Session.Inbox.Reset"
           }
         ]
       },
@@ -24176,6 +24533,23 @@
               },
               "payload": {
                 "$ref": "#/components/schemas/Session.Inbox.MovePayload_1"
+              },
+              "delivery": {
+                "$ref": "#/components/schemas/Session.Inbox.Delivery"
+              }
+            },
+            "required": ["type", "payload", "delivery"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["reset"]
+              },
+              "payload": {
+                "$ref": "#/components/schemas/Session.Inbox.ResetPayload"
               },
               "delivery": {
                 "$ref": "#/components/schemas/Session.Inbox.Delivery"
@@ -24251,6 +24625,44 @@
         "required": ["location", "projectID"],
         "additionalProperties": false
       },
+      "Session.Inbox.Reset": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Session.Message.ID"
+          },
+          "sessionID": {
+            "$ref": "#/components/schemas/Session.ID"
+          },
+          "time": {
+            "type": "object",
+            "properties": {
+              "created": {
+                "type": "number"
+              }
+            },
+            "required": ["created"],
+            "additionalProperties": false
+          },
+          "type": {
+            "type": "string",
+            "enum": ["reset"]
+          },
+          "payload": {
+            "$ref": "#/components/schemas/Session.Inbox.ResetPayload"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/Session.Inbox.Delivery"
+          }
+        },
+        "required": ["id", "sessionID", "time", "type", "payload", "delivery"],
+        "additionalProperties": false
+      },
+      "Session.Inbox.ResetPayload": {
+        "not": {
+          "type": "null"
+        }
+      },
       "Session.Inbox.Synthetic": {
         "type": "object",
         "properties": {
@@ -24295,6 +24707,12 @@
           },
           "metadata": {
             "type": "object"
+          },
+          "beforeReset": {
+            "$ref": "#/components/schemas/Session.Message.ID"
+          },
+          "background": {
+            "type": "boolean"
           }
         },
         "required": ["text"],
@@ -24758,7 +25176,13 @@
           },
           "reason": {
             "type": "string",
-            "enum": ["auto", "manual"]
+            "enum": ["auto", "manual", "reset"]
+          },
+          "undone": {
+            "type": "number"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/Session.Message.Compaction.ResetBaseline"
           },
           "model": {
             "$ref": "#/components/schemas/Model.Ref"
@@ -24821,6 +25245,27 @@
           }
         },
         "required": ["type", "id", "time", "status", "reason", "error"],
+        "additionalProperties": false
+      },
+      "Session.Message.Compaction.ResetBaseline": {
+        "type": "object",
+        "properties": {
+          "epochStart": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "values": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z0-9][a-z0-9._-]*\\/[a-z0-9][a-z0-9._/-]*$": {
+                "$ref": "#/components/schemas/Instruction.Hash"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["epochStart", "values"],
         "additionalProperties": false
       },
       "Session.Message.Compaction.Running": {
@@ -26542,6 +26987,9 @@
           },
           {
             "$ref": "#/components/schemas/session.revert.committed"
+          },
+          {
+            "$ref": "#/components/schemas/session.reset.undone"
           },
           {
             "$ref": "#/components/schemas/filesystem.changed"
@@ -29899,6 +30347,58 @@
               }
             },
             "required": ["sessionID", "title"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "created", "type", "durable", "data"],
+        "additionalProperties": false
+      },
+      "session.reset.undone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Event.ID"
+          },
+          "created": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["session.reset.undone"]
+          },
+          "durable": {
+            "type": "object",
+            "properties": {
+              "aggregateID": {
+                "type": "string"
+              },
+              "seq": {
+                "$ref": "#/components/schemas/Event.Seq"
+              },
+              "version": {
+                "$ref": "#/components/schemas/Event.VersionEncoded_c77c5abcb68d"
+              }
+            },
+            "required": ["aggregateID", "seq", "version"],
+            "additionalProperties": false
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location.Ref"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "$ref": "#/components/schemas/Session.ID"
+              },
+              "messageID": {
+                "$ref": "#/components/schemas/Session.Message.ID"
+              }
+            },
+            "required": ["sessionID", "messageID"],
             "additionalProperties": false
           }
         },

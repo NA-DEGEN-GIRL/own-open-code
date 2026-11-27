@@ -91,6 +91,15 @@ export interface TimeoutConfig {
   readonly headers?: HttpTimeout
   /** Between streamed response chunks once headers have arrived. */
   readonly chunk?: HttpTimeout
+  // OWN-PATCH(P-018) begin
+  /**
+   * Time allowed without model progress: a new output item or a non-empty delta; keepalives do not count.
+   * Unbounded by default when `chunk` is false.
+   */
+  readonly progress?: HttpTimeout
+  /** Same while a local tool call's input is open; that input may stay open for five of these windows. */
+  readonly toolInput?: HttpTimeout
+  // OWN-PATCH(P-018) end
 }
 
 /** Milliseconds for the whole request, `false` to disable it, or per-phase limits. */
@@ -131,6 +140,10 @@ export const mergeTransport = (...items: ReadonlyArray<TransportOptions | undefi
       total: last(timeouts.map((item) => item.total)),
       headers: last(timeouts.map((item) => item.headers)),
       chunk: last(timeouts.map((item) => item.chunk)),
+      // OWN-PATCH(P-018) begin
+      progress: last(timeouts.map((item) => item.progress)),
+      toolInput: last(timeouts.map((item) => item.toolInput)),
+      // OWN-PATCH(P-018) end
     }),
     http: someDefined({
       query: mergeStringRecords(...http.map((item) => item?.query)),

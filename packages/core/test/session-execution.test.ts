@@ -22,7 +22,9 @@ import { SessionEvent } from "@opencode/core/session/event"
 import { SessionInbox } from "@opencode/core/session/inbox"
 import { SessionMessage } from "@opencode/core/session/message"
 import { SessionRunner } from "@opencode/core/session/runner/index"
-import { SessionInboxTable, SessionTable } from "@opencode/core/session/sql"
+// OWN-PATCH(P-035) begin: SessionMessageTable
+import { SessionInboxTable, SessionMessageTable, SessionTable } from "@opencode/core/session/sql"
+// OWN-PATCH(P-035) end
 import { SessionStore } from "@opencode/core/session/store"
 import { Shell } from "@opencode/core/shell"
 import { BlobStore } from "@opencode/core/blob-store"
@@ -37,7 +39,10 @@ import { ID } from "@opencode/core/model"
 import { Provider } from "@opencode/core/provider"
 import { daemonShells } from "./fixture/shell-daemon"
 import { Cause, Context, Deferred, Effect, Exit, Fiber, Layer, LayerMap, Logger, Schedule, Scope, Stream } from "effect"
-import { eq } from "drizzle-orm"
+// OWN-PATCH(P-035) begin: and, TestClock
+import { and, eq } from "drizzle-orm"
+import { TestClock } from "effect/testing"
+// OWN-PATCH(P-035) end
 import { testEffect } from "./lib/effect"
 
 const it = testEffect(
@@ -1574,6 +1579,60 @@ describe("SessionRestart background recovery", () => {
     }),
   )
 
+  // OWN-PATCH(P-035) begin
+  it.effect("a recovered background job's notice keeps its first start: a reset since then holds it passive", () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service
+      const jobs = yield* Job.Service
+      const sessions = yield* Session.Service
+      const parent = Session.ID.make("ses_recovered_start_parent")
+      const child = Session.ID.make("ses_recovered_start_child")
+      yield* seedSessions(database, [parent])
+      yield* seedSessions(database, [child], { parent_id: parent, time_suspended: Date.now() })
+      // A subagent and a shell start at 1 s; the parent's context is reset at 2 s; the server restarts at 3 s.
+      yield* TestClock.adjust("1 second")
+      yield* jobs.start({
+        id: child,
+        type: "subagent",
+        recovery: {
+          kind: "subagent",
+          parentSessionID: parent,
+          childSessionID: child,
+          agent: "explore",
+          description: "Inspect before the reset",
+        },
+        run: Effect.never,
+      })
+      yield* jobs.background(child)
+      yield* seedBackground(jobs, parent, [{ id: "job_recovered_start", shellID: "sh_1", command: "bun run build" }])
+      yield* TestClock.adjust("1 second")
+      const reset = yield* sessions.reset({ sessionID: parent })
+      yield* TestClock.adjust("1 second")
+
+      const scope = yield* Scope.make()
+      yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void))
+      const restarted = yield* Job.make.pipe(Effect.provideService(Scope.Scope, scope))
+      const context = yield* buildExecution(scope, () => Effect.void, undefined, restarted)
+      yield* Context.get(context, SessionRestart.Service).resumeSuspendedSessions
+      // Since v2.4.1 the recovered child reports through SubagentReport's outbox once it settles, and a report after an
+      // applied reset wakes nothing: wait for both notices in the parent's inbox (real time; the clock is the test's).
+      const notices = Effect.gen(function* () {
+        for (let tries = 0; tries < 200; tries++) {
+          const listed = yield* SessionInbox.list(database.db, parent)
+          if (listed.length >= 2) return listed
+          yield* Effect.promise(() => Bun.sleep(25))
+        }
+        return yield* SessionInbox.list(database.db, parent)
+      })
+      // The recovered child ran after the restart, but its work, like the shell's, started before the reset.
+      expect(yield* notices).toMatchObject([
+        { type: "synthetic", payload: { metadata: { source: "shell" }, background: true, beforeReset: reset.id } },
+        { type: "synthetic", payload: { metadata: { source: "subagent" }, background: true, beforeReset: reset.id } },
+      ])
+    }),
+  )
+  // OWN-PATCH(P-035) end
+
   it.effect("wakes the parent of an admitted report if the restart sweep fails afterward", () =>
     Effect.gen(function* () {
       const database = yield* Database.Service
@@ -2048,6 +2107,90 @@ describe("SessionExecution interrupt continuation", () => {
     }),
   )
 
+  // OWN-PATCH(P-035) begin
+  it.effect(
+    "an interrupt with continue delivers a reset next in line and keeps the queued prompt behind it parked",
+    () =>
+      Effect.gen(function* () {
+        const database = yield* Database.Service
+        const sessionID = Session.ID.make("ses_continue_reset")
+        yield* seedSessions(database, [sessionID])
+        yield* seedInbox(database, sessionID, [{ delivery: "queue", type: "reset" }, "queue"])
+        const drains = yield* stopDrain(sessionID, { resume: true })
+        // Upstream's continue: steers and controls resume, queued prompts stay parked.
+        expect(drains).toEqual([
+          { force: true, promotable: "input" },
+          { force: false, promotable: "steer" },
+        ])
+        expect((yield* SessionInbox.list(database.db, sessionID)).map((item) => item.type)).toEqual(["user"])
+        expect(yield* resetMarkers(database, sessionID)).toHaveLength(1)
+      }),
+  )
+
+  it.effect("an interrupt with continue applies a reset behind a parked prompt and resumes steers only", () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service
+      const sessionID = Session.ID.make("ses_continue_before_reset")
+      yield* seedSessions(database, [sessionID])
+      yield* seedInbox(database, sessionID, ["queue", { delivery: "queue", type: "reset" }])
+      expect(yield* stopDrain(sessionID, { resume: true })).toEqual([
+        { force: true, promotable: "input" },
+        { force: false, promotable: "steer" },
+      ])
+      // The parked prompt does not hold the reset: it waits in the new context.
+      expect((yield* SessionInbox.list(database.db, sessionID)).map((item) => item.type)).toEqual(["user"])
+      expect(yield* resetMarkers(database, sessionID)).toHaveLength(1)
+    }),
+  )
+
+  // Upstream v2.1 interrupts only for the user (LocationActivity no longer stops executions for inactivity).
+  for (const reason of ["user"] as const)
+    it.effect(`a stop (${reason}) delivers a pending reset next in line and starts nothing`, () =>
+      Effect.gen(function* () {
+        const database = yield* Database.Service
+        const sessionID = Session.ID.make(`ses_stop_reset_${reason}`)
+        yield* seedSessions(database, [sessionID])
+        yield* seedInbox(database, sessionID, [{ delivery: "queue", type: "reset" }, "steer"])
+        expect(yield* stopDrain(sessionID, {})).toEqual([{ force: true, promotable: "input" }])
+        expect(yield* resetMarkers(database, sessionID)).toHaveLength(1)
+        // A steer admitted after the reset stays parked, like any input after a stop.
+        expect((yield* SessionInbox.list(database.db, sessionID)).map((item) => item.type)).toEqual(["user"])
+        expect((yield* claims(database))[sessionID]).toBe(false)
+      }),
+    )
+
+  it.effect("a stop applies a reset ahead of a parked prompt and an undelivered steer; shutdown keeps it", () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service
+      const parked = Session.ID.make("ses_stop_reset_parked")
+      const behind = Session.ID.make("ses_stop_reset_behind")
+      const shutdown = Session.ID.make("ses_stop_reset_shutdown")
+      yield* seedSessions(database, [parked, behind, shutdown])
+      yield* seedInbox(database, parked, ["queue", { delivery: "queue", type: "reset" }])
+      yield* seedInbox(database, behind, ["steer", { delivery: "queue", type: "reset" }])
+      yield* seedInbox(database, shutdown, [{ delivery: "queue", type: "reset" }])
+      expect(yield* stopDrain(parked, {})).toHaveLength(1)
+      expect((yield* SessionInbox.list(database.db, parked)).map((item) => item.type)).toEqual(["user"])
+      expect(yield* resetMarkers(database, parked)).toHaveLength(1)
+      // A steer admitted before the reset waits in the new context too: a stop gives what a reset after it gives.
+      expect(yield* stopDrain(behind, {})).toHaveLength(1)
+      expect((yield* SessionInbox.list(database.db, behind)).map((item) => item.type)).toEqual(["user"])
+      expect(yield* resetMarkers(database, behind)).toHaveLength(1)
+
+      const draining = yield* Deferred.make<void>()
+      const scope = yield* Scope.make()
+      const context = yield* buildExecution(scope, () =>
+        Deferred.succeed(draining, undefined).pipe(Effect.andThen(Effect.never)),
+      )
+      yield* Context.get(context, SessionExecution.Service).resume(shutdown).pipe(Effect.forkIn(scope))
+      yield* Deferred.await(draining)
+      yield* Scope.close(scope, Exit.void)
+      expect((yield* SessionInbox.list(database.db, shutdown)).map((item) => item.type)).toEqual(["reset"])
+      expect(yield* resetMarkers(database, shutdown)).toEqual([])
+    }),
+  )
+  // OWN-PATCH(P-035) end
+
   it.effect("keeps a control item parked behind a queued prompt on continue", () =>
     Effect.gen(function* () {
       const database = yield* Database.Service
@@ -2098,7 +2241,9 @@ function seedInbox(
   database: Database.Service["Service"],
   sessionID: Session.ID,
   items: ReadonlyArray<
-    SessionInbox.Delivery | { readonly delivery: SessionInbox.Delivery; readonly type: "compaction" }
+    // OWN-PATCH(P-035) begin
+    SessionInbox.Delivery | { readonly delivery: SessionInbox.Delivery; readonly type: "compaction" | "reset" }
+    // OWN-PATCH(P-035) end
   >,
 ) {
   return database.db
@@ -2250,6 +2395,40 @@ function buildExecution(
     )
   })
 }
+
+// OWN-PATCH(P-035) begin
+/** Resumes an execution whose first drain blocks, stops it with `options`, waits for idle and returns every drain. */
+function stopDrain(sessionID: Session.ID, options: Parameters<SessionExecution.Interface["interrupt"]>[1]) {
+  return Effect.gen(function* () {
+    const draining = yield* Deferred.make<void>()
+    const drains: Array<{ force: boolean; promotable?: SessionInbox.Promotable }> = []
+    const scope = yield* Scope.make()
+    yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void))
+    const context = yield* buildExecution(scope, (input) =>
+      Effect.suspend(() => {
+        drains.push({ force: input.force, promotable: input.promotable })
+        if (drains.length > 1) return Effect.void
+        return Deferred.succeed(draining, undefined).pipe(Effect.andThen(Effect.never))
+      }),
+    )
+    const execution = Context.get(context, SessionExecution.Service)
+    yield* execution.resume(sessionID).pipe(Effect.forkScoped)
+    yield* Deferred.await(draining)
+    yield* execution.interrupt(sessionID, options)
+    yield* execution.awaitIdle(sessionID)
+    return drains
+  })
+}
+
+function resetMarkers(database: Database.Service["Service"], sessionID: Session.ID) {
+  return database.db
+    .select({ id: SessionMessageTable.id })
+    .from(SessionMessageTable)
+    .where(and(eq(SessionMessageTable.session_id, sessionID), eq(SessionMessageTable.type, "compaction")))
+    .all()
+    .pipe(Effect.orDie)
+}
+// OWN-PATCH(P-035) end
 
 /** Records a shell call the model made that is still running, as a killed server leaves it. */
 function seedShellCall(bus: Bus.Interface, sessionID: Session.ID, callID: string) {

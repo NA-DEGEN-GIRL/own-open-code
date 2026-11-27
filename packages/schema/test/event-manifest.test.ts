@@ -162,6 +162,9 @@ describe("public event manifest", () => {
         "session.revert.staged.1",
         "session.revert.cleared.1",
         "session.revert.committed.1",
+        // OWN-PATCH(P-035) begin: the undo of a context reset
+        "session.reset.undone.1",
+        // OWN-PATCH(P-035) end
         "worktree.resolved.1",
       ].toSorted(),
     )

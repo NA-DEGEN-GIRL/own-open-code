@@ -47,14 +47,19 @@ export const requests = Effect.fnUntraced(function* <E>(
     access.resolve({ path: directory, base: input.target, kind: "directory" }),
   )
   const external = FileAccess.externalDirectoryRequest([input.target, ...directories])
+  // OWN-PATCH(P-030) begin
+  // P-019's `asked` also asks a command the scanner finds no command in (`$x = 'hi'`, `X=1`), whole, so a `shell`
+  // deny still refuses it; a command of only directory changes still asks nothing.
+  const commands = ShellParse.asked(input.command, parsed)
   const command =
-    parsed.commands.length > 0 || input.once
+    commands.length > 0 || input.once
       ? {
           action: "shell",
-          resources: parsed.commands.length > 0 ? parsed.commands.map((command) => command.resource) : [input.command],
-          save: parsed.commands.map((command) => command.save),
+          resources: commands.length > 0 ? commands.map((command) => command.resource) : [input.command],
+          save: commands.map((command) => command.save),
         }
       : undefined
+  // OWN-PATCH(P-030) end
   return [external, command].flatMap((request) =>
     request ? [{ ...request, save: input.once ? undefined : request.save }] : [],
   )

@@ -806,7 +806,15 @@ describe("OpenAI Responses tool updates", () => {
         tools: [plain.body.tools?.[1]],
       })
       expect(plain.body.tools?.[1]?.type).toBe("custom")
-      expect(prepared.body.input[4]).toEqual({ type: "custom_tool_call", call_id: "call_1", name: "run", input: "ls" })
+      // OWN-PATCH(P-020) begin: a replayed custom call carries Codex's `status: "completed"`
+      expect(prepared.body.input[4]).toEqual({
+        type: "custom_tool_call",
+        call_id: "call_1",
+        name: "run",
+        input: "ls",
+        status: "completed",
+      })
+      // OWN-PATCH(P-020) end
     }),
   )
 

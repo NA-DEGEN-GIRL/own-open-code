@@ -1,0 +1,37 @@
+/* First-chunk styles of the SSH server marks (overlay buttons). Same look as the lazy kit's .own-btn (limits/kit.css)
+   without depending on that chunk being loaded, like src/browser/browser.css does. */
+.own-remote-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-remote-btn:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-remote-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.own-remote-btn[data-variant="primary"] {
+  border-color: var(--own-accent);
+  background: var(--own-accent);
+  color: var(--own-on-accent);
+}
+
+.own-remote-btn[data-variant="primary"]:hover:not(:disabled) {
+  filter: brightness(1.06);
+}

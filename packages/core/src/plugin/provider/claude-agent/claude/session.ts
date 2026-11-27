@@ -2,6 +2,9 @@ export * as ClaudeSession from "./session.js"
 
 import type { LanguageModelV3FunctionTool } from "@ai-sdk/provider"
 import type { Options, SDKMessage, SDKResultMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk"
+// OWN-PATCH(P-044) begin
+import type { SpareProcess } from "@anthropic-ai/claude-agent-sdk"
+// OWN-PATCH(P-044) end
 import { ToolNames } from "../tools/names.js"
 import { ClaudeProbe } from "./probe.js"
 import { ClaudeSDK } from "./sdk.js"
@@ -15,7 +18,16 @@ interface Turn {
 
 export type Interface = Awaited<ReturnType<typeof start>>
 
-export async function start(options: Options) {
+export async function start(
+  options: Options,
+  // OWN-PATCH(P-044) begin
+  // A spare claude prewarmed with these options' host-level half: the session binds it instead of starting one.
+  spare?: SpareProcess,
+  // OWN-PATCH(P-044) end
+  // OWN-PATCH(P-051) begin
+  readVersion?: ClaudeProbe.ReadVersion,
+  // OWN-PATCH(P-051) end
+) {
   const { query } = await ClaudeSDK.load()
   let input!: ReadableStreamDefaultController<SDKUserMessage>
   const prompt = new ReadableStream<SDKUserMessage>({
@@ -23,19 +35,37 @@ export async function start(options: Options) {
       input = controller
     },
   })
-  const session = query({ prompt, options })
+  // OWN-PATCH(P-044) begin
+  const session = spare
+    ? spare.claim({
+        prompt,
+        options: { cwd: options.cwd ?? process.cwd(), ...(options.model === undefined ? {} : { model: options.model }) },
+      })
+    : query({ prompt, options })
+  // The claimed session's id comes from the claim; a refused claim fails `ready`, so the caller starts one instead.
+  const claimed = spare?.claimed.then((info) => info.sessionId)
+  let claimedID: string | undefined
+  // OWN-PATCH(P-044) end
   let turn: Turn | undefined
   let initialized = false
   let ended = false
   let failure: unknown
   let stopping: Promise<void> | undefined
   let persisted = false
-  const ready = session.initializationResult().then((init): ClaudeProbe.Result => {
-    const error = ClaudeProbe.versionError(init.claude_code_version)
-    if (error) throw error
-    initialized = true
-    return { version: init.claude_code_version!, account: init.account, models: init.models }
-  })
+  // OWN-PATCH(P-044) begin
+  const ready = Promise.all([session.initializationResult(), claimed]).then(
+    async ([init, id]): Promise<ClaudeProbe.Result> => {
+      claimedID = id
+      // OWN-PATCH(P-044) end
+      // OWN-PATCH(P-051) begin
+      const version = await ClaudeProbe.resolveVersion(init.claude_code_version, options, readVersion)
+      const error = ClaudeProbe.versionError(version)
+      if (error) throw error
+      initialized = true
+      return { version, account: init.account, models: init.models }
+      // OWN-PATCH(P-051) end
+    },
+  )
   // A cancel during startup can stop the session before anything awaits ready.
   ready.catch(() => {})
 
@@ -132,7 +162,11 @@ export async function start(options: Options) {
   }
 
   return {
-    id: options.resume ?? options.sessionId!,
+    // OWN-PATCH(P-044) begin
+    get id() {
+      return claimedID ?? options.resume ?? options.sessionId!
+    },
+    // OWN-PATCH(P-044) end
     ready,
     get ended() {
       return ended
@@ -158,5 +192,11 @@ export async function start(options: Options) {
     stop,
     setModel: (model: string) => session.setModel(model),
     setEffort: (effort: Options["effort"]) => session.applyFlagSettings({ effortLevel: effort ?? null }),
+    // OWN-PATCH(P-060) begin
+    setFastMode: (fast: boolean) => session.applyFlagSettings({ fastMode: fast }),
+    // OWN-PATCH(P-060) end
+    // OWN-PATCH(P-039) begin
+    usage: () => session.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: true }),
+    // OWN-PATCH(P-039) end
   }
 }

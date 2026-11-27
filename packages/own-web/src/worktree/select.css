@@ -1,0 +1,132 @@
+/* `⑂ 작업 위치` selector on the new-session screen (03 §5.1, §19.3). own tokens only (13.2); the popover content and
+   the dialogs style in panel.css (lazy). */
+.own-wt-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 30ch;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-wt-button:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+.own-wt-button:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-wt-button[data-mode="new"],
+.own-wt-button[data-mode="existing"] {
+  color: var(--own-accent-text);
+}
+.own-wt-button[data-busy] {
+  cursor: progress;
+}
+.own-wt-button-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-wt-caret {
+  color: var(--own-text-faint);
+}
+.own-wt-pop {
+  position: fixed;
+  inset: auto;
+  width: min(380px, calc(100vw - 16px));
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.own-wt-pop-loading {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--own-text-faint);
+  font-size: 12.5px;
+}
+
+/* 03 §8 세션 폴더 없음 above the composer (location-missing.tsx): the folder, why sending stops, the ways on. Wraps
+   at phone width (375 px): the actions go under the text. */
+.own-wt-missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--own-warn);
+  border-radius: 12px;
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 13px;
+}
+.own-wt-missing-text {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.own-wt-missing-text p {
+  margin: 0;
+}
+.own-wt-missing-title {
+  color: var(--own-text);
+  font-weight: 600;
+}
+.own-wt-missing-title > span {
+  color: var(--own-warn);
+}
+.own-wt-missing-path {
+  margin-top: 2px;
+  font-family: var(--own-font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.own-wt-missing-body {
+  margin-top: 4px;
+}
+.own-wt-missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.own-wt-missing-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.own-wt-missing-btn[data-variant="primary"] {
+  border-color: transparent;
+  background: var(--own-accent);
+  color: var(--own-on-accent, #fff);
+}
+.own-wt-missing-btn:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.own-wt-missing-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.own-wt-missing-btn:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}

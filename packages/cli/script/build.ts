@@ -15,6 +15,9 @@ import { verifyArtifact, verifySimulationGraph } from "./verify-artifact"
 import { resolveOpencodePty } from "./opencode-pty"
 import { NativeArch } from "../../../script/native-arch"
 import { bundledModelsSnapshot, modelsSnapshotPlugin } from "../../core/script/models-snapshot"
+// OWN-PATCH(P-050) begin
+import { ownFilenamePlugin } from "./own-filename"
+// OWN-PATCH(P-050) end
 
 const dir = path.resolve(import.meta.dirname, "..")
 const binary = "opencode"
@@ -168,7 +171,9 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
   // The machine link's Iroh binding: this target's native package is embedded, and a target with none (Intel Macs)
   // gets `undefined`, which the server takes as Iroh being unavailable.
   const irohPackage =
-    item.os === "darwin" && item.arch === "x64"
+    // OWN-PATCH(P-050) begin: own's Linux builds on Windows stage no Iroh native (own runs no machine links)
+    (item.os === "darwin" && item.arch === "x64") || (item.os === "linux" && process.env.OWN_BUILD_IROH === "0")
+      // OWN-PATCH(P-050) end
       ? undefined
       : `@number0/iroh-${item.os}-${item.arch}${item.os === "linux" ? `-${item.abi === "musl" ? "musl" : "gnu"}` : item.os === "win32" ? "-msvc" : ""}`
   const irohBindingPlugin: BunPlugin = {
@@ -185,7 +190,9 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
   const executablePath = await compileExecutable(item)
   console.log(`building ${name}`)
   const result = await Bun.build({
-    entrypoints: ["./src/index.ts", "./src/photon-worker.ts", "./src/claude-folder-worker.ts"],
+    // OWN-PATCH(P-014) begin
+    entrypoints: ["./src/bootstrap.ts", "./src/photon-worker.ts", "./src/claude-folder-worker.ts"],
+    // OWN-PATCH(P-014) end
     tsconfig: "./tsconfig.json",
     plugins: [
       appAssetsPlugin,
@@ -197,6 +204,9 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       wsReexportPlugin,
       simulationGraphPlugin,
       modelsSnapshot,
+      // OWN-PATCH(P-050) begin
+      ownFilenamePlugin,
+      // OWN-PATCH(P-050) end
     ],
     external: ["node-gyp"],
     format: "esm",

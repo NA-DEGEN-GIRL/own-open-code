@@ -19,6 +19,9 @@ export function start(
   execution: SessionExecution.Interface,
   recovery: Recovery,
   notificationID?: Job.Background["notificationID"],
+  // OWN-PATCH(P-035) begin: a recovered job keeps its first start across restarts (a reset since makes its report passive)
+  started_at?: number,
+  // OWN-PATCH(P-035) end
 ) {
   const id = recovery.childSessionID
   return jobs.start({
@@ -28,6 +31,7 @@ export function start(
     metadata: notificationID === undefined ? {} : undefined,
     recovery,
     notificationID,
+    started_at, // OWN-PATCH(P-035)
     background: true,
     run: execution.resume(id).pipe(
       // Only an explicit caller cancel releases the child's claim. A server shutdown

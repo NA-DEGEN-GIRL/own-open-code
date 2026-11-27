@@ -1,0 +1,62 @@
+/*
+ * A line of parts separated by `·` that wraps without a separator at the start or the end of a line (UX 2026-10-26):
+ * every part but the first carries its `·` before it (the first takes the same room as padding), and the inner row is
+ * pulled left by one separator's width inside a clipping box, so the separator of whichever part starts a wrapped line
+ * is cut off. Screen readers read `주간 남음 20% (3시간 45분 후 리셋) · 5시간 남음 99%`, no separator first. A part is one
+ * unbreakable piece; its lines start at the box's start edge, never centred (a centred line's `·` would not be cut).
+ * The limits summary line and the 이 대화 card's facts (limits/), the switch marker and the turn footer (transcript/)
+ * and the team area menu's head (team/area-menu) use it (UX 2026-10-27: the last three wrapped to a line starting with
+ * `·`), and so do the compaction and context-reset markers (merge round 7: their pills had the same `·` at a 375 px
+ * line's start); the markers' pills end at their widest line (transcript/seps-fit.ts). Unlayered and in the first
+ * stylesheet (styles/index.css), so every lazy screen can use it.
+ */
+.own-seps {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.own-seps > .own-seps-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-inline-start: -1.1em;
+}
+
+.own-seps-in > * {
+  white-space: nowrap;
+}
+
+.own-seps-in > :first-child {
+  padding-inline-start: 1.1em;
+}
+
+.own-seps-in > * + *::before {
+  content: "·";
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+  color: var(--own-text-faint);
+}
+
+/* A part that follows without a `·` (a tag such as the switch marker's `화면 전용`) keeps the separator's room, so it
+   is cut off the same way when the part starts a wrapped line. */
+.own-seps-in > * + [data-sep="none"]::before {
+  content: "";
+}
+
+/* A part that may wrap inside (a long name): its own lines start where its text does, after the separator, so the
+   separator is still the only thing cut off when the part starts a line. */
+.own-seps-in > [data-wrap] {
+  white-space: normal;
+}
+
+.own-seps-in > * + [data-wrap] {
+  padding-inline-start: 1.1em;
+}
+
+.own-seps-in > * + [data-wrap]::before {
+  margin-inline-start: -1.1em;
+}

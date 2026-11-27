@@ -1,0 +1,119 @@
+/* Window zoom (03 §4.2.1, 05 §7.9): the title bar's `110%` indicator, its bubble and the control (zoom.tsx). Own
+   button styles: limits/kit.css (.own-btn) is a lazy chunk. */
+
+/* While the indicator shows, the band rows keep its place free left of the window buttons: tokens.css adds this to
+   --own-wco-right, which the session header, the work panel's head and the manual's bar already keep empty. */
+:root[data-own-zoomed] {
+  --own-wco-zoom: 52px;
+}
+
+.own-zoom-pill {
+  position: fixed;
+  top: 0;
+  right: var(--own-wco-buttons, 0px);
+  z-index: 60;
+  width: 52px;
+  height: var(--own-header-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--own-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+/* The visible pill inside the band-high button (the whole height stays clickable). */
+.own-zoom-pill::before {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 11px) 4px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  z-index: -1;
+}
+
+.own-zoom-pill:hover,
+.own-zoom-pill[aria-expanded="true"] {
+  color: var(--own-text);
+}
+
+.own-zoom-pill:hover::before,
+.own-zoom-pill[aria-expanded="true"]::before {
+  background: var(--own-bg-hover);
+}
+
+.own-zoom-pill:focus-visible {
+  outline: none;
+}
+
+.own-zoom-pill:focus-visible::before {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+/* Below the band, under the indicator's place (also at 100 %, after Ctrl+0, when the indicator is gone). */
+.own-zoom-bubble {
+  position: fixed;
+  inset: auto;
+  top: calc(var(--own-header-h, 44px) + 4px);
+  right: calc(var(--own-wco-buttons, 0px) + 4px);
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-card);
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  box-shadow: var(--own-shadow-float);
+}
+
+.own-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.own-zoom-control button {
+  height: 28px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-zoom-control button:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-zoom-control button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.own-zoom-control .own-zoom-step {
+  width: 28px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.own-zoom-control .own-zoom-reset {
+  padding: 0 10px;
+}
+
+.own-zoom-value {
+  min-width: 3.25em;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

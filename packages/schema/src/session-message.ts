@@ -17,6 +17,10 @@ import { Skill as SkillSchema } from "./skill.js"
 import { Money } from "./money.js"
 import { Snapshot } from "./snapshot.js"
 import { TokenUsage } from "./token-usage.js"
+// OWN-PATCH(P-035) begin
+import { Instruction } from "./instruction.js"
+import { NonNegativeInt } from "./schema.js"
+// OWN-PATCH(P-035) end
 
 export const ID = Schema.String.check(Schema.isStartingWith("msg_")).pipe(
   Schema.brand("Session.Message.ID"),
@@ -267,11 +271,31 @@ export const CompactionRunning = Schema.Struct({
   summary: Schema.String,
 }).annotate({ identifier: "Session.Message.Compaction.Running" })
 
+// OWN-PATCH(P-035) begin
+/**
+ * The instruction epoch a context reset ended (its start seq and baseline values), projection data copied from the
+ * instruction state at delivery. Its undo restores that epoch, so the request starts with the pre-reset system again
+ * and the instruction updates since stay in history. Absent when no epoch existed, or once it can no longer be
+ * restored: a committed revert re-initialized the instructions, a fork copied the marker, or the undo found the epoch
+ * moved.
+ */
+export interface ResetBaseline extends Schema.Schema.Type<typeof ResetBaseline> {}
+export const ResetBaseline = Schema.Struct({
+  epochStart: NonNegativeInt,
+  values: Instruction.Values,
+}).annotate({ identifier: "Session.Message.Compaction.ResetBaseline" })
+// OWN-PATCH(P-035) end
+
 export interface CompactionCompleted extends Schema.Schema.Type<typeof CompactionCompleted> {}
 export const CompactionCompleted = Schema.Struct({
   ...CompactionBase,
   status: Schema.tag("completed"),
-  reason: Schema.Literals(["auto", "manual"]),
+  // OWN-PATCH(P-035) begin: `reset` marks a context reset (no summary or recent part; renders nothing to the model).
+  // `undone` is when that reset was undone: history selection then no longer starts at it.
+  reason: Schema.Literals(["auto", "manual", "reset"]),
+  undone: DateTimeUtcFromMillis.pipe(optional),
+  baseline: ResetBaseline.pipe(optional),
+  // OWN-PATCH(P-035) end
   model: Model.Ref.pipe(optional),
   /** A provider compaction stores its replacement window in `native.messages`, replayed instead of `summary`. */
   native: Native.pipe(optional),

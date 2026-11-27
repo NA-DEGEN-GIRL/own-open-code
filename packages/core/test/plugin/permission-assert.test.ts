@@ -26,6 +26,9 @@ const permission = Layer.succeed(
       if (input.action === "declined") return Effect.die(new Permission.DeclinedError())
       return Effect.void
     },
+    // OWN-PATCH(P-031) begin
+    check: () => Effect.succeed("allow" as const),
+    // OWN-PATCH(P-031) end
     assertNotDenied: () => Effect.void,
     allows: () => Effect.succeed(false),
     reply: () => Effect.void,

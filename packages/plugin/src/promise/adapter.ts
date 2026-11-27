@@ -690,6 +690,12 @@ export function fromPromise(plugin: Plugin) {
             move: adaptApiMethod(SessionEndpoints["session.move"], host.session.move),
             wait: adaptApiMethod(SessionEndpoints["session.wait"], host.session.wait),
             context: adaptApiMethod(SessionEndpoints["session.context"], host.session.context),
+            // OWN-PATCH(P-054) begin
+            messages: (input) => run(host.session.messages(input)),
+            // OWN-PATCH(P-054) end
+            // OWN-PATCH(P-061) begin
+            side: (input, options) => Effect.runPromiseWith(runtime)(host.session.side(input), { signal: options?.signal }),
+            // OWN-PATCH(P-061) end
             instructions: {
               entry: {
                 list: adaptApiMethod(

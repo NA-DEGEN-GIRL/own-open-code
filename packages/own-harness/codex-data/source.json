@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/openai/codex",
+  "license": "Apache-2.0",
+  "commit": "ccf9be8cc458bd6b8336fe84d68d8893f2691a5e",
+  "date": "2026-11-19T15:07:36-08:00",
+  "files": {
+    "codex-rs/models-manager/models.json": "d50b6749506d97e5f334dbabcb666eb1689f423cf3e88cfabdcf3c536b873068",
+    "codex-rs/models-manager/prompt.md": "ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807",
+    "codex-rs/core/assets/tools/apply_patch.lark": "d6367f4826ed608c424b0a308f3d6163527df63c22513d089b91863552f8bfeb",
+    "codex-rs/prompts/templates/compact/prompt.md": "ab0c334d4faca17e3afbb9b16967c1b2fdcc7242a9a0880af57949fa236d6d07",
+    "codex-rs/prompts/templates/compact/summary_prefix.md": "e9b088e794a6bb9082ac053fcc760bd818d7e720ee4bcdc72c6e480de7b7cb0e",
+    "codex-rs/prompts/templates/permissions/sandbox_mode/read_only.md": "509b39f88e6a4f5cb36485ea8b340680c03f27175ba20200b823ec07bc79668d",
+    "codex-rs/prompts/templates/permissions/sandbox_mode/workspace_write.md": "763661195d613a48173638af6227d480d70ab0a6898d3a81ff075155e82f7555",
+    "codex-rs/prompts/templates/permissions/sandbox_mode/danger_full_access.md": "0d887cb1eaba21a6cade67ab958a6ffee00f671c46f8cf29c83706e397942dbf",
+    "codex-rs/prompts/templates/permissions/approval_policy/never.md": "41c7931bac2391a24046362bd07615d5a3e73dca4672b911516fac99646be8c4",
+    "codex-rs/prompts/templates/permissions/approval_policy/on_request.md": "85541a9738741407642b3c39bbe3781fbf8bb42f628d50e562c87738ab192b3a",
+    "codex-rs/prompts/templates/permissions/approval_policy/unless_trusted.md": "fadec1a060a758b805f227bc5715c7dd3d7d7e2015bd5020c386eca0f3293d10",
+    "codex-rs/collaboration-mode-templates/templates/default.md": "1042cc643eb0147ca1039b19287c7462ceb297502f7f310d9664ac323a12feca",
+    "codex-rs/collaboration-mode-templates/templates/plan.md": "d6d46c2d460a9d91ada2167605a8dfc56efde6b2ab61e101444c736c6fd6960a",
+    "LICENSE": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+    "NOTICE": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
+  }
+}

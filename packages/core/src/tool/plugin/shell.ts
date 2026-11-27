@@ -183,6 +183,9 @@ const notify = Effect.fnUntraced(function* (
     .synthetic({
       ...(info.notificationID ? { id: info.notificationID } : {}),
       sessionID: input.sessionID,
+      // OWN-PATCH(P-035) begin: a context reset since the job started makes its notice passive
+      startedAt: info.started_at,
+      // OWN-PATCH(P-035) end
       description: input.command,
       ...ShellResult.notification({
         jobID: input.id,

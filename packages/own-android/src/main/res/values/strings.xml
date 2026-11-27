@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Own OpenCode</string>
+
+    <!-- PC 목록 -->
+    <string name="add_pc">PC 추가</string>
+    <string name="empty_list">연결된 PC가 없어요.\n\nPC의 Own OpenCode에서 설정 &gt; 휴대폰·다른 PC &gt; 새 기기 연결(앱)로 QR을 띄운 뒤 [PC 추가]를 누르세요.</string>
+    <string name="add_scan">QR 코드 스캔</string>
+    <string name="add_paste">링크 붙여넣기</string>
+    <string name="paste_title">연결 링크 붙여넣기</string>
+    <string name="paste_hint">ownpc://pair?…</string>
+    <string name="connect">연결</string>
+    <string name="cancel">취소</string>
+    <string name="close">닫기</string>
+    <string name="scan_unavailable">QR 스캐너를 쓸 수 없어요(Google Play 서비스 필요). [링크 붙여넣기]를 쓰세요.</string>
+    <string name="scan_not_link">이 QR은 Own OpenCode 연결 링크가 아니에요.</string>
+    <string name="item_detail">%1$s · 만료 %2$s</string>
+    <string name="item_expired">%1$s · 만료됨 — PC에서 다시 연결하세요</string>
+    <string name="remove_title">\'%1$s\'을(를) 지울까요?</string>
+    <string name="remove_body">PC에 닿으면 PC의 기기 목록에서 이 휴대폰의 연결을 끊고, 이 휴대폰에서 연결 정보와 로그인 쿠키를 지워요. PC에 닿지 않으면 PC의 기기 목록에서 따로 연결을 끊으세요.</string>
+    <string name="remove">지우기</string>
+
+    <!-- 페어링 -->
+    <string name="pair_title">PC 연결</string>
+    <string name="pair_routes">경로: %1$s</string>
+    <string name="pair_confirm">이 PC에 연결할까요? PC 화면에 연결 QR을 띄운 것이 본인일 때만 연결하세요.</string>
+    <string name="pair_confirm_same_name">주의: 목록에 이름이 같은 PC \'%1$s\'가 이미 있지만, 이 링크는 그 PC가 아니에요. 다른 사람이 보낸 링크일 수 있어요. PC 화면에 연결 QR을 직접 띄웠을 때만 연결하세요.</string>
+    <string name="pair_identity">PC 키 %1$s · 인증서 %2$s</string>
+    <string name="pair_connecting">PC에 연결하는 중…</string>
+    <string name="pair_sas">확인 번호 %1$s — PC 화면의 번호와 같으면 PC에서 [허용]을 누르세요</string>
+    <string name="pair_device_name">이 휴대폰은 PC에 \'%1$s\'(으)로 등록돼요.</string>
+    <string name="pair_saving">연결 정보를 저장하는 중…</string>
+    <string name="pair_invalid_link">올바른 연결 링크가 아니에요. PC에서 새 QR이나 링크를 만들어 다시 시도하세요.</string>
+    <string name="pair_expired">연결 링크가 만료됐거나 이미 쓰였어요. PC에서 새 QR을 만들어 다시 시도하세요.</string>
+    <string name="pair_rejected">PC에서 연결을 거절했어요.</string>
+    <string name="pair_cancelled">PC에서 연결 요청을 취소했어요.</string>
+    <string name="pair_rate_limited">시도가 너무 많아요. 잠시 뒤 PC에서 새 QR을 만들어 다시 시도하세요.</string>
+    <string name="pair_unreachable">PC에 연결할 수 없어요. PC가 켜져 있고 앱 연결이 켜져 있는지, 휴대폰의 Tailscale이나 인터넷 연결을 확인하세요.</string>
+    <string name="pair_key_changed">이 PC는 이미 다른 키로 추가돼 있어 연결하지 않았어요. 이 링크가 위조됐을 수 있어요. PC의 키를 정말 바꿨다면 목록에서 이 PC를 먼저 지운 뒤 다시 연결하세요.</string>
+    <string name="pair_pin_mismatch">보안 경고: PC의 인증서가 연결 링크의 키와 달라요. 누군가 연결을 가로채고 있을 수 있어 연결을 멈췄어요.</string>
+    <string name="pair_protocol">PC의 응답을 이해할 수 없어요. PC와 앱의 버전을 확인하세요.</string>
+    <string name="pair_cookie_failed">기기 인증 정보를 저장하지 못했어요. 다시 시도하세요.</string>
+    <string name="pair_return_hint">다른 앱에서 PC의 [허용]을 눌렀다면 이 앱으로 돌아오세요. 앱이 화면에 있어야 연결이 끝나요.</string>
+    <string name="pair_waiting_network">PC가 응답하지 않아 계속 다시 시도하고 있어요. 휴대폰의 데이터 절약 모드나 이 앱의 백그라운드 데이터 제한이 켜져 있으면 다른 앱으로 넘어갔을 때 연결이 끊겨요. 그 설정을 끄거나, PC에서 [허용]을 누르는 동안 앱을 화면에 띄워 두세요(화면 분할, 팝업 창).</string>
+    <string name="pair_connection_lost">PC와 연결이 끊겨 연결을 마치지 못했어요. 휴대폰의 데이터 절약 모드나 이 앱의 백그라운드 데이터 제한을 확인하고, PC에서 [허용]을 누르는 동안 앱을 화면에 띄워 두세요. 그다음 PC에서 새 QR을 만들어 다시 시도하세요.</string>
+    <string name="pair_interrupted">앱이 백그라운드에서 종료돼 연결이 중단됐어요. PC의 연결 요청은 취소하고, PC에서 새 QR을 만들어 다시 시도하세요.</string>
+
+    <!-- PC 화면 -->
+    <string name="back_to_list">목록으로</string>
+    <string name="retry">다시 시도</string>
+    <string name="unreachable_title">PC에 연결할 수 없어요</string>
+    <string name="unreachable_body">PC가 켜져 있고 Own OpenCode가 실행 중인지, 휴대폰이 Tailscale 또는 인터넷에 연결돼 있는지 확인하세요. PC가 절전 중이면 깨운 뒤 다시 시도하세요.</string>
+    <string name="security_title">보안 경고</string>
+    <string name="security_body">PC의 인증서가 연결할 때 받은 키와 달라요. 누군가 연결을 가로채고 있을 수 있어 연결을 막았어요.\n\nPC의 앱 연결 키를 바꿨다면 PC에서 새 QR로 다시 연결하세요.</string>
+    <string name="pin_changed_title">PC의 키가 바뀌었어요</string>
+    <string name="pin_changed_body">PC가 알려 준 인증서 키가 저장된 키와 달라요. PC에서 새 QR로 다시 연결하세요.</string>
+    <string name="expired_title">연결이 끊겼어요</string>
+    <string name="expired_body">이 기기의 연결이 만료됐거나 끊겼어요. PC에서 다시 연결하세요.</string>
+    <string name="webview_old_title">WebView가 너무 오래됐어요</string>
+    <string name="webview_old_body">이 휴대폰의 Android System WebView가 앱 연결에 필요한 기능(프록시 설정)을 지원하지 않아요. Play 스토어에서 Android System WebView와 Chrome을 업데이트하세요.</string>
+    <string name="webview_missing_body">Android System WebView를 불러오지 못했어요. WebView가 업데이트 중이면 잠시 뒤 다시 여세요.</string>
+    <string name="crashed_title">화면이 종료됐어요</string>
+    <string name="crashed_body">웹 화면 프로세스가 종료됐어요. 다시 불러오세요.</string>
+</resources>

@@ -89,7 +89,11 @@ export function abandon(started: Started, standardUpdates: boolean) {
 // Nothing on this connection would settle a replayed running compaction.
 export function replay(message: Extract<SessionMessage.Info, { type: "compaction" }>, standardUpdates: boolean) {
   if (message.status === "running") return undefined
-  const base = { messageId: message.id, reason: message.reason }
+  // OWN-PATCH(P-035) begin: a context reset's marker is no compaction for an ACP client
+  const reason = message.reason === "reset" ? undefined : message.reason
+  if (reason === undefined) return undefined
+  const base = { messageId: message.id, reason }
+  // OWN-PATCH(P-035) end
   return update(
     message.status === "failed"
       ? { ...base, status: "failed", error: message.error }

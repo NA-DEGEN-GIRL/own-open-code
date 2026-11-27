@@ -1,0 +1,12 @@
+/*
+ * Since upstream v2.2 session-ui's activity indicator (SessionProgressIndicatorV2: the transcript's working row and
+ * the running tool cards of the timeline) is the Soft Radar spinner. own draws running work still
+ * (styles/running-mark.css, 03 §7.6), so the indicator shows its frozen pose: upstream's reduced-motion rule
+ * (packages/ui/src/components/spinner.css), whose `data-motion` switch own-web does not set. Since v2.4.0 (#65634) the
+ * spinner is one element whose `::before` is masked by an animated APNG (`--spinner-frames`), which no CSS animation
+ * rule can stop; the still pose is its `--spinner-still` mask. Unlayered (styles/index.css), like the running mark.
+ */
+[data-component="session-progress-indicator-v2"]::before {
+  mask-image: var(--spinner-still);
+  mask-size: 100% 100%;
+}

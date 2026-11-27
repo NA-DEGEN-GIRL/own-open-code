@@ -1,0 +1,87 @@
+/* Compaction progress chip and failure banner (03 §19.12). own tokens only (13.2). */
+.own-fc-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.own-fc-spin {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--own-accent-text) 30%, transparent);
+  border-top-color: var(--own-accent-text);
+  border-radius: 50%;
+  animation: own-fc-spin 0.9s linear infinite;
+}
+@keyframes own-fc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.own-fc-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 8px 0;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--own-danger) 45%, var(--own-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--own-danger) 8%, var(--own-bg-raised));
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.own-fc-banner-icon {
+  color: var(--own-danger);
+  font-weight: 700;
+}
+.own-fc-banner-text {
+  flex: 1;
+  min-width: 180px;
+}
+.own-fc-banner-detail {
+  color: var(--own-text-muted);
+  overflow-wrap: anywhere;
+}
+.own-fc-banner-actions {
+  display: flex;
+  gap: 10px;
+}
+.own-fc-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--own-accent-text);
+  font: inherit;
+  cursor: pointer;
+}
+.own-fc-link:hover {
+  text-decoration: underline;
+}
+.own-fc-link:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .own-fc-spin {
+    animation: none;
+  }
+}
+@media (pointer: coarse) {
+  .own-fc-link {
+    min-height: 44px;
+  }
+}
+@media (forced-colors: active) {
+  .own-fc-chip,
+  .own-fc-banner {
+    border: 1px solid CanvasText;
+  }
+}

@@ -1,0 +1,98 @@
+/* Review comment chips above the composer (first chunk, small; 03 §19.1). `own-rc-`; tokens only, like the mention
+   chips next to them. */
+.own-rc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px 0;
+  list-style: none;
+}
+
+.own-rc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 4px 0 2px;
+  border: 1px solid var(--own-border);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg-subtle);
+  color: var(--own-text);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.own-rc-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 320px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.own-rc-open:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-rc-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: var(--own-accent-text);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.own-rc-where {
+  flex: none;
+  font-family: var(--own-font-mono);
+  color: var(--own-text-muted);
+}
+
+.own-rc-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.own-rc-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--own-text-faint);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.own-rc-remove:hover {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+
+.own-rc-open:focus-visible,
+.own-rc-remove:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+  .own-rc-chip {
+    border: 1px solid CanvasText;
+  }
+}

@@ -263,7 +263,15 @@ const resolveCatalogModel = Effect.fn("ModelResolver.resolveCatalogModel")(funct
         options: {
           ...runtime.options,
           ...mergeTransport(runtime.options, {
-            timeout: { total: timeouts.timeout, headers: timeouts.headerTimeout, chunk: timeouts.chunkTimeout },
+            timeout: {
+              total: timeouts.timeout,
+              headers: timeouts.headerTimeout,
+              chunk: timeouts.chunkTimeout,
+              // OWN-PATCH(P-018) begin
+              progress: timeouts.progressTimeout,
+              toolInput: timeouts.toolInputTimeout,
+              // OWN-PATCH(P-018) end
+            },
             http: { encoding: Provider.encoding(configured), tls: Provider.tls(configured) },
           }),
         },

@@ -309,6 +309,9 @@ const projectFork = Effect.fn("SessionProjector.projectFork")(function* (
     cursor = rows.at(-1)!.seq
   }
   if (copiedSeq !== undefined) yield* Bus.reserveSequence(db, event.data.sessionID, copiedSeq)
+  // OWN-PATCH(P-035) begin: the fork seeds its own instruction epoch, so a copied reset's ended one is not its own
+  yield* forgetBaselines(db, event.data.sessionID)
+  // OWN-PATCH(P-035) end
   if (event.data.instructions)
     yield* InstructionState.initialize(db, event.data.sessionID, event.durable.seq, event.data.instructions)
 })
@@ -796,6 +799,25 @@ function partRowWrites(db: DatabaseService, event: MessageEvent): Writes {
   }
 }
 
+// OWN-PATCH(P-035) begin
+/** Context reset markers whose ended epoch can no longer be restored: all of a Session's, or one (`messageID`). */
+function forgetBaselines(db: DatabaseService, sessionID: SessionSchema.ID, messageID?: SessionMessage.ID) {
+  return db
+    .update(SessionMessageTable)
+    .set({ data: sql`json_remove(${SessionMessageTable.data}, '$.baseline')` })
+    .where(
+      and(
+        eq(SessionMessageTable.session_id, sessionID),
+        messageID ? eq(SessionMessageTable.id, messageID) : undefined,
+        eq(SessionMessageTable.type, "compaction"),
+        sql`json_extract(${SessionMessageTable.data}, '$.baseline') is not null`,
+      ),
+    )
+    .run()
+    .pipe(Effect.orDie, Effect.asVoid)
+}
+// OWN-PATCH(P-035) end
+
 const encodeStored = (message: SessionMessage.Info | SessionStored.User) =>
   message.type === "user" ? encodeStoredUser(message) : encodeMessage(message)
 
@@ -1015,6 +1037,25 @@ const layer = Layer.effectDiscard(
           id: event.data.inboxID,
           sessionID: event.data.sessionID,
         })
+        // OWN-PATCH(P-035) begin: a delivered reset becomes its marker, a completed compaction without summary that
+        // bounds history, and moves the instruction epoch as a completed compaction does. The marker keeps the epoch it
+        // ended, read from the projected state (so replay derives it again), for its undo.
+        if (input.type === "reset") {
+          const baseline = yield* InstructionState.epoch(db, event.data.sessionID)
+          yield* insertMessage(db, event, {
+            id: input.id,
+            type: "compaction",
+            status: "completed",
+            reason: "reset",
+            summary: "",
+            ...(baseline ? { baseline } : {}),
+            time: { created: DateTime.makeUnsafe(event.created) },
+          })
+          // Background notices it overtook belong to the context it ends.
+          yield* SessionInbox.projectOvertaken(db, { sessionID: event.data.sessionID, resetID: input.id })
+          return yield* InstructionState.advanceEpoch(db, event.data.sessionID, event.durable.seq)
+        }
+        // OWN-PATCH(P-035) end
         const time = { created: DateTime.makeUnsafe(event.created) }
         if (input.type === "user")
           yield* insertMessage(db, event, {
@@ -1031,7 +1072,11 @@ const layer = Layer.effectDiscard(
           yield* insertMessage(db, event, {
             id: input.id,
             type: "synthetic",
-            text: input.payload.text,
+            // OWN-PATCH(P-035) begin: a notice still passive at delivery says its job started before the reset
+            text: input.payload.beforeReset
+              ? `${SessionInbox.BEFORE_RESET}\n${input.payload.text}`
+              : input.payload.text,
+            // OWN-PATCH(P-035) end
             description: input.payload.description,
             metadata: input.payload.metadata,
             time,
@@ -1054,7 +1099,13 @@ const layer = Layer.effectDiscard(
       SessionInbox.projectCancelled(db, {
         id: event.data.inboxID,
         sessionID: event.data.sessionID,
-      }),
+      }).pipe(
+        // OWN-PATCH(P-035) begin: a cancelled reset releases the notices it held passive
+        Effect.andThen(
+          SessionInbox.projectReleased(db, { sessionID: event.data.sessionID, resetID: event.data.inboxID }),
+        ),
+        // OWN-PATCH(P-035) end
+      ),
     )
     yield* bus.project(SessionEvent.InboxDeliveryChanged, (event) =>
       SessionInbox.projectDeliveryChanged(db, {
@@ -1127,6 +1178,35 @@ const layer = Layer.effectDiscard(
       }),
     )
     yield* bus.project(SessionEvent.Compaction.Failed, (event) => run(db, event))
+    // OWN-PATCH(P-035) begin
+    yield* bus.project(SessionEvent.Reset.Undone, (event) =>
+      Effect.gen(function* () {
+        const undone = yield* db
+          .update(SessionMessageTable)
+          .set({ data: sql`json_set(${SessionMessageTable.data}, '$.undone', ${event.created})` })
+          .where(
+            and(
+              eq(SessionMessageTable.session_id, event.data.sessionID),
+              eq(SessionMessageTable.id, event.data.messageID),
+              eq(SessionMessageTable.type, "compaction"),
+              sql`json_extract(${SessionMessageTable.data}, '$.reason') = 'reset'`,
+            ),
+          )
+          .returning()
+          .get()
+          .pipe(Effect.orDie)
+        if (!undone) return yield* Effect.die(new Error(`Reset marker not found: ${event.data.messageID}`))
+        // The epoch the reset ended is current again: the request starts with the pre-reset system, and the updates
+        // since stay in history. A marker that cannot restore it drops its baseline, and history retires them instead.
+        const marker = SessionHistory.decodeMessageRowSync(undone)
+        const baseline = marker.type === "compaction" && marker.status === "completed" ? marker.baseline : undefined
+        if (baseline && !(yield* InstructionState.restoreEpoch(db, event.data.sessionID, undone.seq, baseline)))
+          yield* forgetBaselines(db, event.data.sessionID, undone.id)
+        // The notices it held passive are ordinary again (or precede a reset still waiting).
+        yield* SessionInbox.projectReleased(db, { sessionID: event.data.sessionID, resetID: event.data.messageID })
+      }),
+    )
+    // OWN-PATCH(P-035) end
     yield* bus.project(SessionEvent.RevertEvent.Staged, (event) =>
       setSession(db, event.data.sessionID, { revert: event.data.revert, time_updated: event.created }),
     )
@@ -1164,6 +1244,11 @@ const layer = Layer.effectDiscard(
         yield* setSession(db, event.data.sessionID, { revert: null, time_updated: event.created })
         yield* InstructionState.rewind(db, event.data.sessionID, boundary.seq)
         yield* SessionBlob.releaseFrom(db, event.data.sessionID, boundary.seq)
+        // OWN-PATCH(P-035) begin: instructions re-initialized by the revert (it removed an update or the epoch start)
+        // leave no earlier epoch for a reset's undo; a fold that survived keeps every remaining marker's baseline valid.
+        if ((yield* InstructionState.epoch(db, event.data.sessionID)) === undefined)
+          yield* forgetBaselines(db, event.data.sessionID)
+        // OWN-PATCH(P-035) end
       }),
     )
     yield* bus.subscribe([SessionEvent.Step.Ended, SessionEvent.Step.Failed, SessionEvent.UsageRecorded]).pipe(

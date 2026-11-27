@@ -1,0 +1,638 @@
+/*
+ * Files tab stylesheet, loaded with the lazy files chunk (03 §20.2 R5), like review.css:
+ * 1. A Tailwind root with the @opencode/ui theme for the session-ui pieces (file viewer, find bar, markdown, the
+ *    SessionFilePanelV2 frame), plus the ui and session-ui component styles.
+ * 2. own chrome on the --own-* tokens (03 §13; dark is the default scheme, every color below is a token): bar,
+ *    virtualized tree, tabs, toolbar, media stage, quick open, menu.
+ */
+@layer theme, base, components, utilities;
+
+@import "@opencode/ui/styles/tailwind";
+@import "@opencode/session-ui/styles";
+
+@source not "../../../app";
+@source not "../../../desktop";
+@source not "../../../enterprise";
+@source not "../../../storybook";
+
+@layer components {
+  .own-files {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: var(--line-height-compact, 16px);
+    color: var(--own-text);
+  }
+
+  .own-files button,
+  .own-files a {
+    font: inherit;
+  }
+
+  .own-files :focus-visible {
+    outline: 2px solid var(--own-focus);
+    outline-offset: -2px;
+  }
+
+  .own-files-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 6px 6px 6px;
+    flex: none;
+  }
+
+  .own-files-find {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    border: 1px solid var(--own-border-input);
+    border-radius: 8px;
+    background: var(--own-bg-raised);
+    color: var(--own-text-muted);
+    cursor: text;
+    text-align: start;
+  }
+
+  .own-files-find:hover {
+    border-color: var(--own-border-strong);
+  }
+
+  .own-files-find svg,
+  .own-files-glyph,
+  .own-files-twisty svg,
+  .own-files-tab-close svg,
+  .own-files-state-icon {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .own-files-find > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .own-files-find kbd {
+    flex: none;
+    padding: 1px 5px;
+    border: 1px solid var(--own-border);
+    border-radius: 4px;
+    color: var(--own-text-faint);
+    font-family: var(--own-font-sans);
+    font-size: 11px;
+  }
+
+  .own-files .own-icon-button[aria-busy="true"] svg {
+    animation: own-files-spin 900ms linear infinite;
+  }
+
+  @keyframes own-files-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .own-files .own-icon-button[aria-busy="true"] svg {
+      animation: none;
+    }
+  }
+
+  /* ---- tree ---- */
+  .own-files-tree-pane {
+    flex: 1 1 auto;
+    min-height: 96px;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--own-border);
+  }
+
+  .own-files[data-file] .own-files-tree-pane {
+    flex: 0 0 38%;
+    border-bottom: 1px solid var(--own-border);
+  }
+
+  .own-files-side {
+    width: 240px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    border-inline-end: 1px solid var(--own-border);
+  }
+
+  .own-files-tree {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    contain: strict;
+    padding: 4px 0;
+  }
+
+  .own-files-tree:focus-visible {
+    outline: 2px solid var(--own-focus);
+    outline-offset: -2px;
+  }
+
+  .own-files-tree-inner {
+    position: relative;
+    width: 100%;
+  }
+
+  .own-files-tree-state {
+    margin: 0;
+    padding: 12px;
+    color: var(--own-text-faint);
+  }
+
+  .own-files-row {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-inline-end: 8px;
+    color: var(--own-text);
+    cursor: pointer;
+    contain: content;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .own-files-row:hover {
+    background: var(--own-bg-hover);
+  }
+
+  .own-files-row[aria-selected="true"] {
+    background: var(--own-accent-soft);
+  }
+
+  .own-files-tree:focus-visible .own-files-row[data-focused] {
+    box-shadow: inset 0 0 0 1px var(--own-focus);
+  }
+
+  .own-files-twisty {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--own-text-faint);
+    transition: transform 0.12s ease;
+  }
+
+  .own-files-twisty[data-open] {
+    transform: rotate(90deg);
+  }
+
+  .own-files-glyph {
+    color: var(--own-text-faint);
+  }
+
+  .own-files-row[data-type="directory"] .own-files-glyph {
+    color: var(--own-text-muted);
+  }
+
+  .own-files-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---- tabs ---- */
+  .own-files-tabs {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    padding: 4px 6px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--own-border);
+  }
+
+  .own-files-tab {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    max-width: 220px;
+    height: 30px;
+    border-radius: 6px 6px 0 0;
+    color: var(--own-text-muted);
+  }
+
+  .own-files-tab:hover {
+    background: var(--own-bg-hover);
+  }
+
+  .own-files-tab[data-active] {
+    color: var(--own-text);
+    background: var(--own-bg);
+    box-shadow: inset 0 -2px 0 var(--own-accent);
+  }
+
+  .own-files-tab > [role="tab"] {
+    min-width: 0;
+    height: 100%;
+    padding: 0 4px 0 10px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .own-files-tab-close {
+    width: 22px;
+    height: 22px;
+    margin-inline-end: 4px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--own-text-faint);
+    cursor: pointer;
+  }
+
+  .own-files-tab-close:hover {
+    background: var(--own-bg-hover);
+    color: var(--own-text);
+  }
+
+  .own-files-tab-close svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ---- viewer ---- */
+  .own-files-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .own-files-main > [data-component="session-review-v2"] {
+    flex: 1;
+    background: var(--own-bg);
+  }
+
+  .own-files-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    padding-inline-start: 4px;
+  }
+
+  .own-files-path {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: start;
+    font-family: var(--own-font-mono);
+    font-size: 12.5px;
+  }
+
+  /* Long paths lose their start, never the file name: the ellipsis side is flipped, the text stays LTR. */
+  .own-files-path > bdi {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  .own-files-dir {
+    color: var(--own-text-faint);
+  }
+
+  .own-files-file {
+    color: var(--own-text);
+  }
+
+  .own-files-meta {
+    flex: none;
+    color: var(--own-text-faint);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .own-files-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* Three round dots: the stroke is the dot size. */
+  .own-files-actions svg[data-icon="more"] {
+    stroke-width: 3;
+  }
+
+  .own-files-actions a.own-icon-button {
+    text-decoration: none;
+  }
+
+  .own-files-seg {
+    display: inline-flex;
+    height: 28px;
+    margin-inline-end: 4px;
+    padding: 2px;
+    border: 1px solid var(--own-border);
+    border-radius: 8px;
+    background: var(--own-bg-subtle);
+  }
+
+  .own-files-seg > button {
+    padding: 0 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--own-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .own-files-seg > button[aria-checked="true"] {
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    box-shadow: 0 0 0 1px var(--own-border);
+  }
+
+  .own-files-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .own-files-code,
+  .own-files-markdown {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    outline: none;
+  }
+
+  .own-files-markdown {
+    padding: 16px 20px 48px;
+  }
+
+  .own-files-state {
+    margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    color: var(--own-text-muted);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .own-files-state > p {
+    margin: 0;
+  }
+
+  .own-files-state-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--own-text-faint);
+  }
+
+  .own-files-note {
+    margin: 8px 12px 0;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--own-bg-hover);
+    color: var(--own-text-muted);
+    font-size: 12px;
+    flex: none;
+  }
+
+  .own-files-link {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--own-accent-text);
+    cursor: pointer;
+  }
+
+  .own-files-stage {
+    --own-files-check: color-mix(in srgb, var(--own-text) 6%, transparent);
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow: auto;
+    background-color: var(--own-bg-subtle);
+  }
+
+  .own-files-stage[data-checker] {
+    background-image:
+      linear-gradient(45deg, var(--own-files-check) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--own-files-check) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--own-files-check) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--own-files-check) 75%);
+    background-size: 16px 16px;
+    background-position:
+      0 0,
+      0 8px,
+      8px -8px,
+      -8px 0;
+  }
+
+  .own-files-stage[data-zoom="actual"] {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .own-files-media {
+    display: block;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px var(--own-border);
+  }
+
+  .own-files-stage[data-zoom="fit"] .own-files-media {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .own-files-stage img.own-files-media[title] {
+    cursor: zoom-in;
+  }
+
+  .own-files-stage[data-zoom="actual"] img.own-files-media[title] {
+    cursor: zoom-out;
+  }
+
+  .own-files-stage video.own-files-media {
+    width: 100%;
+    background: var(--own-bg-subtle);
+  }
+
+  .own-files-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    /* The PDF viewer paints its own dark chrome; white under it avoids a flash in the light theme. */
+    background: var(--own-bg-subtle);
+  }
+
+  /* ---- quick open (fixed over the app, like the palette) ---- */
+  .own-files-quick {
+    position: fixed;
+    z-index: 70;
+    top: 10vh;
+    left: 50%;
+    width: min(560px, calc(100vw - 16px));
+    max-height: min(520px, 70vh);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-50%);
+    border: 1px solid var(--own-border-strong);
+    border-radius: var(--own-radius-card);
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    box-shadow: var(--own-shadow-float);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  .own-files-quick-input {
+    flex: none;
+    height: 40px;
+    margin: 8px;
+    padding: 0 10px;
+    border: 1px solid var(--own-border-input);
+    border-radius: 8px;
+    background: var(--own-bg);
+    color: var(--own-text);
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .own-files-quick-input::placeholder {
+    color: var(--own-text-faint);
+  }
+
+  .own-files-quick-input:focus {
+    outline: 2px solid var(--own-focus);
+    outline-offset: -1px;
+  }
+
+  .own-files-quick-list {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 0 4px 4px;
+    list-style: none;
+    overflow: auto;
+  }
+
+  .own-files-quick-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-height: 30px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .own-files-quick-row[aria-selected="true"] {
+    background: var(--own-accent-soft);
+  }
+
+  .own-files-quick-row .own-files-dir {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+
+  .own-files-badge {
+    flex: none;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: var(--own-accent-soft);
+    color: var(--own-accent-text);
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  .own-files-quick-status,
+  .own-files-quick-note {
+    flex: none;
+    margin: 0;
+    padding: 6px 12px;
+    color: var(--own-text-faint);
+    font-size: 12px;
+  }
+
+  .own-files-quick-note {
+    border-top: 1px solid var(--own-border);
+  }
+
+  /* ---- menu ---- */
+  .own-files-menu {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    min-width: 200px;
+    padding: 4px;
+    border: 1px solid var(--own-border-strong);
+    border-radius: 8px;
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    box-shadow: var(--own-shadow-float);
+    font-size: 13px;
+  }
+
+  .own-files-menu > [role="menuitem"] {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .own-files-menu > [role="menuitem"]:hover,
+  .own-files-menu > [role="menuitem"]:focus-visible {
+    background: var(--own-bg-hover);
+    outline: none;
+  }
+}

@@ -1,0 +1,3 @@
+[test]
+# Keeps core's feature flags off as in a release (own/scripts/test/release-flags.ts).
+preload = ["../../own/scripts/test/release-flags.ts"]

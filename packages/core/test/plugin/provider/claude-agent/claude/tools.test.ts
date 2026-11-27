@@ -2,6 +2,10 @@ import { describe, expect } from "bun:test"
 import { Effect, Exit, Fiber, Scope } from "effect"
 import { TestClock } from "effect/testing"
 import { ClaudeSessions } from "@opencode/core/plugin/provider/claude-agent/claude/sessions"
+// OWN-PATCH(P-044) begin
+import { ClaudeObserver } from "@opencode/core/plugin/provider/claude-agent/claude/observer"
+import { RequestKind } from "@opencode/core/plugin/provider/claude-agent/language-model/request-kind"
+// OWN-PATCH(P-044) end
 import { it } from "../../../../lib/effect"
 import { FakeClaude } from "../lib/fake-claude"
 import { TestSessions } from "../lib/sessions"
@@ -48,6 +52,48 @@ describe("Claude tool steps", () => {
       claude.check()
     }),
   )
+
+  // OWN-PATCH(P-044) begin
+  it.live("a conversation parked on an ordinary tool never lets its subagent over the cap (CAG-43)", () =>
+    Effect.gen(function* () {
+      ClaudeObserver.configure({ processes: 1 })
+      yield* Effect.addFinalizer(() => Effect.sync(() => ClaudeObserver.configure({})))
+      // Only session-a's turn is scripted: a claude started for the subagent would fail the script.
+      const claude = FakeClaude.make(FakeClaude.replay("tools"))
+      const test = yield* TestSessions.start(claude)
+      const prompt = TestTools.prompt()
+      const first = yield* TestTools.step(test.model, prompt)
+      expect(first.filter((part) => part.type === "tool-call")).toHaveLength(2)
+      // session-a waits for two lookups (ordinary tools that never wait for another conversation): its subagent waits
+      // for a slot instead of going over the cap, however long it waits.
+      const abort = new AbortController()
+      const child = test.model
+        .doStream({
+          prompt: TestSessions.prompt("Say hi."),
+          headers: {
+            [RequestKind.SESSION_HEADER]: "session-c",
+            [RequestKind.HEADER]: "primary",
+            [RequestKind.PARENT_HEADER]: "session-a",
+          },
+          abortSignal: abort.signal,
+        })
+        .then((result) => TestSessions.collect(result.stream))
+        .catch(() => [])
+      yield* Effect.sleep("200 millis")
+      expect(ClaudeObserver.pool()).toMatchObject({ live: 1, over: 0 })
+      expect(ClaudeObserver.pool()?.waiting.map((item) => item.sessionID)).toEqual(["session-c"])
+      abort.abort()
+      yield* Effect.promise(() => child)
+      TestTools.append(prompt, first, TestTools.output)
+      const second = yield* TestTools.step(test.model, prompt)
+      TestTools.append(prompt, second, TestTools.output)
+      expect(TestSessions.text(yield* TestTools.step(test.model, prompt))).toBe("COPPER-OTTER")
+      expect(claude.runs).toHaveLength(1)
+      yield* test.registry.close()
+      claude.check()
+    }),
+  )
+  // OWN-PATCH(P-044) end
 
   it.effect("plugin reload hands over the process with its pending handlers; without a reload it shuts down", () =>
     Effect.gen(function* () {

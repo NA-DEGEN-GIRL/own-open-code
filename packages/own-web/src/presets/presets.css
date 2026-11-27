@@ -1,0 +1,440 @@
+/* Presets screens (07 §7.1, §7.3): the editor, the target picker and the settings 프리셋 page. own tokens only (13.2). */
+
+/* ---- editor ---- */
+.own-pe {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.own-pe-shared {
+  margin: -6px 0 0;
+  color: var(--own-text-muted);
+  font-size: 12.5px;
+}
+
+.own-pe-q {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.own-pe-q > legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-weight: 650;
+}
+
+.own-pe-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.own-pe-choice > input {
+  margin: 0;
+  accent-color: var(--own-accent);
+}
+
+.own-pe-hint {
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+/* ① (UC 2026-10-18): the radio, then its name with the one-line hint under it. */
+.own-pe-choice[data-stacked] {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.own-pe-choice[data-stacked] > input {
+  margin-top: 3px;
+}
+
+.own-pe-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.own-pe-starters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.own-pe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 999px;
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.own-pe-chip:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-pe-chip:disabled {
+  border-style: dashed;
+  color: var(--own-text-faint);
+  cursor: not-allowed;
+}
+
+.own-pe-roles {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 0 22px;
+  border-top: 1px solid var(--own-border);
+}
+
+.own-pe-role {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--own-border);
+}
+
+.own-pe-role > .own-pe-role-name {
+  font-weight: 600;
+}
+
+.own-pe-role > .own-pe-role-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.own-pe-role > .own-pe-role-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.own-pe-sub {
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-pe-src {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg-subtle);
+  color: var(--own-text-muted);
+  font-size: 11px;
+  line-height: 17px;
+  vertical-align: 1px;
+}
+
+.own-pe-src[data-source="suggested"] {
+  background: var(--own-accent-soft);
+  color: var(--own-accent-text);
+}
+
+.own-pe-caps {
+  color: var(--own-text-muted);
+}
+
+.own-pe-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+}
+
+.own-pe-single {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: 22px;
+}
+
+/* ---- 모델 묶음 checklist (pool-list.tsx) ---- */
+.own-pl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 6px 22px;
+  padding-top: 4px;
+  border-top: 1px solid var(--own-border);
+}
+
+.own-pl-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 2px 0 4px;
+}
+
+.own-pl-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.own-pl-row:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-pl-row > input {
+  margin: 0;
+  accent-color: var(--own-accent);
+}
+
+.own-pl-row > input:disabled {
+  cursor: not-allowed;
+}
+
+.own-pl-row > .own-pl-name {
+  font-weight: 600;
+}
+
+.own-pl-row > .own-pl-facts {
+  flex-basis: 100%;
+  padding-left: 22px;
+}
+
+.own-pl-account {
+  width: auto;
+  max-width: 220px;
+  height: 28px;
+  font-weight: 400;
+}
+
+@media (max-width: 520px) {
+  .own-pe-role {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .own-pe-role > .own-pe-role-name {
+    grid-column: 1 / -1;
+  }
+  .own-pe-roles,
+  .own-pe-single,
+  .own-pl {
+    margin-left: 0;
+  }
+}
+
+/* ---- target picker ---- */
+.own-tp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.own-tp-head {
+  margin: 10px 2px 2px;
+  color: var(--own-text-muted);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.own-tp-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 6px 2px 2px;
+  font-weight: 600;
+}
+
+.own-tp-account > .own-tp-budget {
+  color: var(--own-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.own-tp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--own-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-tp-row:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-tp-row[aria-pressed="true"] {
+  border-color: var(--own-accent);
+}
+
+.own-tp-row:disabled {
+  color: var(--own-text-faint);
+  cursor: not-allowed;
+}
+
+.own-tp-row > .own-tp-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.own-tp-facts {
+  color: var(--own-text-muted);
+  font-size: 12px;
+}
+
+.own-tp-paid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-top: 1px solid var(--own-border);
+  background: none;
+  color: var(--own-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.own-tp-paid:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-tp-budget-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 2px 10px 4px;
+}
+
+.own-tp-budget-form > .own-field {
+  width: 140px;
+}
+
+.own-tp-hidden {
+  margin: 10px 2px 0;
+  color: var(--own-text-faint);
+  font-size: 12px;
+}
+
+/* ---- settings 프리셋 ---- */
+.own-pp-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--own-border);
+}
+
+.own-pp-tabs > button {
+  flex: none;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.own-pp-tabs > button[aria-selected="true"] {
+  border-bottom-color: var(--own-accent);
+  color: var(--own-text);
+  font-weight: 600;
+}
+
+/* Four groups (ChatGPT, Anthropic API, DeepSeek, Claude 구독) fit a 375 px phone without scrolling the strip
+   (2026-10-18 layout audit); more still scroll. */
+@media (max-width: 599px) {
+  .own-pp-tabs > button {
+    padding: 0 8px;
+  }
+}
+
+.own-pp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--own-border);
+  font-size: 13px;
+}
+
+.own-pp-row > .own-pp-main {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.own-pp-row > .own-pp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.own-pp-star {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-faint);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.own-pp-star[aria-pressed="true"] {
+  color: var(--own-warn);
+}
+
+.own-pp-star:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+
+.own-pp-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+
+.own-pp-form > .own-field {
+  width: 120px;
+}

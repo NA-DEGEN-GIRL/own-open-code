@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/bun/tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "noEmit": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["server.ts", "src", "test", "script"],
+  // The runtime entry imports the vendored omo sources (`@omo/*`), which are bundled, not type-checked:
+  // src/runtime.d.ts declares what it exports.
+  "exclude": ["src/runtime-entry.ts", ".omo-stage"]
+}

@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+  "tag": "v5.1.50",
+  "tagObject": "fc005a310a54d1e161133d382321a593205741c0",
+  "commit": "d4d2204e075b17945d6899c6a6bc76e67ab7abea",
+  "date": "2026-10-28T15:19:54+09:00",
+  "version": "5.1.50",
+  "v1Api": "1.18.31",
+  "entry": "packages/own-omo/src/runtime-entry.ts",
+  "files": 1805,
+  "licenseSha256": "b61ac928f152d13517328263e6bee9175b928f9ab696a2d2ca2b6cfd961ddc32",
+  "noticesSha256": "5cba3d05e48cb53d89acaf701ff727bc09a571b0b35f2ce71c9737a79901ab1b",
+  "externals": [
+    "@modelcontextprotocol/sdk",
+    "diff",
+    "js-yaml",
+    "jsonc-parser",
+    "picocolors",
+    "picomatch",
+    "proper-lockfile",
+    "zod"
+  ]
+}

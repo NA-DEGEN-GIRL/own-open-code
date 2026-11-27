@@ -1,0 +1,1415 @@
+{
+  "kind": "codex",
+  "sourceProvider": "openai",
+  "source": "bundled",
+  "capturedAt": "2026-10-29T21:33:01Z",
+  "models": [
+    {
+      "id": "gpt-5.6-cyber",
+      "modelID": "gpt-5.6-cyber",
+      "type": "chat",
+      "family": "gpt",
+      "name": "GPT-5.6 Cyber",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1786060800000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-luna",
+      "modelID": "gpt-6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-6 Luna",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-luna-fast",
+      "modelID": "gpt-6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-6 Luna Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "modelID": "gpt-5.6-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-5.6 Terra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-terra-fast",
+      "modelID": "gpt-5.6-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-5.6 Terra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "modelID": "gpt-6.1-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-6.1 Terra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1792972800000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-terra-fast",
+      "modelID": "gpt-6.1-terra",
+      "type": "chat",
+      "family": "gpt-terra",
+      "name": "GPT-6.1 Terra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1792972800000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol-fast",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6.1-sol-ultrafast",
+      "modelID": "gpt-6.1-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6.1 Sol Ultrafast",
+      "body": {
+        "service_tier": "ultrafast"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790640000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-sol",
+      "modelID": "gpt-6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-sol-fast",
+      "modelID": "gpt-6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-6 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1790035200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra-fast",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-6-astra-ultrafast",
+      "modelID": "gpt-6-astra",
+      "type": "chat",
+      "family": "gpt-astra",
+      "name": "GPT-6 Astra Ultrafast",
+      "body": {
+        "service_tier": "ultrafast"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1788480000000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "modelID": "gpt-5.6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-5.6 Luna",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-luna-fast",
+      "modelID": "gpt-5.6-luna",
+      "type": "chat",
+      "family": "gpt-luna",
+      "name": "GPT-5.6 Luna Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "modelID": "gpt-5.6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Sol",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    },
+    {
+      "id": "gpt-5.6-sol-fast",
+      "modelID": "gpt-5.6-sol",
+      "type": "chat",
+      "family": "gpt-sol",
+      "name": "GPT-5.6 Sol Fast",
+      "body": {
+        "service_tier": "priority"
+      },
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": false
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "max",
+          "settings": {
+            "reasoningEffort": "max",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783555200000
+      },
+      "cost": [],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "input": 872000,
+        "output": 128000
+      },
+      "package": "@opencode/ai/providers/openai"
+    }
+  ]
+}

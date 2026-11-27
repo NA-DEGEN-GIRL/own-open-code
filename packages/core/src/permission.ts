@@ -126,6 +126,10 @@ export interface Interface {
   readonly assertNotDenied: (input: AssertInput) => Effect.Effect<void, BlockedError | SessionErrors.NotFoundError>
   /** True only when the rules already allow the request; never asks the user. */
   readonly allows: (input: AssertInput) => Effect.Effect<boolean, SessionErrors.NotFoundError>
+  // OWN-PATCH(P-031) begin
+  /** The effect `assert` would have for `input`, without asking: no request, no event. */
+  readonly check: (input: AssertInput) => Effect.Effect<Permission.Effect, SessionErrors.NotFoundError>
+  // OWN-PATCH(P-031) end
   readonly reply: (input: ReplyInput) => Effect.Effect<void, NotFoundError>
   readonly get: (id: ID) => Effect.Effect<Request | undefined>
   readonly forSession: (sessionID: SessionSchema.ID) => Effect.Effect<ReadonlyArray<Request>>
@@ -223,6 +227,12 @@ const layer = Layer.effect(
         metadata: input.metadata,
         source: row(input.source),
         effect,
+        // OWN-PATCH(P-047) begin
+        saved: all
+          .slice(rules.length)
+          .filter((rule) => Wildcard.match(input.action, rule.action))
+          .map((rule) => rule.resource),
+        // OWN-PATCH(P-047) end
       })
       const unattended = yield* Unattended
       if (event.effect !== "ask" || unattended === undefined)
@@ -406,7 +416,13 @@ const layer = Layer.effect(
       return Array.from(pending.values(), (item) => item.request).filter((request) => request.sessionID === sessionID)
     })
 
-    return Service.of({ ask, assert, assertNotDenied, allows, reply, get, forSession, list, nested, close })
+    // OWN-PATCH(P-031) begin
+    const check = Effect.fn("Permission.check")(function* (input: AssertInput) {
+      if (closed) return "deny" as const
+      return (yield* evaluateInput(input)).effect
+    })
+    return Service.of({ ask, assert, assertNotDenied, allows, check, reply, get, forSession, list, nested, close })
+    // OWN-PATCH(P-031) end
   }),
 )
 

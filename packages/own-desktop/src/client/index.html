@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Own OpenCode</title>
+    <style>
+      /* The fallback page's tokens (src/fallback/index.html): dark by default, light for own-web's stored choice. */
+      :root {
+        color-scheme: dark;
+        --bg: #080808;
+        --fg: #fafafa;
+        --muted: #aeaeae;
+        --card: #161616;
+        --border: #2e2e2e;
+        --danger: #f17471;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-scheme]) {
+          color-scheme: light;
+          --bg: #fafafa;
+          --fg: #161616;
+          --muted: #5c5c5c;
+          --card: #ffffff;
+          --border: #dbdbdb;
+          --danger: #b82d35;
+        }
+      }
+      :root[data-scheme="light"] {
+        color-scheme: light;
+        --bg: #fafafa;
+        --fg: #161616;
+        --muted: #5c5c5c;
+        --card: #ffffff;
+        --border: #dbdbdb;
+        --danger: #b82d35;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/1.6 "Segoe UI",
+          "Malgun Gothic",
+          system-ui,
+          sans-serif;
+      }
+      .band {
+        height: env(titlebar-area-height, 44px);
+        -webkit-app-region: drag;
+      }
+      main {
+        max-width: 640px;
+        margin: 4vh auto 32px;
+        padding: 0 16px;
+        display: grid;
+        gap: 16px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px 24px;
+      }
+      h1,
+      h2 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 15px;
+      }
+      p {
+        margin: 8px 0;
+        color: var(--muted);
+      }
+      ul {
+        list-style: none;
+        margin: 8px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+      li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      li strong {
+        display: block;
+        overflow-wrap: anywhere;
+      }
+      .detail {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      li[data-state="connected"] .detail {
+        color: var(--fg);
+      }
+      li[data-state="unreachable"] .detail,
+      li[data-state="reauth"] .detail {
+        color: var(--danger);
+      }
+      .row-actions,
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .actions {
+        margin: 12px 0 0;
+      }
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 72px;
+        resize: vertical;
+        font:
+          13px Consolas,
+          "Cascadia Mono",
+          monospace;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+        overflow-wrap: anywhere;
+      }
+      button {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 14px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--muted);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      button[hidden],
+      p[hidden] {
+        display: none;
+      }
+      #sas {
+        font:
+          600 22px Consolas,
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.1em;
+      }
+      #sas:empty {
+        display: none;
+      }
+      #status {
+        min-height: 1.6em;
+        margin: 12px 0 0;
+      }
+      #status[data-tone="error"] {
+        color: var(--danger);
+      }
+      footer {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="band"></div>
+    <main data-testid="own-client">
+      <section>
+        <h1>원격 PC</h1>
+        <p>이 앱은 다른 PC의 Own OpenCode에 연결해서 써요. 이 PC에서는 서비스를 실행하지 않아요.</p>
+        <p id="empty" data-testid="client-empty">아직 연결한 PC가 없어요. 아래에 연결 링크를 붙여 넣으세요.</p>
+        <ul id="pcs" data-testid="client-pcs"></ul>
+      </section>
+      <section>
+        <h2>PC 추가</h2>
+        <p>
+          연결할 PC의 설정 &gt; 휴대폰·다른 PC &gt; 새 기기 연결에서 만든 ownpc:// 링크를 붙여 넣으세요. 링크는 5분 동안
+          한 번만 쓸 수 있어요.
+        </p>
+        <textarea
+          id="link"
+          data-testid="client-link"
+          spellcheck="false"
+          placeholder="ownpc://pair?v=1&amp;k=…"
+        ></textarea>
+        <div class="actions">
+          <button id="connect" data-testid="client-connect" type="button">연결</button>
+          <button id="cancel" data-testid="client-cancel" type="button" hidden>취소</button>
+          <button id="open-added" data-testid="client-open-added" type="button" hidden>열기</button>
+        </div>
+        <p id="sas" data-testid="client-sas"></p>
+        <p id="status" data-testid="client-status" role="status" aria-live="polite"></p>
+      </section>
+      <footer>원격 PC 전용 빌드 · <span id="shell">-</span></footer>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

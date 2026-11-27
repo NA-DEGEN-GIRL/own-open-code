@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect"
+import { Effect, Option, Schema, SchemaGetter } from "effect"
 import type { Content } from "@opencode/schema/tool"
 import { HttpTransport } from "../route/transport/index.js"
 import { Protocol } from "../route/protocol.js"
@@ -9,13 +9,15 @@ import {
   Usage,
   type FinishReason,
   type LLMRequest,
+  Message,
   type MediaPart,
   type ProviderMetadata,
   type ReasoningPart,
   type TextPart,
   type ToolCallPart,
+  ToolDefinition,
   type ToolChanges,
-  type ToolDefinition,
+  type ToolEntry,
   type ToolResultPart,
   type UserMessage,
 } from "../schema/index.js"
@@ -236,6 +238,13 @@ export const InputItem = Schema.Union([
   AdditionalTools,
   Schema.Struct({ type: Schema.tag("message"), role: Schema.tag("system"), content: Schema.String }),
   Schema.Struct({ type: Schema.tag("message"), role: Schema.tag("developer"), content: Schema.String }),
+  // OWN-PATCH(P-021) begin
+  Schema.Struct({
+    type: Schema.tag("message"),
+    role: Schema.tag("developer"),
+    content: Schema.Array(Schema.Struct({ type: Schema.tag("input_text"), text: Schema.String })),
+  }),
+  // OWN-PATCH(P-021) end
   Schema.Struct({
     type: Schema.tag("message"),
     role: Schema.tag("user"),
@@ -254,6 +263,9 @@ export const InputItem = Schema.Union([
   OpenResponsesReasoningItem,
   Schema.Struct({
     type: Schema.tag("function_call"),
+    // OWN-PATCH(P-022) begin
+    status: Schema.optionalKey(Schema.Literal("completed")),
+    // OWN-PATCH(P-022) end
     id: Schema.optionalKey(Schema.String),
     call_id: Schema.String,
     name: Schema.String,
@@ -268,10 +280,37 @@ export const InputItem = Schema.Union([
   Schema.Struct({
     type: Schema.tag("custom_tool_call"),
     id: Schema.optionalKey(Schema.String),
+    // OWN-PATCH(P-020) begin
+    status: Schema.optionalKey(Schema.Literal("completed")),
+    // OWN-PATCH(P-020) end
     call_id: Schema.String,
     name: Schema.String,
     input: Schema.String,
   }),
+  // OWN-PATCH(P-022) begin
+  Schema.Struct({
+    type: Schema.tag("additional_tools"),
+    id: Schema.optionalKey(Schema.String),
+    role: Schema.tag("developer"),
+    tools: Schema.Array(JsonObject),
+  }),
+  // OWN-PATCH(P-022) end
+  // OWN-PATCH(P-026) begin
+  Schema.Struct({
+    type: Schema.tag("tool_search_call"),
+    call_id: Schema.String,
+    status: Schema.tag("completed"),
+    execution: Schema.tag("client"),
+    arguments: JsonObject,
+  }),
+  Schema.Struct({
+    type: Schema.tag("tool_search_output"),
+    call_id: Schema.String,
+    status: Schema.tag("completed"),
+    execution: Schema.tag("client"),
+    tools: Schema.Array(Schema.Unknown),
+  }),
+  // OWN-PATCH(P-026) end
   HostedToolItem,
   HostedToolReplay,
 ])
@@ -371,6 +410,17 @@ type OpenResponsesUsage = Schema.Schema.Type<typeof OpenResponsesUsage>
 // `output_item.done` and `response.completed.output`). Decode it as optional
 // and let `normalize` recover or mint it once before the parser runs.
 // https://www.openresponses.org/specification#extending-items
+// OWN-PATCH(P-026) begin: `tool_search_call` carries its arguments as a JSON object, read as JSON text.
+const ArgumentsText = Schema.Union([
+  Schema.String,
+  Schema.Record(Schema.String, Schema.Unknown).pipe(
+    Schema.decodeTo(Schema.String, {
+      decode: SchemaGetter.transform((value) => JSON.stringify(value)),
+      encode: SchemaGetter.transform((text) => JSON.parse(text) as Record<string, unknown>),
+    }),
+  ),
+])
+// OWN-PATCH(P-026) end
 export const StreamItem = Schema.StructWithRest(
   Schema.Struct({
     type: Schema.String,
@@ -378,7 +428,7 @@ export const StreamItem = Schema.StructWithRest(
     call_id: optionalNullish(Schema.String),
     name: optionalNullish(Schema.String),
     namespace: optionalNullish(Schema.String),
-    arguments: optionalNullish(Schema.String),
+    arguments: optionalNullish(ArgumentsText), // OWN-PATCH(P-026)
     encrypted_content: optionalNull(Schema.String),
   }),
   [Schema.Record(Schema.String, Schema.Unknown)],
@@ -463,6 +513,9 @@ export interface ParserState {
   readonly outputItems: Readonly<Record<number, string>>
   readonly message: { readonly id: string; readonly phase: MessagePhase | null | undefined } | undefined
   readonly reasoningItems: Readonly<Record<string, ReasoningStreamItem>>
+  /** `namespace.leaf` → flat name of the request's placed tools. */
+  readonly placed?: ReadonlyMap<string, string> // OWN-PATCH(P-024)
+  readonly search?: string // OWN-PATCH(P-026)
 }
 
 type ReasoningSummaryStatus = "active" | "can-conclude" | "concluded"
@@ -482,6 +535,116 @@ interface ReasoningStreamItem {
 // =============================================================================
 // Request Lowering
 // =============================================================================
+// OWN-PATCH(P-021) begin
+/**
+ * Text part provider metadata key: a system message with a text part so marked becomes a developer message with one
+ * input_text per text part. System messages carry no metadata of their own.
+ */
+export const INPUT_TEXT_KEY = "opencode.responses.inputText"
+// OWN-PATCH(P-021) end
+// OWN-PATCH(P-024) begin
+/**
+ * Native namespace placement: a top-level tool whose input schema carries
+ * `x-opencode-namespace: {namespace, name, description?}` is sent inside that native namespace under the leaf name.
+ * Its calls arrive with the namespace and leaf and read as calls of the flat tool; replayed calls go back placed.
+ */
+export const NAMESPACE_KEY = "x-opencode-namespace"
+const placement = (tool: ToolEntry) => {
+  if (tool.type !== "tool") return undefined
+  const value: unknown = tool.inputSchema[NAMESPACE_KEY]
+  return ProviderShared.isRecord(value) && typeof value.namespace === "string" && typeof value.name === "string"
+    ? {
+        flat: tool.name,
+        namespace: value.namespace,
+        name: value.name,
+        description: typeof value.description === "string" ? value.description : undefined,
+        // OWN-PATCH(P-026): a deferred tool is not sent; a tool search output lists it.
+        deferred: value.deferred === true,
+      }
+    : undefined
+}
+/** `namespace.leaf` → flat tool name for the request's placed tools. */
+const placedNames = (tools: ReadonlyArray<ToolEntry>) =>
+  new Map(
+    tools.flatMap((tool) => {
+      const placed = placement(tool)
+      return placed ? [[`${placed.namespace}.${placed.name}`, placed.flat] as const] : []
+    }),
+  )
+/** The request with placed tools grouped into namespaces (at the first member's position) and their calls placed. */
+export const placeNamespaces = (request: LLMRequest): LLMRequest => {
+  const placed = request.tools.flatMap((tool) => {
+    const found = placement(tool)
+    return found ? [{ tool: tool as ToolDefinition, ...found }] : []
+  })
+  if (placed.length === 0) return request
+  const byFlat = new Map(placed.map((entry) => [entry.flat, entry]))
+  const leaf = (entry: (typeof placed)[number]) => {
+    const { [NAMESPACE_KEY]: _, ...inputSchema } = entry.tool.inputSchema
+    return ToolDefinition.make({ ...entry.tool, name: entry.name, inputSchema })
+  }
+  const tools = request.tools.flatMap((tool): ReadonlyArray<ToolEntry> => {
+    const found = tool.type === "tool" ? byFlat.get(tool.name) : undefined
+    if (found === undefined) return [tool]
+    if (found.deferred) return [] // OWN-PATCH(P-026)
+    const sent = placed.filter((entry) => !entry.deferred) // OWN-PATCH(P-026)
+    if (sent.find((entry) => entry.namespace === found.namespace) !== found) return []
+    const members = sent.filter((entry) => entry.namespace === found.namespace)
+    return [
+      {
+        type: "namespace",
+        name: found.namespace,
+        description: members.find((entry) => entry.description !== undefined)?.description,
+        tools: members.map(leaf),
+      },
+    ]
+  })
+  return {
+    ...request,
+    tools,
+    messages: request.messages.map((message) =>
+      message.role === "assistant" && message.content.some((part) => part.type === "tool-call" && byFlat.has(part.name))
+        ? Message.make({
+            ...message,
+            content: message.content.map((part) => {
+              const found = part.type === "tool-call" ? byFlat.get(part.name) : undefined
+              return found === undefined ? part : { ...part, name: found.name, namespace: found.namespace }
+            }),
+          })
+        : message,
+    ),
+  }
+}
+const unplace = <I extends StreamItem | null | undefined>(placed: ParserState["placed"], item: I): I => {
+  if (item?.type !== "function_call" || item.namespace === undefined) return item
+  const flat = placed?.get(`${item.namespace}.${item.name}`)
+  return flat === undefined ? item : { ...item, name: flat, namespace: undefined }
+}
+// OWN-PATCH(P-024) end
+// OWN-PATCH(P-026) begin
+/**
+ * Client tool search: the tool whose input schema carries `x-opencode-hosted: {type: "tool_search", execution:
+ * "client"}` (its definition is sent by the OpenAI lowering, P-023) is called with `tool_search_call` items, read as
+ * calls of that tool; replayed calls go back as `tool_search_call`, and its JSON-array result as the `tools` of a
+ * `tool_search_output`.
+ */
+const searchTool = (tools: ReadonlyArray<ToolEntry>) =>
+  tools.find((tool) => {
+    if (tool.type !== "tool") return false
+    const hosted: unknown = tool.inputSchema["x-opencode-hosted"]
+    return ProviderShared.isRecord(hosted) && hosted.type === "tool_search" && hosted.execution === "client"
+  })?.name
+const fromSearch = <I extends StreamItem | null | undefined>(search: string | undefined, item: I): I =>
+  item?.type === "tool_search_call" && search !== undefined
+    ? { ...item, type: "function_call", name: search, namespace: undefined }
+    : item
+const searchOutput = (part: ToolResultPart) => {
+  const text = part.result.type === "text" ? String(part.result.value) : JSON.stringify(part.result.value)
+  const parsed: unknown = Option.getOrUndefined(Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown))(text))
+  return Array.isArray(parsed) ? parsed : []
+}
+// OWN-PATCH(P-026) end
+
 export const lowerTool = Effect.fnUntraced(function* (protocolName: string, tool: ToolDefinition) {
   if (tool.native !== undefined)
     return yield* ProviderShared.invalidRequest(`${protocolName} does not support provider-native tool ${tool.name}`)
@@ -558,6 +721,9 @@ const lowerToolCall = (
     return {
       type: "custom_tool_call",
       ...(id === undefined ? {} : { id }),
+      // OWN-PATCH(P-020) begin: a replayed call is completed, as Codex sends it (own harness byte parity).
+      status: "completed",
+      // OWN-PATCH(P-020) end
       call_id: part.id,
       name: part.name,
       input: OpenAIFreeform.toRaw(custom, part.input),
@@ -659,6 +825,7 @@ export const lowerMessages = Effect.fnUntraced(function* (request: LLMRequest, a
   const custom = OpenAIFreeform.tools(request)
   const customTool = (part: ToolCallPart | ToolResultPart) =>
     part.namespace === undefined ? custom.get(part.name) : undefined
+  const search = searchTool(request.tools) // OWN-PATCH(P-026)
 
   for (const message of request.messages) {
     const rawMetadata =
@@ -682,6 +849,20 @@ export const lowerMessages = Effect.fnUntraced(function* (request: LLMRequest, a
         input.push(...(yield* adapter.lowerToolChanges(tools)))
         if (message.content.length === 0) continue
       }
+      // OWN-PATCH(P-021) begin: a system message with a text part marked `providerMetadata[INPUT_TEXT_KEY]` keeps each
+      // text part as its own input_text item, as Codex sends its developer fragments; unmarked messages are joined.
+      if (
+        message.content.some((part) => part.type === "text" && part.providerMetadata?.[INPUT_TEXT_KEY] !== undefined)
+      ) {
+        const texts = yield* ProviderShared.systemUpdateText(adapter.name, message)
+        input.push({
+          type: "message",
+          role: "developer",
+          content: texts.map((part) => ({ type: "input_text", text: part.text })),
+        })
+        continue
+      }
+      // OWN-PATCH(P-021) end
       input.push({
         type: "message",
         role: "developer",
@@ -760,6 +941,18 @@ export const lowerMessages = Effect.fnUntraced(function* (request: LLMRequest, a
         if (part.type === "tool-call") {
           flushText()
           if (part.providerExecuted === true) continue
+          // OWN-PATCH(P-026) begin
+          if (part.name === search) {
+            input.push({
+              type: "tool_search_call",
+              call_id: part.id,
+              status: "completed",
+              execution: "client",
+              arguments: ProviderShared.isRecord(part.input) ? part.input : {},
+            })
+            continue
+          }
+          // OWN-PATCH(P-026) end
           input.push(lowerToolCall(part, providerMetadataKey, customTool(part)))
           continue
         }
@@ -813,6 +1006,18 @@ export const lowerMessages = Effect.fnUntraced(function* (request: LLMRequest, a
     }
 
     for (const part of message.content) {
+      // OWN-PATCH(P-026) begin
+      if (part.name === search) {
+        input.push({
+          type: "tool_search_output",
+          call_id: part.id,
+          status: "completed",
+          execution: "client",
+          tools: searchOutput(part),
+        })
+        continue
+      }
+      // OWN-PATCH(P-026) end
       input.push({
         type: customTool(part) ? "custom_tool_call_output" : "function_call_output",
         call_id: part.id,
@@ -856,7 +1061,12 @@ export const lowerGeneration = (request: LLMRequest, options = OpenResponsesOpti
     ...(cacheKey ? { prompt_cache_key: cacheKey } : {}),
     ...(options.include ? { include: options.include } : {}),
     ...(options.reasoningEffort || options.reasoningSummary
-      ? { reasoning: { effort: options.reasoningEffort, summary: options.reasoningSummary } }
+      ? {
+          reasoning: {
+            effort: options.reasoningEffort,
+            summary: options.reasoningSummary,
+          },
+        }
       : {}),
     ...(options.textVerbosity ? { text: { verbosity: options.textVerbosity } } : {}),
     ...(options.serviceTier ? { service_tier: options.serviceTier } : {}),
@@ -1056,11 +1266,22 @@ const resolveItem = (
 
 // Registered output slots are authoritative for `item_id` routing, and items
 // are resolved here so everything downstream can rely on `item.id`.
-export const normalize = (state: Pick<ParserState, "outputItems">, input: Event): NormalizedEvent => ({
-  ...input,
-  item_id: input.item_id === undefined ? undefined : outputItemID(state, input),
-  item: input.item ? resolveItem(state, input.item, input.output_index) : input.item,
-})
+export const normalize = (
+  state: Pick<ParserState, "outputItems" | "placed" | "search">,
+  raw: Event,
+): NormalizedEvent => {
+  // OWN-PATCH(P-024, P-026): placed and tool-search calls read as calls of their flat tools.
+  const custom = { ...raw, item: unplace(state.placed, fromSearch(state.search, raw.item)) }
+  // OWN-PATCH(P-022) begin: `functions` is Responses Lite's namespace for top-level tools; its calls are top-level.
+  const input =
+    custom.item?.namespace === "functions" ? { ...custom, item: { ...custom.item, namespace: undefined } } : custom
+  // OWN-PATCH(P-022) end
+  return {
+    ...input,
+    item_id: input.item_id === undefined ? undefined : outputItemID(state, input),
+    item: input.item ? resolveItem(state, input.item, input.output_index) : input.item,
+  }
+}
 
 const startReasoningSummaryPart = (state: ParserState, itemID: string, index: number): StepResult => {
   const item = state.reasoningItems[itemID]
@@ -1425,7 +1646,10 @@ const onResponseFinish = Effect.fnUntraced(function* (state: ParserState, event:
   const events: LLMEvent[] = []
   if (event.type === "response.completed") {
     // An output item's array position is its output index.
-    for (const item of (event.response?.output ?? []).map((item, index) => resolveItem(state, item, index))) {
+    for (const item of (event.response?.output ?? []).map(
+      // OWN-PATCH(P-024, P-026)
+      (item, index) => resolveItem(state, unplace(state.placed, fromSearch(state.search, item)), index),
+    )) {
       // Terminal recovery cannot insert a checkpoint before already-emitted content.
       if (item.type === "compaction" && state.lifecycle.stepStarted && !state.completedCompactions.has(item.id))
         return yield* ProviderShared.eventError(
@@ -1600,6 +1824,8 @@ export const initial = (request: LLMRequest, adapter: ProviderAdapter = BASE_ADA
   outputItems: {},
   message: undefined,
   reasoningItems: {},
+  placed: placedNames(request.tools), // OWN-PATCH(P-024)
+  search: searchTool(request.tools), // OWN-PATCH(P-026)
 })
 
 export const protocol = Protocol.make({

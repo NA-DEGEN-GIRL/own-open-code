@@ -1,0 +1,75 @@
+/* "이 세션 압축 설정" dialog (03 §5.8.5): loaded with its lazy chunk. */
+
+.own-cp-dlg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--own-scrim);
+}
+.own-cp-dlg {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 16px 18px;
+  border-radius: var(--own-radius-dialog);
+  background: var(--own-bg-raised);
+  box-shadow: var(--own-shadow-float);
+  font-size: 13px;
+}
+.own-cp-dlg h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 650;
+}
+.own-cp-dlg-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+.own-cp-dlg-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.own-cp-dlg-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0 24px;
+}
+.own-cp-dlg-field input {
+  width: 140px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  background: var(--own-bg);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.own-cp-dlg-field input[aria-invalid="true"] {
+  border-color: var(--own-danger);
+}
+.own-cp-dlg-error {
+  min-height: 18px;
+  margin: 4px 0 0 24px;
+  font-size: 12px;
+  color: var(--own-danger);
+}
+.own-cp-dlg-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--own-text-muted);
+}
+.own-cp-dlg-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}

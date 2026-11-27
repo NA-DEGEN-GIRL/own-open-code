@@ -69,12 +69,23 @@ const PublicInboxInfo = Schema.Union([
   SessionInbox.Synthetic,
   SessionInbox.Compaction,
   PublicMove,
+  // OWN-PATCH(P-035) begin
+  SessionInbox.Reset,
+  // OWN-PATCH(P-035) end
 ]).annotate({ identifier: "Session.Inbox.Info" })
 
 /** Experimental: the `session.inbox.list` response for clients that opt into `experimental-media-uri`. */
 export const SessionMediaInboxResponse = Schema.Struct({
   data: Schema.Array(
-    Schema.Union([SessionInbox.MediaUser, SessionInbox.Synthetic, SessionInbox.Compaction, PublicMove]).annotate({
+    Schema.Union([
+      SessionInbox.MediaUser,
+      SessionInbox.Synthetic,
+      SessionInbox.Compaction,
+      PublicMove,
+      // OWN-PATCH(P-035) begin
+      SessionInbox.Reset,
+      // OWN-PATCH(P-035) end
+    ]).annotate({
       identifier: "Session.Inbox.MediaInfo",
     }),
   ),
@@ -409,6 +420,11 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
           metadata: SessionMessage.Synthetic.fields.metadata,
           delivery: SessionInbox.Delivery.pipe(Schema.optional),
           resume: Schema.Boolean.pipe(Schema.optional),
+          // OWN-PATCH(P-035) begin: a background job's notice (11 §7.2): `startedAt` (epoch ms) when the job started,
+          // `background` alone when that is unknown
+          background: Schema.Boolean.pipe(Schema.optional),
+          startedAt: Schema.Finite.pipe(Schema.optional),
+          // OWN-PATCH(P-035) end
         }),
         success: Schema.Struct({ data: SessionInbox.Synthetic }),
         error: [ConflictError, SessionNotFoundError],
@@ -458,6 +474,41 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
         }),
       ),
     )
+    // OWN-PATCH(P-035) begin
+    .add(
+      HttpApiEndpoint.post("session.reset.create", "/api/session/:sessionID/reset", {
+        params: { sessionID: Session.ID },
+        payload: Schema.Struct({ id: SessionMessage.ID.pipe(Schema.optional) }),
+        success: Schema.Struct({ data: SessionInbox.Reset }),
+        error: [ConflictError, SessionNotFoundError],
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "session.reset.create",
+            summary: "Reset session context",
+            description:
+              "Durably admit a context reset. It is queued: it delivers between turns, after the running turn and the input queued before it, as a marker the model's context starts after; input admitted after it, steered or queued, delivers after it. Stopping the turn delivers it at once. A request while one is pending returns that one. Commits a staged revert first. A subagent session is refused (Conflict).",
+          }),
+        ),
+    )
+    .add(
+      HttpApiEndpoint.delete("session.reset.undo", "/api/session/:sessionID/reset/:resetID", {
+        params: { sessionID: Session.ID, resetID: SessionMessage.ID },
+        success: HttpApiSchema.NoContent,
+        error: [ConflictError, SessionNotFoundError, MessageNotFoundError, SessionBusyError],
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "session.reset.undo",
+            summary: "Undo session context reset",
+            description:
+              "Cancel a pending context reset, or undo a delivered one: the model's context starts at the boundary before it again. Undo needs an idle session without a staged revert, and the reset must be the newest compaction or reset (Conflict otherwise).",
+          }),
+        ),
+    )
+    // OWN-PATCH(P-035) end
     .add(
       HttpApiEndpoint.post("session.wait", "/api/experimental/session/:sessionID/wait", {
         params: { sessionID: Session.ID },
@@ -512,7 +563,10 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
         OpenApi.annotations({
           identifier: "session.context",
           summary: "Get session context",
-          description: "Retrieve the active context messages for a session (all messages after the last compaction).",
+          // OWN-PATCH(P-035) begin
+          description:
+            "Retrieve the active context messages for a session (all messages after the last compaction or context reset).",
+          // OWN-PATCH(P-035) end
         }),
       ),
     )

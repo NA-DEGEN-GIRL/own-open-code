@@ -1,0 +1,203 @@
+/* `⧗ 백그라운드 n` dock row (03 §4.6, §19.7). own tokens only (13.2); the list and the viewer style in view.css. */
+.own-bj {
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  background: var(--own-bg-raised);
+  color: var(--own-text);
+  font-size: 12.5px;
+}
+.own-bj-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 30px;
+}
+.own-bj-row + .own-bj-row {
+  border-top: 1px solid var(--own-border);
+}
+.own-bj-row-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-bj-summary {
+  color: var(--own-text-faint);
+}
+.own-bj-toggle,
+.own-bj-send {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--own-border-strong);
+  border-radius: var(--own-radius-chip);
+  background: var(--own-bg);
+  color: var(--own-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-bj-toggle {
+  border-color: transparent;
+  background: none;
+  font-weight: 600;
+}
+.own-bj-toggle:hover,
+.own-bj-send:hover:not(:disabled) {
+  background: var(--own-bg-hover);
+}
+.own-bj-toggle:focus-visible,
+.own-bj-send:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-bj-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.own-bj-kbd {
+  padding: 0 4px;
+  border: 1px solid var(--own-border);
+  border-radius: 4px;
+  color: var(--own-text-faint);
+  font-family: var(--own-font-mono);
+  font-size: 10.5px;
+}
+.own-bj-caret {
+  flex: none;
+  color: var(--own-text-faint);
+}
+
+/* Session header running menu (03 §4.4, running-menu.tsx): `● 작업 중 2 ▾` after the title, a fixed popover list. */
+.own-run-trigger {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-run-trigger:hover,
+.own-run-trigger[aria-expanded="true"] {
+  background: var(--own-bg-hover);
+  color: var(--own-text);
+}
+.own-run-trigger:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: 1px;
+}
+.own-run-menu {
+  margin: 0;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(360px, 70vh);
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg);
+  box-shadow: var(--own-shadow-float);
+  color: var(--own-text);
+  font-size: 13px;
+}
+.own-run-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.own-run-row:hover,
+.own-run-row:focus-within {
+  background: var(--own-bg-hover);
+}
+.own-run-item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.own-run-item:focus-visible {
+  outline: 2px solid var(--own-focus);
+  outline-offset: -2px;
+}
+.own-run-item[aria-current="page"] {
+  cursor: default;
+}
+.own-run-kind-icon {
+  flex: none;
+  color: var(--own-text-faint);
+  font-size: 11px;
+}
+.own-run-kind {
+  flex: none;
+  font-weight: 600;
+}
+.own-run-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--own-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-run-here {
+  flex: none;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-run-stop {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-right: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-text-faint);
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0;
+}
+.own-run-row:hover .own-run-stop,
+.own-run-row:focus-within .own-run-stop {
+  opacity: 1;
+}
+.own-run-stop:hover {
+  background: var(--own-bg-active, var(--own-bg-hover));
+  color: var(--own-danger);
+}
+@media (pointer: coarse) {
+  .own-run-item,
+  .own-run-stop {
+    min-height: 44px;
+  }
+  .own-run-stop {
+    width: 44px;
+    opacity: 1;
+  }
+}

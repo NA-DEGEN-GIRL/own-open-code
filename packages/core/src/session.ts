@@ -42,6 +42,9 @@ import {
   PromptConflictError,
   SkillNotFoundError,
   SyntheticConflictError,
+  // OWN-PATCH(P-035) begin
+  ResetConflictError,
+  // OWN-PATCH(P-035) end
 } from "./session/error.js"
 import { Node } from "@opencode/util/effect/app-node"
 import { LayerNode } from "@opencode/util/effect/layer-node"
@@ -117,6 +120,9 @@ export {
   PromptConflictError,
   SkillNotFoundError,
   SyntheticConflictError,
+  // OWN-PATCH(P-035) begin
+  ResetConflictError,
+  // OWN-PATCH(P-035) end
 }
 type InboxItemRef = { readonly sessionID: SessionSchema.ID; readonly inboxID: SessionMessage.ID }
 
@@ -219,6 +225,12 @@ export interface Interface {
     sessionID: SessionSchema.ID
     prompt: string
   }) => Effect.Effect<SessionGenerate.Result, NotFoundError | SessionGenerate.Error>
+  // OWN-PATCH(P-061) begin
+  /** A side question: {@link SessionGenerate.side} on the Session's current history, streamed, recording nothing. */
+  readonly side: (
+    input: SessionGenerate.SideInput & { sessionID: SessionSchema.ID },
+  ) => Effect.Effect<SessionGenerate.SideResult, NotFoundError | SessionGenerate.Error>
+  // OWN-PATCH(P-061) end
   readonly command: (input: {
     sessionID: SessionSchema.ID
     command: string
@@ -240,6 +252,18 @@ export interface Interface {
   readonly compact: (
     input: CompactInput,
   ) => Effect.Effect<SessionInbox.Compaction, NotFoundError | CompactionConflictError>
+  // OWN-PATCH(P-035) begin
+  /** Admits a context reset, delivered between turns; a pending one is returned again. */
+  readonly reset: (input: {
+    sessionID: SessionSchema.ID
+    id?: SessionMessage.ID
+  }) => Effect.Effect<SessionInbox.Reset, NotFoundError | ResetConflictError>
+  /** Cancels a pending reset or undoes the newest delivered one (idle, no staged revert). */
+  readonly undoReset: (input: {
+    sessionID: SessionSchema.ID
+    resetID: SessionMessage.ID
+  }) => Effect.Effect<void, NotFoundError | MessageNotFoundError | BusyError | ResetConflictError>
+  // OWN-PATCH(P-035) end
   readonly wait: (id: SessionSchema.ID) => Effect.Effect<void, NotFoundError>
   readonly active: Effect.Effect<ReadonlySet<SessionSchema.ID>>
   readonly background: (sessionID: SessionSchema.ID) => Effect.Effect<void, NotFoundError>
@@ -504,6 +528,16 @@ const layer = Layer.effect(
           Effect.provideService(Bus.Service, bus),
         )
       }),
+      // OWN-PATCH(P-061) begin
+      side: Effect.fn("Session.side")(function* (input) {
+        const session = yield* result.get(input.sessionID)
+        return yield* SessionGenerate.side({ ...input, session }).pipe(
+          Effect.provideService(Instance.Service, instances),
+          Effect.provideService(Database.Service, database),
+          Effect.provideService(LLMClient.Service, llm),
+        )
+      }),
+      // OWN-PATCH(P-061) end
       command: Effect.fn("Session.command")(function* (input) {
         const session = yield* result.get(input.sessionID)
         return yield* SessionCommand.execute({ ...input, session }).pipe(
@@ -521,6 +555,10 @@ const layer = Layer.effect(
       setPermissions: (input) => sessions.forSession(input.sessionID).setPermissions(input),
       move: moves.move,
       compact: (input) => sessions.forSession(input.sessionID).compact(input),
+      // OWN-PATCH(P-035) begin
+      reset: (input) => sessions.forSession(input.sessionID).reset(input),
+      undoReset: (input) => sessions.forSession(input.sessionID).undoReset(input.resetID),
+      // OWN-PATCH(P-035) end
       wait: (sessionID) => sessions.forSession(sessionID).wait(),
       active: execution.active,
       background: Effect.fn("Session.background")(function* (sessionID) {

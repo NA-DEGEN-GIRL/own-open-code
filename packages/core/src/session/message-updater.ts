@@ -489,6 +489,9 @@ export function update(adapter: Adapter, event: SessionEvent.DurableEvent) {
       "session.revert.staged": () => Effect.void,
       "session.revert.cleared": () => Effect.void,
       "session.revert.committed": () => Effect.void,
+      // OWN-PATCH(P-035) begin: the projector marks the reset's marker undone
+      "session.reset.undone": () => Effect.void,
+      // OWN-PATCH(P-035) end
     }),
   )
   return project(event)

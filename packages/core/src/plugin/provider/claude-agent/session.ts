@@ -28,6 +28,9 @@ export const register = Effect.fn("ClaudeSessionHooks.register")(function* (ctx:
         if (event.kind !== "primary") return
         const session = yield* ctx.session.get({ sessionID: event.sessionID }).pipe(Effect.orDie)
         if (session.fork) event.headers[RequestKind.FORK_HEADER] = session.fork.sessionID
+        // OWN-PATCH(P-044) begin
+        if (session.parentID) event.headers[RequestKind.PARENT_HEADER] = session.parentID
+        // OWN-PATCH(P-044) end
       }),
     { providerID: ClaudeProvider.ID },
   )

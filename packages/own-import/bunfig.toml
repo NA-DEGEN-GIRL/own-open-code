@@ -1,0 +1,6 @@
+[test]
+# Keeps core's feature flags off as in a release (own/scripts/test/release-flags.ts).
+# Points CODEX_HOME and CLAUDE_CONFIG_DIR (and OWN_HOME) at an empty temp folder before any test runs, so a test that
+# forgets its fixture roots can never reach the user's real ~/.codex or ~/.claude (09 §7.3).
+# The git variables that point at this repository go too (own/scripts/test/git-env.ts).
+preload = ["../../own/scripts/test/git-env.ts", "./test/preload.ts", "../../own/scripts/test/release-flags.ts"]

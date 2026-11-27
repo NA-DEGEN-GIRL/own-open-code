@@ -75,9 +75,18 @@ export function resolveAttachmentMediaTarget(
 ): AttachmentMediaTarget {
   if (!file.mime.startsWith("image/")) return NONE_ATTACHMENT_MEDIA_TARGET
 
-  if (file.source?.type === "uri") return { kind: "direct", src: file.source.uri }
+  // OWN-PATCH(P-057) begin
+  // Inline bytes ask `peekMedia` too: a host may show a `data:` URI as a `blob:` URL (Chromium keeps every `data:` URI
+  // an image loaded for as long as the page lives).
+  const inline =
+    file.source?.type === "uri"
+      ? file.source.uri
+      : "data" in file && file.data !== undefined
+        ? `data:${file.mime};base64,${file.data}`
+        : undefined
 
-  if ("data" in file && file.data !== undefined) return { kind: "direct", src: `data:${file.mime};base64,${file.data}` }
+  if (inline !== undefined) return { kind: "direct", src: options.peekMedia?.(inline, file.mime) ?? inline }
+  // OWN-PATCH(P-057) end
 
   const uri = "uri" in file ? file.uri : undefined
 

@@ -1,0 +1,4 @@
+[test]
+# Keeps core's feature flags off as in a release (own/scripts/test/release-flags.ts).
+# Drops the variables that point git at this repository (own/scripts/test/git-env.ts).
+preload = ["../../own/scripts/test/git-env.ts", "../../own/scripts/test/release-flags.ts"]

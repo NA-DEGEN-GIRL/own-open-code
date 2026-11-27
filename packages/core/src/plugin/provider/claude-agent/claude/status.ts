@@ -27,6 +27,10 @@ export const make = Effect.fn("ClaudeStatus.make")(function* (
   io: ClaudeIO.Interface,
   connection: () => Effect.Effect<Record<string, string>>,
   configDirs: () => Effect.Effect<readonly string[]> = () => Effect.succeed([]),
+  // OWN-PATCH(P-044) begin
+  // The process pool's side start (CAG-38): the check's claude counts against the cap while it runs, never waiting.
+  side: <A, E>(effect: Effect.Effect<A, E>) => Effect.Effect<A, E> = (effect) => effect,
+  // OWN-PATCH(P-044) end
 ) {
   const state = yield* SubscriptionRef.make<State>({ type: "checking" })
   const lock = yield* Semaphore.make(1)
@@ -36,7 +40,23 @@ export const make = Effect.fn("ClaudeStatus.make")(function* (
     const executable = io.which()
     if (!executable) return yield* SubscriptionRef.set(state, { type: "missing" })
     const env = ClaudeQueryOptions.withoutDefaultFolder(yield* connection(), io)
-    const next = yield* ClaudeProbe.run(ClaudeQueryOptions.base({ executable, io, connection: env })).pipe(
+    // OWN-PATCH(P-052) begin
+    // own-accounts names the account folder in its provider fold, which a Location may set up after this check first
+    // runs: until a folder is named the check waits instead of failing (the connection would read as logged out).
+    if (io.requiresFolder && !env.CLAUDE_CONFIG_DIR && (yield* SubscriptionRef.get(state)).type === "checking") return
+    // OWN-PATCH(P-052) end
+    // OWN-PATCH(P-045) begin
+    // Building the options fails without an account folder (own's route not set up); that is a failed check too.
+    const next = yield* Effect.try({
+      try: () => ClaudeQueryOptions.base({ executable, io, connection: env }),
+      catch: (cause) => new ClaudeProbe.ProbeError({ cause }),
+    }).pipe(
+      // OWN-PATCH(P-044) begin
+      // OWN-PATCH(P-051) begin
+      Effect.flatMap((options) => side(ClaudeProbe.run(options, io.version))),
+      // OWN-PATCH(P-051) end
+      // OWN-PATCH(P-044) end
+      // OWN-PATCH(P-045) end
       Effect.map((probe): State => ({ type: "ready", probe, configDir: env.CLAUDE_CONFIG_DIR })),
       Effect.catch((error) =>
         Effect.logWarning("Claude Code login check failed", { cause: error.cause }).pipe(

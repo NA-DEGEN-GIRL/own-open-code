@@ -100,17 +100,44 @@ export const Plugin = {
               const root = target.absolute
               const type = yield* ToolSearch.pathType(target.environment.files, root, input.path ?? ".")
               const cwd = type === "directory" ? root : path.dirname(root)
+              // OWN-PATCH(P-031) begin
+              // A line is shown only from a file `read` would show without asking (own's protected paths, `.env`).
+              // Filtered before the limit; the files left out are counted for the model's note.
+              const hidden = new Set<string>()
+              // OWN-PATCH(P-031) end
               const result = yield* ToolSearch.bounded(input.limit ?? FileSystem.DEFAULT_SEARCH_LIMIT, (limit) =>
-                ripgrep.grep({
-                  environment: target.environment,
-                  cwd,
-                  pattern: input.pattern,
-                  file: type === "file" ? path.basename(root) : undefined,
-                  include: input.include,
-                  literal: input.literal,
-                  caseSensitive: input.caseSensitive,
-                  limit,
-                }),
+                ripgrep
+                  .grep({
+                    environment: target.environment,
+                    cwd,
+                    pattern: input.pattern,
+                    file: type === "file" ? path.basename(root) : undefined,
+                    include: input.include,
+                    literal: input.literal,
+                    caseSensitive: input.caseSensitive,
+                    limit,
+                  })
+                  .pipe(
+                    // OWN-PATCH(P-031) begin
+                    Effect.flatMap((matches) =>
+                      access
+                        .readable(
+                          matches.map((match) => path.resolve(cwd, match.entry.path)),
+                          context,
+                        )
+                        .pipe(
+                          Effect.map((readable) =>
+                            matches.filter((match) => {
+                              const absolute = path.resolve(cwd, match.entry.path)
+                              if (readable.has(absolute)) return true
+                              hidden.add(absolute)
+                              return false
+                            }),
+                          ),
+                        ),
+                    ),
+                    // OWN-PATCH(P-031) end
+                  ),
               )
               return {
                 matches: result.items.map((match) =>
@@ -123,18 +150,30 @@ export const Plugin = {
                   }),
                 ),
                 truncated: result.truncated,
+                // OWN-PATCH(P-031) begin
+                hidden: hidden.size,
+                // OWN-PATCH(P-031) end
               }
             }).pipe(
               Effect.map((result) => ({
                 output: result.matches,
-                content: toModelContent(
-                  result.matches.map((match) => ({
-                    ...match,
-                    entry: { ...match.entry, path: path.resolve(location.directory, match.entry.path) },
-                  })),
-                  result.truncated,
-                ),
+                // OWN-PATCH(P-031) begin
+                content: [
+                  toModelContent(
+                    result.matches.map((match) => ({
+                      ...match,
+                      entry: { ...match.entry, path: path.resolve(location.directory, match.entry.path) },
+                    })),
+                    result.truncated,
+                  ),
+                  ...(result.hidden > 0
+                    ? [
+                        `(Matches in ${result.hidden} file(s) are left out: reading them is denied or needs the user's approval. Read such a file with the read tool to ask.)`,
+                      ]
+                    : []),
+                ].join("\n\n"),
                 metadata: { matches: result.matches.length, truncated: result.truncated },
+                // OWN-PATCH(P-031) end
               })),
               Effect.mapError((error) => {
                 if (error instanceof ToolFailure) return error

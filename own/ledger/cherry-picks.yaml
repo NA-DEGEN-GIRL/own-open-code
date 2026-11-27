@@ -1,0 +1,14 @@
+# Emergency cherry-picks from upstream-v2 into main (own/FORK.md §4). Default is a tip merge; use this only
+# when a single fix is needed urgently. Add the entry in the same commit as `git cherry-pick -x <sha>`.
+#
+# Entry shape:
+# - upstream_sha: 0123456789abcdef0123456789abcdef01234567
+#   picked_as: <sha of the commit on main>
+#   files: [packages/core/src/session/compaction.ts]
+#   reason: "compaction infinite loop fix (upstream PR #NNNNN)"
+#   date: 2026-10-01
+#
+# check-ledger allows the diff of `files` while upstream_sha is not yet an ancestor of
+# `git merge-base HEAD upstream-v2`; once a merge absorbs it, check-ledger reports "absorbed - remove entry".
+# (none: the four picks on v2.2.6 were absorbed by the v2.4.1 sync, decisions MR18)
+[]

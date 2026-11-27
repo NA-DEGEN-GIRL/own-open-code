@@ -1,0 +1,549 @@
+{
+  "kind": "xai",
+  "sourceProvider": "xai",
+  "source": "bundled",
+  "capturedAt": "2026-10-29T21:33:01Z",
+  "models": [
+    {
+      "id": "grok-4.20-multi-agent-0309",
+      "modelID": "grok-4.20-multi-agent-0309",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.20 Multi-Agent",
+      "capabilities": {
+        "tools": false,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1773014400000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 2.5,
+          "cache": {
+            "read": 0.2,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 2.5,
+          "output": 5,
+          "cache": {
+            "read": 0.4,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.3",
+      "modelID": "grok-4.3",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.3",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "none",
+          "settings": {
+            "reasoningEffort": "none",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1776384000000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 2.5,
+          "cache": {
+            "read": 0.2,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 2.5,
+          "output": 5,
+          "cache": {
+            "read": 0.4,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.6",
+      "modelID": "grok-4.6",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.6",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1786492800000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 6,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 4,
+          "output": 12,
+          "cache": {
+            "read": 1,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.20-0309-non-reasoning",
+      "modelID": "grok-4.20-0309-non-reasoning",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1773014400000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 2.5,
+          "cache": {
+            "read": 0.2,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 2.5,
+          "output": 5,
+          "cache": {
+            "read": 0.4,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.7",
+      "modelID": "grok-4.7",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.7",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1789948800000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 6,
+          "cache": {
+            "read": 0.5,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 4,
+          "output": 12,
+          "cache": {
+            "read": 1,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.20-0309-reasoning",
+      "modelID": "grok-4.20-0309-reasoning",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.20 (Reasoning)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1773014400000
+      },
+      "cost": [
+        {
+          "input": 1.25,
+          "output": 2.5,
+          "cache": {
+            "read": 0.2,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 2.5,
+          "output": 5,
+          "cache": {
+            "read": 0.4,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-build-0.1",
+      "modelID": "grok-build-0.1",
+      "type": "chat",
+      "family": "grok-build",
+      "name": "Grok Build 0.1",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [],
+      "time": {
+        "released": 1776297600000
+      },
+      "cost": [
+        {
+          "input": 1,
+          "output": 2,
+          "cache": {
+            "read": 0.2,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 2,
+          "output": 4,
+          "cache": {
+            "read": 0.4,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 256000,
+        "output": 256000
+      },
+      "package": "@opencode/ai/providers/xai"
+    },
+    {
+      "id": "grok-4.5",
+      "modelID": "grok-4.5",
+      "type": "chat",
+      "family": "grok",
+      "name": "Grok 4.5",
+      "capabilities": {
+        "tools": true,
+        "input": ["text", "image", "pdf"],
+        "output": ["text"],
+        "temperature": true
+      },
+      "variants": [
+        {
+          "id": "low",
+          "settings": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "medium",
+          "settings": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "high",
+          "settings": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        },
+        {
+          "id": "xhigh",
+          "settings": {
+            "reasoningEffort": "xhigh",
+            "reasoningSummary": "auto",
+            "include": ["reasoning.encrypted_content"]
+          }
+        }
+      ],
+      "time": {
+        "released": 1783468800000
+      },
+      "cost": [
+        {
+          "input": 2,
+          "output": 6,
+          "cache": {
+            "read": 0.3,
+            "write": 0
+          }
+        },
+        {
+          "tier": {
+            "type": "context",
+            "size": 200000
+          },
+          "input": 4,
+          "output": 12,
+          "cache": {
+            "read": 0.6,
+            "write": 0
+          }
+        }
+      ],
+      "status": "active",
+      "enabled": true,
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "package": "@opencode/ai/providers/xai"
+    }
+  ]
+}

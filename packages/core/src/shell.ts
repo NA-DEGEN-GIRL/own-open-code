@@ -972,6 +972,9 @@ const layer = () =>
           : undefined
         // An environment that names its shell runs every command under it, and the command is parsed as that shell.
         const program = target.shell ?? input.shell ?? (yield* shell.resolve({ priority: "config" }))
+        // OWN-PATCH(P-046) begin: the command's id is made before the hooks, which name it
+        const id = Shell.ID.ascending()
+        // OWN-PATCH(P-046) end
         const invocation: ShellCreateBefore = {
           command: input.command,
           cwd: input.cwd ?? workingDirectory.absolute,
@@ -982,6 +985,10 @@ const layer = () =>
             TERM: "xterm-256color",
             OPENCODE_TERMINAL: "1",
           },
+          // OWN-PATCH(P-046) begin
+          ...(Schema.is(SessionSchema.ID)(sessionID) ? { sessionID } : {}),
+          id,
+          // OWN-PATCH(P-046) end
         }
         yield* hooks.trigger("shell", "create.before", invocation)
         if (before) yield* before(invocation)
@@ -993,7 +1000,6 @@ const layer = () =>
           .ensureDir(outputDir)
           .pipe(Effect.mapError((cause) => new AppProcess.AppProcessError({ command: invocation.command, cause })))
 
-        const id = Shell.ID.ascending()
         const args = ShellSelect.args(invocation.shell, invocation.command)
         const file = path.join(outputDir, `${id}.out`)
 
@@ -1184,7 +1190,10 @@ const layer = () =>
                 }),
               )
 
-              yield* bus.publish(Shell.Event.Created, { info })
+              // OWN-PATCH(P-046) begin
+              // The spawned process's id too, so a plugin can tie what it gave the command to that process (GH-48).
+              yield* bus.publish(Shell.Event.Created, { info: command.info })
+              // OWN-PATCH(P-046) end
               yield* Deferred.succeed(ready, command)
               // Hold the handle's scope open until the command terminates; closing it earlier would
               // release (kill) the process before its exit is observed.

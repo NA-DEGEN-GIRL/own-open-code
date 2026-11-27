@@ -64,6 +64,14 @@ export function configDirs(value: unknown) {
   const dirs: string[] = []
   for (const item of Array.isArray(value) ? value : [value]) {
     if (typeof item !== "string") continue
+    // OWN-PATCH(P-045) begin: own's fully qualified account folders and a host's relay token (P-052, `relay:<account>`,
+    // see ClaudeRelay.TOKEN_PREFIX) stay as written: own keys folders, usage questions and the relay's account by that
+    // string, and resolving would turn C:/… into C:\… on Windows
+    if (path.resolve(item) === path.normalize(item) || item.startsWith("relay:")) {
+      dirs.push(item)
+      continue
+    }
+    // OWN-PATCH(P-045) end
     // Claude Code does not expand ~, so a configDir like ~/.claude-work would point inside the project.
     // An absolute path also means Claude Code and our own transcript lookups agree on the folder.
     const dir = item.startsWith("~/") ? path.join(os.homedir(), item.slice(2)) : item
@@ -76,6 +84,11 @@ export function configDirs(value: unknown) {
 // that to ~/.claude/.claude.json, which can hold an older model list, so the default folder is used by not naming it.
 export function withoutDefaultFolder(connection: Readonly<Record<string, string>>, io: ClaudeIO.Interface) {
   if (connection.CLAUDE_CONFIG_DIR !== path.join(os.homedir(), ".claude")) return connection
+  // OWN-PATCH(P-045) begin
+  // own's route names every account folder, the default one too (an unmanaged account 1), and its claude never runs
+  // without one; its environment allow-list never carries the service's CLAUDE_CONFIG_DIR.
+  if (io.requiresFolder) return connection
+  // OWN-PATCH(P-045) end
   // With the variable already set for opencode, leaving it out would run that folder instead.
   if (io.env().CLAUDE_CONFIG_DIR !== undefined) return connection
   const { CLAUDE_CONFIG_DIR: _, ...rest } = connection
@@ -87,10 +100,22 @@ export function base(input: {
   io: ClaudeIO.Interface
   connection?: Readonly<Record<string, string>>
 }): Options {
+  // OWN-PATCH(P-045) begin
+  const env: Record<string, string | undefined> = { ...input.io.env(), ...input.connection, ...ISOLATION_ENV }
+  // Without a folder claude would use (and refresh the login of) the user's own ~/.claude or another route's folder.
+  if (input.io.requiresFolder && !env.CLAUDE_CONFIG_DIR)
+    throw new Error("Claude Agent has no account folder. Set up the Claude Agent account in own's accounts first.")
+  // A folder without a claude.ai login would fall back to the PC's Anthropic profile (%APPDATA%\Anthropic, from `ant
+  // auth login`) and bill its Console organization. The folder's own profile directory holds none (absent is fine:
+  // Claude Code only reads it); an empty value would read as unset. Derived here, so the PC's relay starts get it too.
+  if (env.CLAUDE_CONFIG_DIR) env.ANTHROPIC_CONFIG_DIR = path.join(env.CLAUDE_CONFIG_DIR, "anthropic")
+  // OWN-PATCH(P-045) end
   return {
     pathToClaudeCodeExecutable: input.executable,
     spawnClaudeCodeProcess: input.io.spawn,
-    env: { ...input.io.env(), ...input.connection, ...ISOLATION_ENV },
+    // OWN-PATCH(P-045) begin
+    env,
+    // OWN-PATCH(P-045) end
     settingSources: [],
     settings: { disableAllHooks: true },
     // Without summaries, OpenCode has no reasoning text to display
@@ -124,7 +149,9 @@ export async function session(input: {
     cwd: input.directory,
     model: input.model,
     effort: input.effort,
-    systemPrompt: input.system,
+    // OWN-PATCH(P-052) begin
+    systemPrompt: input.io.note ? withNote(input.system, input.io.note) : input.system,
+    // OWN-PATCH(P-052) end
     includePartialMessages: true,
     persistSession: input.persist,
     hooks: ToolHooks.make(input.pending),
@@ -141,3 +168,14 @@ export async function session(input: {
   options.sessionId = crypto.randomUUID()
   return options
 }
+
+// OWN-PATCH(P-052) begin
+// The relay's note (a host's claude runs on the PC) goes after the provider's own appended text.
+function withNote(system: NonNullable<Options["systemPrompt"]>, note: string): NonNullable<Options["systemPrompt"]> {
+  if (typeof system === "string") return `${system}\n\n${note}`
+  if (Array.isArray(system)) return [...system, note]
+  if (system.type === "custom")
+    return { ...system, prompt: [...(Array.isArray(system.prompt) ? system.prompt : [system.prompt]), note] }
+  return { ...system, append: system.append ? `${system.append}\n\n${note}` : note }
+}
+// OWN-PATCH(P-052) end

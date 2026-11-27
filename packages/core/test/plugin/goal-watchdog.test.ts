@@ -87,8 +87,12 @@ const run = Effect.fnUntraced(function* (seed?: Goal.State) {
       event: { subscribe: () => Stream.fromQueue(events) as never },
       command: {
         list: () => Effect.die("unused command.list"),
+        // OWN-PATCH(P-038) begin
         transform: (callback) =>
-          Effect.sync(() => callback({ add: (definition) => void commands.push(definition) })) as never,
+          Effect.sync(() =>
+            callback({ add: (definition) => void commands.push(definition), get: () => undefined }),
+          ) as never,
+        // OWN-PATCH(P-038) end
         reload: () => Effect.die("unused command.reload"),
       },
     }),

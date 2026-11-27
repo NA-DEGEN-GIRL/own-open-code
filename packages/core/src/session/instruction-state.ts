@@ -140,6 +140,34 @@ export const advanceEpoch = Effect.fn("InstructionState.advanceEpoch")(function*
     .pipe(Effect.orDie)
 })
 
+// OWN-PATCH(P-035) begin
+/** The current epoch's start and baseline: what a context reset ends, kept on its marker for an undo (11 §7). */
+export const epoch = Effect.fn("InstructionState.epoch")(function* (db: DatabaseService, sessionID: SessionSchema.ID) {
+  const state = yield* find(db, sessionID)
+  return state ? { epochStart: state.epoch_start, values: state.initial_values } : undefined
+})
+
+/**
+ * A context reset's undo: the epoch it ended is current again, while the one it began (at `from`) still is. Returns
+ * whether it was restored; a revert re-initializes the state and a fork seeds its own, so neither restores.
+ */
+export const restoreEpoch = Effect.fn("InstructionState.restoreEpoch")(function* (
+  db: DatabaseService,
+  sessionID: SessionSchema.ID,
+  from: number,
+  baseline: { readonly epochStart: number; readonly values: Instructions.Values },
+) {
+  const restored = yield* db
+    .update(InstructionStateTable)
+    .set({ epoch_start: baseline.epochStart, initial_values: baseline.values })
+    .where(and(eq(InstructionStateTable.session_id, sessionID), eq(InstructionStateTable.epoch_start, from)))
+    .returning({ sessionID: InstructionStateTable.session_id })
+    .get()
+    .pipe(Effect.orDie)
+  return restored !== undefined
+})
+// OWN-PATCH(P-035) end
+
 /**
  * Clears the fold only when a committed revert removed an update or the epoch start. Otherwise the
  * fold still matches the surviving history, and keeping its baseline keeps the prompt cache.

@@ -1,0 +1,289 @@
+/*
+ * Review tab stylesheet, loaded with the lazy review chunk (03 §20.2 R5), like transcript.css:
+ * 1. A Tailwind root with the @opencode/ui theme for the session-ui review pieces (utilities generated from the ui and
+ *    session-ui sources only), plus the ui and session-ui component styles (the pierre `file.css` among them).
+ * 2. own review chrome on the --own-* tokens (03 §13): bar, summary, virtualized file list, notes.
+ */
+@layer theme, base, components, utilities;
+
+@import "@opencode/ui/styles/tailwind";
+@import "@opencode/session-ui/styles";
+
+@source not "../../../app";
+@source not "../../../desktop";
+@source not "../../../enterprise";
+@source not "../../../storybook";
+
+@layer components {
+  .own-review {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: var(--line-height-compact, 16px);
+    color: var(--own-text);
+  }
+
+  .own-review-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 8px 6px 12px;
+    flex: none;
+  }
+
+  .own-review-grow {
+    flex: 1;
+  }
+
+  .own-review-select {
+    height: 28px;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 8px;
+    border: 1px solid var(--own-border-strong);
+    border-radius: 8px;
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    font-size: 12.5px;
+  }
+
+  .own-review-seg {
+    display: inline-flex;
+    height: 28px;
+    padding: 2px;
+    border: 1px solid var(--own-border);
+    border-radius: 8px;
+    background: var(--own-bg-subtle);
+  }
+
+  .own-review-seg > button {
+    padding: 0 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--own-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .own-review-seg > button[aria-checked="true"] {
+    background: var(--own-bg-raised);
+    color: var(--own-text);
+    box-shadow: 0 0 0 1px var(--own-border);
+  }
+
+  .own-review .own-icon-button[aria-busy="true"] svg {
+    animation: own-review-spin 900ms linear infinite;
+  }
+
+  @keyframes own-review-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .own-review .own-icon-button[aria-busy="true"] svg {
+      animation: none;
+    }
+  }
+
+  .own-review-note {
+    margin: 0 12px 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    /* The panel itself is --own-bg-subtle: the hover tint shows the box in both schemes. */
+    background: var(--own-bg-hover);
+    color: var(--own-text-muted);
+    font-size: 12px;
+    flex: none;
+  }
+
+  .own-review-hint {
+    margin: 0 12px 4px;
+    color: var(--own-text-muted);
+    font-size: 11.5px;
+    flex: none;
+  }
+
+  .own-review-note[data-tone="danger"] {
+    color: var(--own-danger);
+  }
+
+  /* 18.5 `Git 저장소 만들기` after the no-Git note: an inline link-styled action, a full tap target on touch. */
+  .own-review-note-action {
+    padding: 0 2px;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .own-review-note-action:disabled {
+    color: var(--own-text-faint);
+    cursor: default;
+  }
+  .own-review-note-action:focus-visible {
+    outline: 2px solid var(--own-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  @media (pointer: coarse) {
+    .own-review-note-action {
+      min-height: 44px;
+    }
+  }
+
+  .own-review-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    color: var(--own-text-muted);
+    font-size: 12px;
+    flex: none;
+  }
+
+  .own-review-link {
+    border: 0;
+    background: transparent;
+    color: var(--own-accent-text);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  a.own-review-link {
+    text-decoration: none;
+  }
+
+  .own-review-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 2px 6px 4px;
+    flex: none;
+  }
+
+  .own-review-stats {
+    display: inline-flex;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .own-review-add {
+    color: var(--own-ok);
+  }
+
+  .own-review-del {
+    color: var(--own-danger);
+  }
+
+  .own-review-list {
+    flex: 0 1 auto;
+    max-height: 38%;
+    min-height: 0;
+    overflow: auto;
+    border-top: 1px solid var(--own-border);
+    border-bottom: 1px solid var(--own-border);
+    contain: layout paint;
+    outline-offset: -2px;
+  }
+
+  .own-review-list-inner {
+    position: relative;
+    width: 100%;
+  }
+
+  .own-review-row {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    cursor: pointer;
+    contain: content;
+    font-size: 12.5px;
+  }
+
+  .own-review-row:hover {
+    background: var(--own-bg-hover);
+  }
+
+  .own-review-row[aria-selected="true"] {
+    background: var(--own-accent-soft);
+    box-shadow: inset 2px 0 0 var(--own-accent-text);
+  }
+
+  .own-review-status {
+    width: 12px;
+    flex: none;
+    font-family: var(--own-font-mono);
+    font-weight: 600;
+    color: var(--own-warn);
+  }
+
+  .own-review-status[data-status="added"] {
+    color: var(--own-ok);
+  }
+
+  .own-review-status[data-status="deleted"] {
+    color: var(--own-danger);
+  }
+
+  .own-review-path {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: var(--own-font-mono);
+    direction: rtl;
+    text-align: left;
+  }
+
+  /* Long paths lose their start, never the file name: the ellipsis side is flipped, the text stays LTR. */
+  .own-review-path > bdi {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  .own-review-dir {
+    color: var(--own-text-faint);
+  }
+
+  .own-review-preview {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .own-review-preview > [data-component="session-review-v2"] {
+    flex: 1;
+  }
+
+  .own-review-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .own-review-state {
+    margin: 0;
+    padding: 16px;
+    color: var(--own-text-faint);
+    font-size: 13px;
+  }
+}

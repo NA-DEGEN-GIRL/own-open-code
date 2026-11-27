@@ -4,7 +4,9 @@ import { Effect, Option, Schema } from "effect"
 import { HttpServerResponse } from "effect/http"
 import { HttpApiBuilder } from "effect/http-api"
 import { Api } from "../api"
-import { wantsMediaRefs } from "../media-uri"
+// OWN-PATCH(P-055) begin
+import { wantsMediaRefs, wantsToolFileOmission } from "../media-uri"
+// OWN-PATCH(P-055) end
 import { InvalidCursorError } from "@opencode/protocol/errors"
 import { SessionMediaMessagesResponse } from "@opencode/protocol/groups/message"
 import { failedMessageDecode, missingSession } from "./session-error"
@@ -49,11 +51,16 @@ export const MessageHandler = HttpApiBuilder.group(Api, "server.message", (handl
           type: ctx.query.type,
           cursor: decoded ? { id: decoded.id, direction: decoded.direction } : undefined,
         }
-        const page = <Message extends { readonly id: SessionMessage.ID }>(messages: ReadonlyArray<Message>) => {
+        // OWN-PATCH(P-055) begin
+        const omitFiles = wantsToolFileOmission(ctx.request)
+        const page = <Message extends SessionMessage.Info | SessionMessage.MediaInfo>(
+          messages: ReadonlyArray<Message>,
+        ) => {
           const first = messages[0]
           const last = messages.at(-1)
           return {
-            data: messages,
+            data: omitFiles ? messages.map(withoutToolFileData) : messages,
+            // OWN-PATCH(P-055) end
             cursor: {
               previous: first ? cursor.encode(first, order, "previous") : undefined,
               next: last ? cursor.encode(last, order, "next") : undefined,
@@ -80,3 +87,30 @@ export const MessageHandler = HttpApiBuilder.group(Api, "server.message", (handl
     )
   }),
 )
+
+// OWN-PATCH(P-055) begin
+/**
+ * A tool result's inline files (`data:` URIs: screenshots, browser captures) with an empty payload, for a client that
+ * shows none of them in the transcript and reads the one message it needs. In a long computer-use session they are
+ * 98-99 % of a page's bytes. Files stored elsewhere (`media:`, `file:`) and user attachments stay whole.
+ */
+function withoutToolFileData<Message extends SessionMessage.Info | SessionMessage.MediaInfo>(message: Message): Message {
+  if (message.type !== "assistant") return message
+  return {
+    ...message,
+    content: message.content.map((part) =>
+      part.type === "tool" && "content" in part.state && part.state.content
+        ? {
+            ...part,
+            state: {
+              ...part.state,
+              content: part.state.content.map((item) =>
+                item.type === "file" && item.uri.startsWith("data:") ? { ...item, uri: `data:${item.mime};base64,` } : item,
+              ),
+            },
+          }
+        : part,
+    ),
+  }
+}
+// OWN-PATCH(P-055) end

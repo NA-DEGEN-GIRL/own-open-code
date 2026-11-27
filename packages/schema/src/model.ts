@@ -57,7 +57,17 @@ export const Type: Schema.Codec<Type> = Schema.Union([
 ]).annotate({ identifier: "Model.Type" })
 
 export const Settings = Schema.StructWithRest(
-  Schema.Struct(Struct.pick(Provider.Settings.schema.fields, ["compaction", "cache", "encoding"])),
+  Schema.Struct(
+    Struct.pick(Provider.Settings.schema.fields, [
+      "compaction",
+      "cache",
+      "encoding",
+      // OWN-PATCH(P-018) begin
+      "progressTimeout",
+      "toolInputTimeout",
+      // OWN-PATCH(P-018) end
+    ]),
+  ),
   // Provider packages may define arbitrary model-level options beyond OpenCode's shared compaction policy.
   [Schema.Record(Schema.String, Schema.Any)],
 ).annotate({ identifier: "Model.Settings" })

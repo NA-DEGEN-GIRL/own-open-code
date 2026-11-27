@@ -1,0 +1,12 @@
+/* Prompt history position line (03 §19.9). own tokens only (13.2). */
+.own-hs-position {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 4px 0;
+  color: var(--own-text-faint);
+  font-size: 11.5px;
+}
+.own-hs-back {
+  color: var(--own-text-muted);
+}

@@ -1,0 +1,41 @@
+/*
+ * The running mark (03 §7.6 `●` 실행 중): a dot in a ring, drawn still, wherever a session or its work runs (sidebar
+ * rows, split-pane titles, the model pill, the header's running menu, the background dock). The ring keeps it apart
+ * from the unread dot `•` without motion. An endless pulse or spin, one per running session, kept the compositor
+ * drawing at the display rate (240 Hz here) while anything ran: with one session streaming the GPU process used about
+ * half a core and nine keystrokes in ten took more than 16 ms to reach the screen; without them 11 % and one in ten
+ * (many-sessions bench 2026-10, own/reports/ui-perf-many-sessions-2026-10.md). Over a status glyph the glyph keeps
+ * its place and text, the mark is drawn on top. Unlayered (styles/index.css), so it wins over the component files'
+ * glyph colours and the sidebar's utilities.
+ */
+.own-run-mark,
+.own-run-glyph::before,
+.own-pane-status[data-running]::before,
+.own-run-kind-icon[data-kind="subagent"]::before {
+  box-sizing: border-box;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--own-accent-text);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, var(--own-accent-text) 0 52%, transparent 60%);
+}
+.own-run-mark {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+.own-run-glyph,
+.own-pane-status[data-running],
+.own-run-kind-icon[data-kind="subagent"] {
+  position: relative;
+  color: transparent;
+}
+.own-run-glyph::before,
+.own-pane-status[data-running]::before,
+.own-run-kind-icon[data-kind="subagent"]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}

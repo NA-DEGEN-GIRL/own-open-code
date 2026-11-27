@@ -1,0 +1,554 @@
+/*
+ * Switcher popover (03 §5.2) and switch-cost dialog (03 §6.3): loaded with their lazy chunk, not with the first CSS.
+ */
+
+/* ---- popover (5.2) ---- */
+
+.own-sw {
+  position: fixed;
+  z-index: 60;
+  width: min(640px, calc(100vw - 24px));
+  max-height: min(620px, calc(100vh - 24px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--own-bg-raised);
+  border: 1px solid var(--own-border);
+  border-radius: 12px;
+  box-shadow: var(--own-shadow-float);
+}
+.own-sw-sheet {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: 100vw;
+  max-height: 85vh;
+  /* A phone reaches nearly to the header (MUX: on an 816 px screen 85 % left two account rows). */
+  max-height: calc(100dvh - 48px);
+  border-radius: 14px 14px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.own-sw-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--own-border);
+}
+.own-sw-search {
+  flex: 1;
+  min-width: 0;
+}
+.own-sw-search input {
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--own-border-input);
+  border-radius: 8px;
+  background: var(--own-bg);
+  outline: none;
+}
+.own-sw-search input:focus {
+  border-color: var(--own-focus);
+}
+
+.own-sw-recent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--own-border);
+  font-size: 12px;
+  color: var(--own-text-faint);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.own-sw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--own-radius-chip);
+  border: 1px solid var(--own-border);
+  background: var(--own-bg);
+  color: var(--own-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.own-sw-chip:hover {
+  background: var(--own-bg-hover);
+}
+
+.own-sw-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.own-sw-col {
+  overflow: auto;
+  padding: 6px;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.own-sw-models {
+  border-left: 1px solid var(--own-border);
+  background: var(--own-bg-subtle);
+}
+.own-sw-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 4px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--own-text-muted);
+}
+.own-sw-empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 12.5px;
+  color: var(--own-text-muted);
+}
+
+.own-sw-account {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  contain: content;
+}
+.own-sw-account:hover {
+  background: var(--own-bg-hover);
+}
+.own-sw-account[aria-selected="true"] {
+  background: var(--own-accent-soft);
+  border-color: var(--own-accent-text);
+}
+.own-sw-col[data-active] .own-sw-account[data-active],
+.own-sw-col[data-active] .own-sw-model[data-active] {
+  box-shadow: inset 0 0 0 2px var(--own-focus);
+}
+/* Dims the account line and its bars only: the reason line (red for a problem) and links keep full contrast. */
+.own-sw-dim > .own-sw-row1,
+.own-sw-dim > .own-sw-limits {
+  opacity: 0.62;
+}
+.own-sw-row1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.own-sw-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13px;
+}
+/* 7.4: `● 캐시 따뜻함 · 약 4분` with a 6 px dot in the state's color (warm, cooling; the current account's cold or
+   unknown cache faint), the words muted. */
+.own-sw-cache {
+  /* It gives way before the account's name does (English: `Ch…` beside `Cache Warm · about 4 min`). */
+  flex: 0 999 auto;
+  min-width: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+  white-space: nowrap;
+}
+.own-sw-cache > .own-cache-dot {
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--own-text-faint);
+}
+.own-sw-cache[data-state="warm"] > .own-cache-dot {
+  background: var(--own-accent-text);
+}
+.own-sw-cache[data-state="cooling"] > .own-cache-dot {
+  background: var(--own-warn);
+}
+.own-sw-limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0 14px;
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+}
+.own-sw-limits > .own-lsum-line {
+  font-size: inherit;
+  line-height: 16px;
+}
+.own-sw-why {
+  display: block;
+  margin: 5px 0 0 14px;
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+}
+.own-sw-why[data-tone="danger"] {
+  color: var(--own-danger);
+}
+
+.own-sw-model {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  contain: content;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.own-sw-model:hover {
+  background: var(--own-bg-hover);
+}
+.own-sw-model[aria-selected="true"] {
+  background: var(--own-bg-raised);
+  box-shadow: 0 0 0 1px var(--own-accent-text);
+}
+.own-sw-radio {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--own-border-input);
+}
+.own-sw-model[aria-selected="true"] .own-sw-radio {
+  border-color: var(--own-accent-text);
+}
+.own-sw-model[aria-selected="true"] .own-sw-radio::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--own-accent-text);
+}
+.own-sw-model-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.own-sw-model-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.own-sw-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--own-text-faint);
+  white-space: nowrap;
+}
+.own-sw-warn {
+  color: var(--own-warn);
+}
+/* The effort and the speed side by side under both columns: in view whatever the model list's length. */
+.own-sw-opts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 20px;
+  padding: 2px 6px 4px;
+  border-top: 1px solid var(--own-border);
+  background: var(--own-bg-subtle);
+}
+.own-sw-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 6px 6px;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+.own-sw-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  border: 1px solid var(--own-border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+/* One line each (2026-10-18: `Ultrafast · 한도 ×8` broke in two); a strip too narrow for them all wraps whole
+   buttons instead. */
+.own-sw-seg button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font-size: 12.5px;
+  color: var(--own-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.own-sw-seg button[aria-pressed="true"] {
+  background: var(--own-accent-soft);
+  color: var(--own-text);
+  font-weight: 600;
+}
+
+.own-sw-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--own-border);
+}
+.own-sw-est {
+  flex: 1;
+  min-width: 240px;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.own-sw-note {
+  font-size: 11.5px;
+  color: var(--own-text-muted);
+}
+.own-sw-note[data-tone="warn"] {
+  color: var(--own-warn);
+}
+
+@media (max-width: 599px) {
+  .own-sw-body {
+    grid-template-columns: minmax(0, 1fr);
+    /* MUX 2026-11-06: each list scrolls in its own half. With content-sized rows the account list was cut after its
+       first groups and the models of the chosen account began under the next group's heading. Accounts get the larger part
+       (the G7's 816 px showed two and a half account rows at half and half). */
+    grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .own-sw-models {
+    border-left: 0;
+    border-top: 1px solid var(--own-border);
+  }
+  /* `<계정>의 모델` stays on top of its list, which opens scrolled to the current model. */
+  .own-sw-models > .own-sw-group:first-child {
+    position: sticky;
+    top: -6px;
+    z-index: 1;
+    margin: -6px -6px 0;
+    padding-inline: 14px;
+    background: var(--own-bg-subtle);
+  }
+}
+/* A phone's sheet on a touch screen: a handle that says it is a sheet, and 44 px choices for the effort and speed. */
+.own-sw-sheet::before {
+  content: "";
+  align-self: center;
+  flex: none;
+  width: 36px;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--own-border-strong);
+}
+@media (pointer: coarse) {
+  .own-sw-seg button,
+  .own-sw-chip {
+    min-height: 44px;
+  }
+  .own-sw-account,
+  .own-sw-model {
+    min-height: 48px;
+  }
+}
+
+/* ---- cost dialog (6.3) ---- */
+
+.own-sw-dlg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--own-scrim);
+}
+.own-sw-dlg {
+  width: min(600px, 100%);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--own-bg-raised);
+  border-radius: var(--own-radius-dialog);
+  box-shadow: var(--own-shadow-float);
+}
+.own-sw-dlg-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px 6px;
+}
+.own-sw-dlg-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.own-sw-dlg-body {
+  padding: 6px 18px 14px;
+  overflow: auto;
+}
+.own-sw-dlg-why {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--own-text-muted);
+}
+.own-sw-dlg-why [data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-sw-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: 10px;
+  background: var(--own-bg);
+  cursor: pointer;
+}
+.own-sw-opt:hover {
+  border-color: var(--own-border-strong);
+}
+.own-sw-opt[aria-checked="true"] {
+  border-color: var(--own-accent-text);
+  box-shadow: 0 0 0 1px var(--own-accent-text);
+}
+.own-sw-opt[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.own-sw-opt-radio {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--own-border-input);
+}
+.own-sw-opt[aria-checked="true"] .own-sw-opt-radio {
+  border-color: var(--own-accent-text);
+}
+.own-sw-opt[aria-checked="true"] .own-sw-opt-radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--own-accent-text);
+}
+.own-sw-opt-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 620;
+}
+.own-sw-opt-desc {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--own-text-muted);
+}
+.own-sw-opt-desc[data-tone="warn"] {
+  color: var(--own-warn);
+}
+.own-sw-dlg-more {
+  margin: 2px 0 8px;
+}
+.own-sw-dlg-detail {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--own-border);
+  border-radius: 8px;
+  background: var(--own-bg-subtle);
+  font-family: var(--own-font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--own-text-muted);
+}
+.own-sw-dlg-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--own-border);
+}
+.own-sw-dlg-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--own-text-muted);
+}
+
+/* CAM-9: the model's name gives way (ellipsis) so its tags and the row's hide button stay whole at any width. */
+.own-sw-model-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.own-sw-model-name > :not(.own-sw-model-label) {
+  flex: none;
+}
+.own-sw-model-hide {
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--own-accent-text);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.own-sw-model-hide:hover {
+  background: var(--own-bg-hover);
+  text-decoration: underline;
+}
+@media (pointer: coarse) {
+  .own-sw-model-hide {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,19 @@
+own.harness `pi` harness (packages/own-harness/src/pi/)
+
+The pi harness ports text and code from the Pi coding agent:
+
+  earendil-works/pi (https://github.com/earendil-works/pi)
+  Copyright (c) 2025 Mario Zechner
+  Licensed under the MIT License; the license text is in LICENSE next to this file.
+
+Ported at commit dd30101cfc5b0609411dd80b6f93adbc14db14cf (v1.5.1; first ported at 3daa20280, v1.2.0-22, refreshed
+on 2026-10-30 at e7a0df27c, v1.4.0-211, with the shell fixes of Pi 1.4.0, and on 2026-11-10 at v1.5.1 with the
+tightened system prompt, the edit tool's line-ending fix, pi-schema's argument texts, the bash timeout after the
+shell exited and the streamed read). The files read are listed with their SHA-256 (LF line endings) in source.json.
+The system prompt, tool descriptions, parameter schemas, result and error texts, truncation rules, edit matching and
+diff rendering, shell resolution and the ported tests come from those files; they are marked "Ported from
+earendil-works/pi" in src/pi/ and test/unit/pi/.
+
+The argument check (src/pi/args.ts) follows the messages and conversion rules of Pi's @earendil-works/pi-schema
+(packages/schema, MIT, Earendil Works), whose conversion rules port TypeBox 1.3.27's Value.Convert (MIT,
+Copyright (c) 2017-2026 Haydn Paterson). own reimplements the few rules Pi's four tools need and depends on neither.

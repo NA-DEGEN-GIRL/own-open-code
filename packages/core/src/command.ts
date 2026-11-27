@@ -27,6 +27,9 @@ export interface Definition {
 
 export type Editor = {
   add: (definition: Definition) => void
+  // OWN-PATCH(P-038) begin: a later transform reads what an earlier one added, so it can wrap that command.
+  get: (name: string) => Definition | undefined
+  // OWN-PATCH(P-038) end
 }
 
 export class NotFoundError extends Schema.TaggedError<NotFoundError>()("Command.NotFoundError", {
@@ -64,6 +67,7 @@ export const layer = Layer.effect(
       initial: () => new Map(),
       editor: (editor) => ({
         add: (definition) => editor.set(definition.name, definition),
+        get: (name) => editor.get(name), // OWN-PATCH(P-038)
       }),
       notify: State.changes(
         (commands) => Array.from(commands.values(), info),

@@ -1,0 +1,57 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_fx01","object":"response","created_at":1791800000,"status":"in_progress","model":"gpt-5.6-luna","output":[],"usage":null},"sequence_number":0}
+
+event: response.in_progress
+data: {"type":"response.in_progress","response":{"id":"resp_fx01","object":"response","created_at":1791800000,"status":"in_progress","model":"gpt-5.6-luna","output":[],"usage":null},"sequence_number":1}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":0,"item":{"id":"rs_fx01","type":"reasoning","summary":[]},"sequence_number":2}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","output_index":0,"item":{"id":"rs_fx01","type":"reasoning","summary":[]},"sequence_number":3}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":1,"item":{"id":"ws_fx01","type":"web_search_call","status":"in_progress","action":{"type":"search","query":"bun 1.4 release notes"}},"sequence_number":4}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","output_index":1,"item_id":"ws_fx01","sequence_number":5}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","output_index":1,"item_id":"ws_fx01","sequence_number":6}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","output_index":1,"item_id":"ws_fx01","sequence_number":7}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","output_index":1,"item":{"id":"ws_fx01","type":"web_search_call","status":"completed","action":{"type":"search","query":"bun 1.4 release notes","queries":["bun 1.4 release notes"],"sources":[{"type":"url","url":"https://bun.example.test/blog/bun-v1.4"},{"type":"url","url":"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0"},{"type":"url","url":"https://news.example.test/bun-1-4"}]}},"sequence_number":8}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":2,"item":{"id":"ws_fx02","type":"web_search_call","status":"in_progress","action":{"type":"open_page","url":"https://bun.example.test/blog/bun-v1.4"}},"sequence_number":9}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","output_index":2,"item":{"id":"ws_fx02","type":"web_search_call","status":"completed","action":{"type":"open_page","url":"https://bun.example.test/blog/bun-v1.4"}},"sequence_number":10}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":3,"item":{"id":"msg_fx01","type":"message","status":"in_progress","role":"assistant","content":[],"phase":"final_answer"},"sequence_number":11}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","item_id":"msg_fx01","output_index":3,"content_index":0,"part":{"type":"output_text","text":"","annotations":[],"logprobs":[]},"sequence_number":12}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"msg_fx01","output_index":3,"content_index":0,"delta":"{\"results\":[{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4\",\"content\":\"Bun 1.4 adds a built-in SQL client and speeds up bun install by 30% on Windows.\"},{\"url\":\"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0\",\"title\":\"Release bun-v1.4.0 · oven-sh/bu","logprobs":[],"sequence_number":13}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"msg_fx01","output_index":3,"content_index":0,"delta":"n\",\"content\":\"The 1.4.0 release lists 212 fixes, including Windows path handling in bun test.\"},{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4 (duplicate)\",\"content\":\"The same page again.\"},{\"url\":\"javascript:alert(1)\",\"title\":\"not a web page\",\"content\":\"dropped\"}]}","logprobs":[],"sequence_number":14}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","item_id":"msg_fx01","output_index":3,"content_index":0,"text":"{\"results\":[{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4\",\"content\":\"Bun 1.4 adds a built-in SQL client and speeds up bun install by 30% on Windows.\"},{\"url\":\"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0\",\"title\":\"Release bun-v1.4.0 · oven-sh/bun\",\"content\":\"The 1.4.0 release lists 212 fixes, including Windows path handling in bun test.\"},{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4 (duplicate)\",\"content\":\"The same page again.\"},{\"url\":\"javascript:alert(1)\",\"title\":\"not a web page\",\"content\":\"dropped\"}]}","logprobs":[],"sequence_number":15}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","item_id":"msg_fx01","output_index":3,"content_index":0,"part":{"type":"output_text","text":"{\"results\":[{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4\",\"content\":\"Bun 1.4 adds a built-in SQL client and speeds up bun install by 30% on Windows.\"},{\"url\":\"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0\",\"title\":\"Release bun-v1.4.0 · oven-sh/bun\",\"content\":\"The 1.4.0 release lists 212 fixes, including Windows path handling in bun test.\"},{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4 (duplicate)\",\"content\":\"The same page again.\"},{\"url\":\"javascript:alert(1)\",\"title\":\"not a web page\",\"content\":\"dropped\"}]}","annotations":[],"logprobs":[]},"sequence_number":16}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","output_index":3,"item":{"id":"msg_fx01","type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":"{\"results\":[{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4\",\"content\":\"Bun 1.4 adds a built-in SQL client and speeds up bun install by 30% on Windows.\"},{\"url\":\"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0\",\"title\":\"Release bun-v1.4.0 · oven-sh/bun\",\"content\":\"The 1.4.0 release lists 212 fixes, including Windows path handling in bun test.\"},{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4 (duplicate)\",\"content\":\"The same page again.\"},{\"url\":\"javascript:alert(1)\",\"title\":\"not a web page\",\"content\":\"dropped\"}]}","annotations":[],"logprobs":[]}],"phase":"final_answer"},"sequence_number":17}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_fx01","object":"response","created_at":1791800000,"status":"completed","model":"gpt-5.6-luna","output":[{"id":"rs_fx01","type":"reasoning","summary":[]},{"id":"ws_fx01","type":"web_search_call","status":"completed","action":{"type":"search","query":"bun 1.4 release notes","queries":["bun 1.4 release notes"],"sources":[{"type":"url","url":"https://bun.example.test/blog/bun-v1.4"},{"type":"url","url":"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0"},{"type":"url","url":"https://news.example.test/bun-1-4"}]}},{"id":"ws_fx02","type":"web_search_call","status":"completed","action":{"type":"open_page","url":"https://bun.example.test/blog/bun-v1.4"}},{"id":"msg_fx01","type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":"{\"results\":[{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4\",\"content\":\"Bun 1.4 adds a built-in SQL client and speeds up bun install by 30% on Windows.\"},{\"url\":\"https://github.example.test/oven-sh/bun/releases/tag/bun-v1.4.0\",\"title\":\"Release bun-v1.4.0 · oven-sh/bun\",\"content\":\"The 1.4.0 release lists 212 fixes, including Windows path handling in bun test.\"},{\"url\":\"https://bun.example.test/blog/bun-v1.4\",\"title\":\"Bun v1.4 (duplicate)\",\"content\":\"The same page again.\"},{\"url\":\"javascript:alert(1)\",\"title\":\"not a web page\",\"content\":\"dropped\"}]}","annotations":[],"logprobs":[]}],"phase":"final_answer"}],"usage":{"input_tokens":4210,"input_tokens_details":{"cached_tokens":0},"output_tokens":312,"output_tokens_details":{"reasoning_tokens":64},"total_tokens":4522}},"sequence_number":18}
+

@@ -290,7 +290,9 @@ function toLLMMessage(message: SessionMessage.Info, model: Model.Ref, providerMe
     case "assistant":
       return assistant(message, model, providerMetadataKey)
     case "compaction": {
-      if (message.status !== "completed") return []
+      // OWN-PATCH(P-035) begin: a context reset only bounds history
+      if (message.status !== "completed" || message.reason === "reset") return []
+      // OWN-PATCH(P-035) end
       // History selection only keeps native windows the target model can replay.
       if (message.native?.messages !== undefined) return [...decodeNativeWindow(message.native.messages)]
       const kept = SessionRecentText.kept(message)

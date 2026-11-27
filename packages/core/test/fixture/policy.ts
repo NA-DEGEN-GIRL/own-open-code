@@ -66,6 +66,9 @@ export const registerIntegrationPolicy = Effect.fn(function* (input: {
         get: () => Effect.die("unused permission.get"),
         reply: () => Effect.die("unused permission.reply"),
         assert: () => Effect.die("unused permission.assert"),
+        // OWN-PATCH(P-019) begin
+        paths: () => Effect.die("unused permission.paths"),
+        // OWN-PATCH(P-019) end
       },
     }),
   ).pipe(
