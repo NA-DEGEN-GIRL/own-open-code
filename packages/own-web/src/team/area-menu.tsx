@@ -82,6 +82,8 @@ import {
 import { ConvertPanel, MergePanel, MovePanel, RecreatePanel, RetirePanel, SplitPanel } from "./reorg"
 import { teamText, type TeamKey } from "./strings"
 import {
+  aliasForm,
+  aliasTaken,
   areaActions,
   areaGroups,
   areaTalkers,
@@ -118,6 +120,7 @@ type Panel =
   | "removePeer"
   | "seat"
   | "ownerNote"
+  | "alias"
   | "outbox"
   | "preset"
   | "role"
@@ -488,6 +491,7 @@ export default function AreaMenu(props: { readonly target: AreaTarget; readonly 
       case "outbox":
       case "preset":
       case "role":
+      case "alias":
       case "paths":
       case "rename":
       case "split":
@@ -540,6 +544,8 @@ export default function AreaMenu(props: { readonly target: AreaTarget; readonly 
         return text("own.team.areaMenu.preset")
       case "role":
         return text("own.team.areaMenu.role")
+      case "alias":
+        return text("own.team.areaMenu.alias")
       case "userMade":
         return text("own.team.areaMenu.userMade")
       case "paths":
@@ -590,6 +596,13 @@ export default function AreaMenu(props: { readonly target: AreaTarget; readonly 
         </Show>
         <Show when={action === "main"}>
           <span class="text-[11.5px] text-own-muted">{text("own.team.areaMenu.mainHint")}</span>
+        </Show>
+        <Show when={action === "alias"}>
+          <span class="text-[11.5px] text-own-muted" data-testid="area-menu-alias-now">
+            {value?.owner.alias
+              ? text("own.team.areaMenu.aliasNow", { alias: value.owner.alias })
+              : text("own.team.areaMenu.aliasNone")}
+          </span>
         </Show>
         <Show when={action === "handBack"}>
           <span class="text-[11.5px] text-own-muted">{text("own.team.areaMenu.handBackHint")}</span>
@@ -984,6 +997,26 @@ export default function AreaMenu(props: { readonly target: AreaTarget; readonly 
                       void run(async () => {
                         await runtime()!.team.rpc.call("area.edit", { ...ids, note })
                         showToast({ message: text("own.team.seat.noteSaved", { area: value().name }) })
+                      })
+                    }
+                    onCancel={close}
+                  />
+                </Match>
+                <Match when={panel() === "alias"}>
+                  <AliasPanel
+                    text={text}
+                    busy={busy()}
+                    area={value().name}
+                    alias={value().owner.alias ?? ""}
+                    taken={entry() ? aliasTaken(entry()!, value().id) : []}
+                    onSubmit={(alias) =>
+                      void run(async () => {
+                        await runtime()!.team.rpc.call("area.edit", { ...ids, alias })
+                        showToast({
+                          message: alias
+                            ? text("own.team.alias.saved", { area: value().name, alias })
+                            : text("own.team.alias.cleared", { area: value().name }),
+                        })
                       })
                     }
                     onCancel={close}
@@ -1833,6 +1866,75 @@ function OwnerNotePanel(props: {
           {props.text("own.team.action.cancel")}
         </button>
         <button type="submit" class={BUTTON} disabled={props.busy || !form().ok} data-testid="area-owner-note-save">
+          {props.text("own.team.action.save")}
+        </button>
+      </span>
+    </form>
+  )
+}
+
+/**
+ * 별칭 바꾸기… (2026-11-27): the owner alias, at most 12 characters on one line, unique in the team (view-model.ts
+ * `aliasForm`), as `area.edit{alias}`; an empty one removes it. The team main may call the area by it and the screens
+ * show `별칭 · 영역`; the owner conversation is not told.
+ */
+function AliasPanel(props: {
+  readonly text: TeamText
+  readonly busy: boolean
+  readonly area: string
+  readonly alias: string
+  readonly taken: readonly string[]
+  readonly onSubmit: (alias: string) => void
+  readonly onCancel: () => void
+}) {
+  const [alias, setAlias] = createSignal(untrack(() => props.alias))
+  const form = createMemo(() => aliasForm(alias(), props.taken))
+  const said = createUniqueId()
+  const problem = () => {
+    const value = form()
+    if (value.left < 0) return props.text("own.team.alias.over", { n: -value.left })
+    if (!value.line) return props.text("own.team.alias.line")
+    if (!value.free) return props.text("own.team.alias.taken")
+    return undefined
+  }
+  return (
+    <form
+      class="flex flex-col gap-1.5 px-2.5 py-1.5"
+      aria-label={props.text("own.team.alias.title", { area: props.area })}
+      data-testid="area-alias"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (form().ok) props.onSubmit(form().alias)
+      }}
+    >
+      <p class="m-0 font-semibold">{props.text("own.team.alias.title", { area: props.area })}</p>
+      <p class="m-0 text-[12px] text-own-muted">{props.text("own.team.alias.hint")}</p>
+      <label class="flex flex-col gap-0.5 text-[12px] text-own-muted">
+        {props.text("own.team.alias.field")}
+        <input
+          class={FIELD}
+          value={alias()}
+          placeholder={props.text("own.team.alias.placeholder")}
+          aria-describedby={said}
+          aria-invalid={!form().ok}
+          autocomplete="off"
+          data-testid="area-alias-text"
+          onInput={(event) => setAlias(event.currentTarget.value)}
+        />
+      </label>
+      <span
+        id={said}
+        class="text-[11.5px]"
+        classList={{ "text-own-muted": form().ok, "text-own-danger": !form().ok }}
+        data-testid="area-alias-left"
+      >
+        {problem() ?? props.text("own.team.alias.left", { n: form().left })}
+      </span>
+      <span class="flex justify-end gap-1.5">
+        <button type="button" class={BUTTON} onClick={() => props.onCancel()}>
+          {props.text("own.team.action.cancel")}
+        </button>
+        <button type="submit" class={BUTTON} disabled={props.busy || !form().ok} data-testid="area-alias-save">
           {props.text("own.team.action.save")}
         </button>
       </span>

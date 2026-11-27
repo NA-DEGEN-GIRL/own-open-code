@@ -42,6 +42,8 @@
 //     by hand (영역 만들기) and the main merges two of them after the user's yes; `게임 작업` on ChatGPT 01;
 //   - `depot` (t3-seat, 2026-11-12): one new area `stock` (`재고 화면`) from `main`; `창고 작업` on ChatGPT 01. The
 //     spec opens the conversations the area's seat moves onto in the area's folder itself.
+//   - `lounge` (t3-room, 2026-11-27): three new areas from `main` (`화면` ui, `서버` api, `문서` docs) for the owner
+//     alias (별칭) and the 팀 룸 tab; `라운지 작업` on ChatGPT 01.
 //
 // Fake SSH hosts for a remote own.team (04 §12.1, 06 §4.13), both on the device stand-in's port: `/srv/<host>/api/*`
 // is relayed to this one server (a remote service of the same build), so the host's own.team is the real one, except
@@ -108,7 +110,14 @@ const T3 = {
   gitMenu: "rom-notes",
   areas: "quest",
   seat: "depot",
+  room: "lounge",
 } as const
+/** `lounge`'s areas, whose owners sit in t3-room's 팀 룸. */
+const LOUNGE = [
+  { slug: "ui", name: "화면", goal: "화면 다듬기" },
+  { slug: "api", name: "서버", goal: "서버 정리" },
+  { slug: "docs", name: "문서", goal: "문서 정리" },
+] as const
 /** `depot`'s area, whose owner seat t3-seat moves. */
 const DEPOT_AREA = { slug: "stock", name: "재고 화면", goal: "재고 화면 다듬기" } as const
 const ATELIER = [
@@ -171,7 +180,18 @@ const fakes = startTeamFakes({
 })
 
 /** The T2 and T3 projects' folders, built with F1 in the server's temp root. */
-const folders = { shop: "", calc: "", memo: "", atelier: "", relay: "", plain: "", notes: "", quest: "", depot: "" }
+const folders = {
+  shop: "",
+  calc: "",
+  memo: "",
+  atelier: "",
+  relay: "",
+  plain: "",
+  notes: "",
+  quest: "",
+  depot: "",
+  lounge: "",
+}
 const team = await startTeamServer({
   name: NAME,
   fakes,
@@ -194,6 +214,7 @@ const team = await startTeamServer({
     folders.notes = notes(base)
     folders.quest = quest(base)
     folders.depot = depot(base)
+    folders.lounge = lounge(base)
     return home
   },
 })
@@ -261,6 +282,11 @@ const t3 = {
     home: folders.depot,
     seed: await team.createSession({ title: "창고 작업", model: MODEL["01"], directory: folders.depot }),
     area: DEPOT_AREA.name,
+  },
+  room: {
+    home: folders.lounge,
+    seed: await team.createSession({ title: "라운지 작업", model: MODEL["01"], directory: folders.lounge }),
+    areas: LOUNGE,
   },
 }
 await accounts(
@@ -381,6 +407,16 @@ function judgedFor(prompt: string, reorganize: boolean) {
       notes: "지금 있는 작업 폴더 두 개를 받아들입니다.",
     }
   if (name === T2.settings) return proposal(0)
+  if (name === T3.room) {
+    const base = proposal(
+      LOUNGE.length,
+      LOUNGE.map((area) => area.slug),
+    )
+    return {
+      ...base,
+      areas: base.areas.map((area, index) => ({ ...area, name: LOUNGE[index]!.name, goal: LOUNGE[index]!.goal })),
+    }
+  }
   if (name === T3.seat) {
     const one = proposal(1, [DEPOT_AREA.slug])
     return { ...one, areas: one.areas.map((area) => ({ ...area, name: DEPOT_AREA.name, goal: DEPOT_AREA.goal })) }
@@ -506,6 +542,18 @@ function depot(base: string) {
     "src/stock.ts": "export const stock = [] as string[]\n",
   })
   commit(home, "depot")
+  return home
+}
+
+/** `lounge` (t3-room): a small app repository. */
+function lounge(base: string) {
+  const home = init(path.join(base, T3.room))
+  write(home, {
+    "README.md": "# lounge\n",
+    "package.json": '{ "name": "lounge" }\n',
+    "src/app.ts": "export const app = 1\n",
+  })
+  commit(home, "lounge")
   return home
 }
 

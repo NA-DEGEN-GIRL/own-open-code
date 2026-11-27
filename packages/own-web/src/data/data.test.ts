@@ -1039,6 +1039,34 @@ describe("OwnStore", () => {
     dispose()
   })
 
+  // CL (2026-11-27): the list read before claude-auth's first detection had no Claude account, and the slot's arrival
+  // moves no registry revision; `plugin.status` says it came, so the list is read again.
+  test("plugin.status reads the list again: Claude accounts listed after the slot was detected show", async () => {
+    const server = { detected: false }
+    const claude = (id: string, label: string) => ({ id, providerID: "anthropic", kind: "claude-sub", label })
+    const { own, bus, calls, dispose } = setup({
+      "accounts.list": () => ({
+        revision: 3,
+        accounts: [
+          { id: "acc_1", providerID: "own-oai-aaaa", kind: "oai", label: "Alpha" },
+          ...(server.detected ? [claude("acc_claude_slot", "AC-01"), claude("acc_cl2", "AC-02")] : []),
+        ],
+      }),
+    })
+    await own.resync()
+    expect(own.state.accountOrder).toEqual(["acc_1"])
+    const lists = () => calls.filter((call) => call.method === "accounts.list").length
+    const before = lists()
+    server.detected = true
+    const event = { eventId: "p1", origin: "global", plugin: "claudeAuth", phase: "installed" }
+    bus.publish(ownFrame("plugin.status", event))
+    bus.flush()
+    await tick()
+    expect(lists()).toBe(before + 1)
+    expect(own.state.accountOrder).toEqual(["acc_1", "acc_claude_slot", "acc_cl2"])
+    dispose()
+  })
+
   test("a resync takes exhaustion reasons from the snapshot; login problems the list still shows stay", async () => {
     const usage = "subscription_sharing_usage_limit_exceeded"
     const server: { exhausted: unknown[] } = { exhausted: [] }

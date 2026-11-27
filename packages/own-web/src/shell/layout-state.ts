@@ -2,8 +2,8 @@
 // storage fails). Widths change only CSS variables while dragging (R7).
 import { createStore } from "solid-js/store"
 
-export type PanelTab = "review" | "files" | "terminal" | "browser" | "accounts"
-export const PANEL_TABS: readonly PanelTab[] = ["review", "files", "terminal", "browser", "accounts"]
+export type PanelTab = "review" | "files" | "terminal" | "browser" | "accounts" | "team"
+export const PANEL_TABS: readonly PanelTab[] = ["review", "files", "terminal", "browser", "accounts", "team"]
 
 export interface LayoutState {
   /** User widths; `undefined` follows the tier default. */

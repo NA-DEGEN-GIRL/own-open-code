@@ -1,4 +1,5 @@
-// Work panel (03 §4.7): tabs 리뷰 / 파일 / 터미널 / 브라우저 / 계정·한도. Tab content is a lazy chunk loaded on first
+// Work panel (03 §4.7): tabs 리뷰 / 파일 / 터미널 / 브라우저 / 계정·한도, and 팀 룸 on a team conversation (06 §9.9,
+// src/team/room). Tab content is a lazy chunk loaded on first
 // open (R5), stays mounted while hidden (terminal scrollback, browser tabs) and is told when it is not visible so it
 // can stop rAF loops and observers. The 파일 tab is src/files through src/adapter/files.tsx (19.4). Tab badges (4.7):
 // 리뷰 = files the last turn changed (review module, until the tab showed the session), 터미널 = running PTYs.
@@ -25,6 +26,7 @@ const LOADERS: Record<PanelTab, () => Promise<{ default: Component<PanelTabProps
   terminal: () => import("@/terminal/panel-tab"),
   browser: () => import("@/browser"),
   accounts: () => import("@/limits/panel-tab"),
+  team: () => import("@/team/room/panel-tab"),
 }
 const CONTENT: Record<PanelTab, Component<PanelTabProps & { tab: PanelTab }>> = {
   review: lazy(LOADERS.review),
@@ -32,6 +34,7 @@ const CONTENT: Record<PanelTab, Component<PanelTabProps & { tab: PanelTab }>> = 
   terminal: lazy(LOADERS.terminal),
   browser: lazy(LOADERS.browser),
   accounts: lazy(LOADERS.accounts),
+  team: lazy(LOADERS.team),
 }
 
 export const TAB_LABEL: Record<PanelTab, I18nKey> = {
@@ -40,6 +43,7 @@ export const TAB_LABEL: Record<PanelTab, I18nKey> = {
   terminal: "own.panel.terminal",
   browser: "own.panel.browser",
   accounts: "own.panel.accounts",
+  team: "own.panel.team",
 }
 
 export function WorkPanel() {

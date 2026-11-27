@@ -35,6 +35,8 @@ export const en: Partial<Record<I18nKey, string>> = {
   "own.panel.terminal": "Terminal",
   "own.panel.browser": "Browser",
   "own.panel.accounts": "Accounts & limits",
+  "own.panel.team": "Team room",
+  "own.panel.teamCommand": "Work panel: team room",
   "own.panel.toggle": "Work panel",
   "own.accounts.title": "Accounts",
   "own.accounts.add": "Add account",

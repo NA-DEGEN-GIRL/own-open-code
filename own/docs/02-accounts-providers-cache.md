@@ -4140,7 +4140,7 @@ core의 앞선 내장 플러그인이 주는 기본값은 core의 설정 파일 
 | `switch.suggested` | `{eventId, sessionID, reason:"hard"\|"auth"\|"home_available"\|"reset_passed", candidates:[…], continue:boolean}` | 세션 location | own-accounts(`anthropic` 소진 판정은 own-telemetry → `own-runtime`) |
 | `ledger.step` | `{eventId, line: LedgerLine}` | 세션 location | own-accounts(step 이벤트 → runtime ledger writer, 7.5) |
 | `alert` | `{eventId, code, severity, sessionID?, accountID?, directory?, message}` | 세션 경보는 세션 location, 전역·Location 경보는 leader | own-accounts(7.7). `claude_extra_usage`만 own-telemetry → `own-runtime` |
-| `plugin.status` | `{eventId, plugin:"claudeAuth", phase, step?, ok?, error?}` | leader | own-accounts(설치·제거 작업) |
+| `plugin.status` | `{eventId, plugin:"claudeAuth", phase, step?, ok?, error?}` | leader | own-accounts. 이 위치에서 claude-auth가 감지되거나 빠지면(감지·검증 상태가 바뀌면) 보낸다. Claude 구독 계정은 감지된 동안만 `accounts.list`에 들고, 이 변화는 레지스트리 리비전을 바꾸지 않는다. own-web은 이때 `accounts.list`를 다시 읽는다(CL, 2026-11-27: 서비스 시작 직후 읽은 목록에 AC-01..04가 빠진 채 남던 문제) |
 | `plugin.trust.changed` | `{eventId, directory, status:"ok"\|"blocked_by_plugin", pending:number}` | leader | own-accounts allowlist 검사(4.2) |
 | `presets.changed` | `{eventId, removed?: Preset.ID[]}`. `presets.json`이 바뀌었다(프리셋, ★, 가벼운 짝, 새 대화 기본 모델, 전역 설정). `removed`는 이 변경으로 지운 프리셋이다(그 세션들은 묶음의 ★로 감). 받은 클라이언트는 `presets.list`를 다시 부른다. T0에 더함, `removed`는 T1(07 §8.1). T2: 파일이 그대로여도 열린 수리 알림(`repairs`)이 바뀌면 낸다(07 §4.3) | leader | own-accounts(`store.changed{store:"presets"}`, T2는 수리 확인 `PresetRepair`도) |
 | `session.preset.changed` | `{eventId, sessionID, binding: Preset.Binding}`. 루트 세션의 바인딩이 바뀌었다(`session.preset.apply`, 울트라 켜기·끄기, 지운 프리셋 뒤 ★로 다시 묶기). T1(07 §8.1) | 세션 location | own-accounts(KV `sess:<root>:preset`) |

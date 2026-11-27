@@ -3,6 +3,7 @@ export * as AreaEditRpc from "./area-edit.js"
 import { OwnTeam } from "@own/protocol"
 import { JudgeValidate } from "../judge/validate.js"
 import { AreaCreate } from "../ops/area-create.js"
+import { OwnerAlias } from "../registry/alias.js"
 import { Areas } from "../registry/area.js"
 import { Fold } from "../report/fold.js"
 import { Services } from "../services.js"
@@ -23,6 +24,11 @@ import { RpcFailure } from "./fail.js"
  * removes it. At most {@link OwnTeam.OWNER_NOTE_MAX} characters, as a peer's role text. It is in no role entry, so
  * nothing is written to a conversation; the team's views show it where the area has a peer.
  *
+ * 별칭 (`alias`, feature `owner-alias`, 2026-11-27): the user's short name for the owner seat (`Owner.alias`), trimmed;
+ * an empty one removes it. At most {@link OwnTeam.OWNER_ALIAS_MAX} characters on one line, unique in the team
+ * (`OwnerAlias.problem`, checked in the mutex against the registry as it is then). A registry write only: no role entry,
+ * no title, no digest entry; the main's next team update names the area `별칭 · 영역(slug)`.
+ *
  * `area.create.check` (2026-10-27, the same feature: the dialog that sends what `area-edit` builds take): 영역 만들기's
  * `만들 곳`, the folder and record name V6 gives a new area of the slug now (`AreaCreate.check`), so the dialog shows
  * `<slug>-2` where a branch or a non-empty folder has the name.
@@ -30,7 +36,7 @@ import { RpcFailure } from "./fail.js"
 
 export type Methods = "area.edit" | "area.create.check"
 
-export const FEATURES: ReadonlyArray<OwnTeam.Feature> = ["area-edit", "owner-note"]
+export const FEATURES: ReadonlyArray<OwnTeam.Feature> = ["area-edit", "owner-note", "owner-alias"]
 
 export function handlers(services: Services.Context): TeamRpc.Group<Methods> {
   return {
@@ -59,6 +65,7 @@ export async function edit(
     readonly goal?: string
     readonly userMade?: boolean
     readonly note?: string
+    readonly alias?: string
     /** Who changes the role (internal, not on the wire): the screen's RPC is the user's; absent = the user. */
     readonly by?: "user" | "owner" | "main"
   },
@@ -69,6 +76,7 @@ export async function edit(
   const note = input.note?.trim()
   if (note !== undefined && note.length > OwnTeam.OWNER_NOTE_MAX)
     return Services.failure("seat_invalid", "담당 메모는 1,024자 이하로 적어요", { why: "note" })
+  const alias = input.alias?.trim()
   const written = await services.write(team.id, async (): Promise<Services.Result<Written>> => {
     const current = await services.registry.areas.get(team.id, input.areaID)
     if (!current || current.state === "retired")
@@ -78,8 +86,16 @@ export async function edit(
         areaID: current.id,
         why: current.broken?.why ?? "identity",
       })
+    const why = alias ? OwnerAlias.problem(alias, current.id, await services.registry.areas.list(team.id)) : undefined
+    if (why === "alias")
+      return Services.failure("seat_invalid", `별칭은 줄바꿈 없이 ${OwnTeam.OWNER_ALIAS_MAX}자 이하로 적어요`, { why })
+    if (why === "alias-taken")
+      return Services.failure("seat_invalid", `'${alias}'은(는) 팀의 다른 영역이나 동료가 이미 쓰는 이름이에요`, {
+        why,
+      })
     const goal = input.goal === undefined ? current.goal : JudgeValidate.clean(input.goal, JudgeValidate.LIMITS.goal)
-    const next = marked({ ...current, goal, owner: noted(current.owner, note) }, input.userMade, services.clock.now())
+    const owner = named(noted(current.owner, note), alias)
+    const next = marked({ ...current, goal, owner }, input.userMade, services.clock.now())
     if (JSON.stringify(next) !== JSON.stringify(current)) await AreaCreate.save(services, next)
     return { ok: true, area: next, role: goal !== current.goal }
   })
@@ -119,6 +135,13 @@ function noted(owner: OwnTeam.Owner, note: string | undefined): OwnTeam.Owner {
   if (note === undefined) return owner
   const { note: _note, ...rest } = owner
   return note === "" ? rest : { ...rest, note }
+}
+
+/** The owner alias as asked: kept (`undefined`), removed (empty) or set. */
+function named(owner: OwnTeam.Owner, alias: string | undefined): OwnTeam.Owner {
+  if (alias === undefined) return owner
+  const { alias: _alias, ...rest } = owner
+  return alias === "" ? rest : { ...rest, alias }
 }
 
 /** The mark as asked: kept (`undefined`), set once (`true`, its first time stays) or removed (`false`). */

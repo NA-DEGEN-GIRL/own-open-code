@@ -551,7 +551,9 @@ export function createOwnStore(input: {
         reloadOffers()
         break
       case "plugin.status":
-        // The Claude subscription slot came or went.
+        // The Claude subscription slot came or went: its accounts are listed only while it is there, and the registry
+        // revision did not move (CL, 2026-11-27). A host's store copies this one, so it follows.
+        if (!input.registry) void loadAccounts().catch(report)
         reloadOffers()
         break
       case "presets.changed":

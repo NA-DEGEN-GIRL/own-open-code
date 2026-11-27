@@ -385,12 +385,41 @@ describe("claude-auth detection", () => {
     expect(w.plugins.claudeSlot().detected).toBe(false)
     expect(w.plugins.claudeOrder()).toBe("missing")
     expect(w.reloads.count).toBe(reloads + 1)
+    // CL (2026-11-27): the Claude accounts are listed only while detected, and no registry revision moved: clients are
+    // told, so a list read before the change is read again.
+    expect(w.events.filter((event) => event.name === "plugin.status").map((event) => event.payload)).toMatchObject([
+      { plugin: "claudeAuth", phase: "installed" },
+    ])
 
     // A list that predates this instance's generation (no active own.accounts) is ignored.
     w.override = { entries: [claude] }
     w.plugins.onEvent?.(sessionEvent("plugin.updated", {}, w.workspace), { local: true })
     await ok(w.plugins.claudeAuthStatus, {})
     expect(w.plugins.claudeSlot().detected).toBe(false)
+  })
+
+  // CL (2026-11-27): a new Location's plugin list still described the previous generation at start, so the account
+  // list own-web read then had no Claude account; claude-auth was detected a moment later and the page never read the
+  // list again (AC-01..04 missing from 계정 관리, 계정·한도 and the SSH host's switcher).
+  test("a detection after start tells the clients, once", async () => {
+    await using w = await world({ config: configText({ accounts: "x", telemetry: "y" }) })
+    const accounts = local("own.accounts", path.join(w.own.accounts, "index.js"))
+    const telemetry = local("own.telemetry", path.join(w.own.telemetry, "index.js"))
+    const claude = local(Plugin.CLAUDE_AUTH_ID, w.bundle())
+    w.override = { entries: [telemetry, claude] }
+    await w.plugins.start()
+    expect(w.plugins.claudeSlot().detected).toBe(false)
+    const told = () => w.events.filter((event) => event.name === "plugin.status").map((event) => event.payload)
+    expect(told()).toEqual([])
+
+    w.override = { entries: [accounts, claude, telemetry] }
+    w.plugins.onEvent?.(sessionEvent("plugin.updated", {}, w.workspace), { local: true })
+    await ok(w.plugins.claudeAuthStatus, {})
+    expect(w.plugins.claudeSlot()).toMatchObject({ detected: true, verified: true })
+    expect(told()).toMatchObject([{ plugin: "claudeAuth", phase: "installed" }])
+    // The same slot again: nothing to tell.
+    await ok(w.plugins.claudeAuthStatus, {})
+    expect(told()).toHaveLength(1)
   })
 
   test("claude-auth active before own.team is reported as before_own_team (06 §2.6)", async () => {

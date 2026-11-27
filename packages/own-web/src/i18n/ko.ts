@@ -214,6 +214,8 @@ export const ko = {
   "own.panel.terminal": "터미널",
   "own.panel.browser": "브라우저",
   "own.panel.accounts": "계정·한도",
+  "own.panel.team": "팀 룸",
+  "own.panel.teamCommand": "작업 패널: 팀 룸",
   "own.panel.toggle": "작업 패널",
   "own.panel.nativeHidden": "브라우저 화면을 잠시 숨겼어요",
   "own.ctx.meter": "문맥 {used} / {window} · 자동 압축 {trigger} ({source})",

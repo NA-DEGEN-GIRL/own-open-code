@@ -306,12 +306,13 @@ export async function strip(
 
 /**
  * The owner fields that stay with the area when its owner conversation changes: the conversations still to be released
- * (`Seat.sweep`) and the user's owner note.
+ * (`Seat.sweep`), the user's owner note and the owner alias (별칭).
  */
 export function carried(owner: OwnTeam.Owner) {
   return {
     ...(owner.release === undefined ? {} : { release: owner.release }),
     ...(owner.note === undefined ? {} : { note: owner.note }),
+    ...(owner.alias === undefined ? {} : { alias: owner.alias }),
   }
 }
 

@@ -318,6 +318,13 @@ export const Owner = Schema.Struct({
    * characters, checked by `area.edit`). It stays with the seat, whichever conversation holds it.
    */
   note: optional(Schema.String),
+  /**
+   * The user's short name for the area's owner (별칭, feature `owner-alias`, 2026-11-27): at most
+   * {@link OWNER_ALIAS_MAX} characters, unique among the team's active area names, slugs, aliases and peer labels
+   * (checked by `area.edit`). It stays with the seat like {@link note}. The team main may name the area by it, the
+   * screens show `별칭 · 영역`; it is never in the owner's own role entry or its conversation title.
+   */
+  alias: optional(Schema.String),
 }).annotate({ identifier: "OwnTeam.Owner" })
 
 /** Longest peer label (화면 이름, `리뷰어`). */
@@ -329,6 +336,8 @@ export const PEER_LABEL_MAX = 40
 export const PEER_ROLE_MAX = 1_024
 /** Longest owner note (담당 메모, `Owner.note`) in characters, counted like {@link PEER_ROLE_MAX}. */
 export const OWNER_NOTE_MAX = 1_024
+/** Longest owner alias (별칭, `Owner.alias`) in characters, counted like {@link PEER_ROLE_MAX}. */
+export const OWNER_ALIAS_MAX = 12
 /** Large-file folders one `area.paths` call (and `team_need_paths`) may add or release. */
 export const PATHS_MAX = 64
 /** Peers one area may have; each one's inbox is read before every main request goes (5.1). */
@@ -1274,6 +1283,8 @@ export const Feature = Schema.Literals([
   "seat",
   /** 담당 메모 (`area.edit{note}`). */
   "owner-note",
+  /** 별칭 (`area.edit{alias}`, `Owner.alias`, 2026-11-27). */
+  "owner-alias",
   /**
    * 직접 작업 (2026-11-14): `Area.directWork`, `Policy.directHold` / `directTell` in `settings.*`, and
    * `area.pause{on: false}` handing a held area back.
@@ -1655,10 +1666,12 @@ export const errors = portable({
    * A conversation that cannot take an area's owner seat (담당 대화 바꾸기): a subagent's conversation (`child`), the
    * team main, current or earlier (`main`), the area's owner already (`owner`), or not a conversation of the area's
    * folder (`elsewhere`); a conversation with no model or account to check (`account`), or whose account cannot be
-   * read right now (`unknown`: try again). `note`: an owner note over 1 KB (`area.edit{note}`).
+   * read right now (`unknown`: try again). `note`: an owner note over 1 KB (`area.edit{note}`). `alias`: an owner
+   * alias that is too long or holds a line break or a control character; `alias-taken`: another active area's name,
+   * slug or alias, or a peer label, has it (`area.edit{alias}`, compared without case).
    */
   seat_invalid: Schema.Struct({
-    why: Schema.Literals(["child", "main", "owner", "elsewhere", "account", "unknown", "note"]),
+    why: Schema.Literals(["child", "main", "owner", "elsewhere", "account", "unknown", "note", "alias", "alias-taken"]),
   }),
   /**
    * Git 저장소로 만들기 refused (3.0): the folder is a repository already (`exists`), inside the repository at `parent`
@@ -2041,7 +2054,9 @@ export const Definition = Rpc.define({
      * refused above and never cut, 2026-11-14) and its user-made mark (`false` removes it). A registry write only: no
      * op, no undo; an attached owner gets its role entry again at once when the role changed. `note` (담당 메모,
      * feature `owner-note`): the owner note, trimmed, at most {@link OWNER_NOTE_MAX} characters (`seat_invalid` with
-     * `why: "note"`); an empty one removes it.
+     * `why: "note"`); an empty one removes it. `alias` (별칭, feature `owner-alias`): the owner alias, trimmed, at most
+     * {@link OWNER_ALIAS_MAX} characters and unique in the team (`seat_invalid` with `why: "alias"` or
+     * `"alias-taken"`); an empty one removes it.
      */
     "area.edit": method(
       Schema.Struct({
@@ -2049,6 +2064,7 @@ export const Definition = Rpc.define({
         goal: optional(Schema.String.check(Schema.isMaxLength(1_000))),
         userMade: optional(Schema.Boolean),
         note: optional(Schema.String),
+        alias: optional(Schema.String),
       }),
       areaResult,
       pick("not_found", "team_off", "broken", "seat_invalid"),

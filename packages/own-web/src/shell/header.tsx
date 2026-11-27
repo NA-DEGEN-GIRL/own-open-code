@@ -240,6 +240,8 @@ export type TeamPillView =
       readonly teamID: OwnTeam.TeamID
       readonly areaID: OwnTeam.AreaID
       readonly area: string
+      /** The owner seat's alias (별칭, 2026-11-27): the whole text says `별칭 · 영역`, the short form the area alone. */
+      readonly alias?: string
       /** An area peer's name (`Peer.label`). */
       readonly peer?: string
     }
@@ -282,7 +284,33 @@ export function teamPill(team: TeamStore, sessionID: string): TeamPillView | und
     : area.paused === false
       ? "own.team.pill.owner"
       : "own.team.pill.paused"
-  return { kind: "area", key, teamID: area.teamID, areaID: area.id, area: area.name }
+  return {
+    kind: "area",
+    key,
+    teamID: area.teamID,
+    areaID: area.id,
+    area: area.name,
+    ...(area.owner.alias ? { alias: area.owner.alias } : {}),
+  }
+}
+
+/**
+ * The pill's whole text and the lead a crowded header drops (./header-fit.ts step 2): what the short form leaves out
+ * of the whole text, `팀 메인 · ` or `영역: `, so `영역 3개` and `cl-perf · 담당` remain. The short form ends every
+ * whole text (team-banners.test.ts); one that did not would keep its whole text. 별칭 (2026-11-27): the whole text
+ * says `영역: 민지 · UI · 담당` and the short form `UI · 담당`, so the alias goes with the lead.
+ */
+export function teamPillLabel(text: TeamText, current: TeamPillView) {
+  // One parameter set for both keys (a union of the two literals would not be a string record).
+  const params: Readonly<Record<string, string | number>> =
+    current.kind === "main"
+      ? { n: current.areas }
+      : { area: current.area, ...(current.peer === undefined ? {} : { label: current.peer }) }
+  const named =
+    current.kind === "area" && current.alias ? { ...params, area: `${current.alias} · ${current.area}` } : params
+  const full = text(current.kind === "main" ? "own.team.pill.main" : current.key, named)
+  const short = text(current.kind === "main" ? "own.team.pill.mainShort" : `${current.key}Short`, params)
+  return { full, lead: full.endsWith(short) ? full.slice(0, full.length - short.length) : "" }
 }
 
 function TeamPill(props: { readonly serverKey: () => ServerKey; readonly sessionID: () => string | undefined }) {
@@ -297,26 +325,13 @@ function TeamPill(props: { readonly serverKey: () => ServerKey; readonly session
     if (current.kind === "main") return openTeamView({ serverKey: props.serverKey(), projectID: current.projectID })
     openAreaMenu({ serverKey: props.serverKey(), teamID: current.teamID, areaID: current.areaID, anchor })
   }
-  // A crowded header drops the first words (./header-fit.ts step 2): what the short form leaves out of the whole text,
-  // `팀 메인 · ` or `영역: `, so `영역 3개` and `cl-perf · 담당` remain. The short form ends every whole text
-  // (team-banners.test.ts); one that did not would keep its whole text.
-  const label = (text: TeamText, current: TeamPillView) => {
-    // One parameter set for both keys (a union of the two literals would not be a string record).
-    const params: Readonly<Record<string, string | number>> =
-      current.kind === "main"
-        ? { n: current.areas }
-        : { area: current.area, ...(current.peer === undefined ? {} : { label: current.peer }) }
-    const full = text(current.kind === "main" ? "own.team.pill.main" : current.key, params)
-    const short = text(current.kind === "main" ? "own.team.pill.mainShort" : `${current.key}Short`, params)
-    return { full, lead: full.endsWith(short) ? full.slice(0, full.length - short.length) : "" }
-  }
   const paused = (current: TeamPillView) => current.kind === "area" && current.key === "own.team.pill.paused"
   return (
     <Show when={pill()}>
       {(current) => (
         <Show when={words()}>
           {(text) => {
-            const view = createMemo(() => label(text(), current()))
+            const view = createMemo(() => teamPillLabel(text(), current()))
             return (
               <button
                 type="button"

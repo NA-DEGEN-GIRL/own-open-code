@@ -1736,7 +1736,7 @@ describe("담당 대화 바꾸기 (2026-11-12): the owner seat moves onto an exi
     const line = { kind: "area", areaID: AREA, change: "seated" }
     expect(roundTrip(codec(OwnTeam.SummaryLine), line)).toEqual(line)
     expect<ReadonlyArray<string>>(OwnTeam.NoticeKind.literals).toContain("seat.moved")
-    expect<ReadonlyArray<string>>(OwnTeam.Feature.literals).toEqual(expect.arrayContaining(["seat", "owner-note"]))
+    expect<ReadonlyArray<string>>(OwnTeam.Feature.literals).toEqual(expect.arrayContaining(["seat", "owner-note", "owner-alias"]))
     const notice = { id: "n1", at: 1, areaID: AREA, kind: "seat.moved", text: "x", data: { sessionID: SESSION } }
     expect(roundTrip(codec(OwnTeam.OpenNotice), notice)).toEqual(notice)
   })

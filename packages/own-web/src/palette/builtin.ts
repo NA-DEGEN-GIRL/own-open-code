@@ -362,16 +362,25 @@ export function useBuiltinCommands(): () => readonly PaletteCommand[] {
             } satisfies PaletteCommand,
           ]
         : []),
-      ...tabs.map(
-        (tab): PaletteCommand => ({
+      ...tabs.map((tab): PaletteCommand => {
+        // 팀 룸 (06 §9.9) shows on team conversations only and has no shortcut of its own.
+        if (tab === "team")
+          return {
+            id: "panel.team",
+            group: "panel",
+            ...shared("own.panel.teamCommand"),
+            keywords: [...shared("own.panel.teamCommand").keywords, tab],
+            run: () => shell.openTab(tab),
+          }
+        return {
           id: `panel.${tab}`,
           group: tab === "review" ? "review" : "panel",
           ...shortcutLabel(`panel.${tab}`),
           keywords: [...shortcutLabel(`panel.${tab}`).keywords, tab],
           shortcut: `panel.${tab}`,
           run: () => shell.openTab(tab),
-        }),
-      ),
+        }
+      }),
       {
         id: "sidebar.toggle",
         group: "panel",
@@ -476,7 +485,15 @@ export function useBuiltinCommands(): () => readonly PaletteCommand[] {
         : []),
       // MH (04 §13 "MCP"): this PC's MCP servers on an SSH host, while there is one.
       ...(local.rpc.allowed("mcp.hosts.send") && (remoteStore()?.state.order.length ?? 0) > 0
-        ? [intent("mcp.hosts", "own.palette.cmd.mcpHosts", "mcp", "mcp.hosts", "mcp ssh host remote install 호스트 원격 서버 설치")]
+        ? [
+            intent(
+              "mcp.hosts",
+              "own.palette.cmd.mcpHosts",
+              "mcp",
+              "mcp.hosts",
+              "mcp ssh host remote install 호스트 원격 서버 설치",
+            ),
+          ]
         : []),
       ...(local.imports.allowed("skills.import")
         ? [intent("skills.import", "own.palette.cmd.skillsImport", "skills", "skills.import", "skills import 가져오기")]

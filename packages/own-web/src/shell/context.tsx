@@ -187,6 +187,12 @@ export function createShell(input: { readonly windowKey: string }) {
       ? { ...base, sidebarMode: "drawer" as const }
       : base
   }
+  const teamConversation = createMemo(() => {
+    const route = workspaceRoute()
+    if (route.name !== "session") return false
+    const place = data.get(route.serverKey)?.team.placeOf(route.sessionID)
+    return place !== undefined && !(place.role === "main" && place.previous)
+  })
   const sessionKey = createMemo(() => {
     const route = workspaceRoute()
     return route.name === "session" ? `${route.serverKey}/${route.sessionID}` : "home"
@@ -208,11 +214,15 @@ export function createShell(input: { readonly windowKey: string }) {
     return true
   }
 
-  /** 4.7: browser only with `browserPane`; terminal leaves the tabs when placed under the conversation. */
+  /**
+   * 4.7: browser only with `browserPane`; terminal leaves the tabs when placed under the conversation. 팀 룸 (06 §9.9,
+   * 2026-11-27) only on a conversation of a team: its main, an area's owner or a peer (not a replaced main).
+   */
   const tabs = createMemo<PanelTab[]>(() =>
-    (["review", "files", "terminal", "browser", "accounts"] as const).filter((tab) => {
+    (["review", "files", "terminal", "browser", "accounts", "team"] as const).filter((tab) => {
       if (tab === "browser") return false
       if (tab === "terminal") return layout.state.terminalPlacement === "tab"
+      if (tab === "team") return teamConversation()
       return true
     }),
   )

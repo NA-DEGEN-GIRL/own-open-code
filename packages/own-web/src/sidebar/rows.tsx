@@ -1243,8 +1243,18 @@ export function AreaRow(props: {
       >
         <span class="flex min-w-0 items-center gap-1.5" classList={{ "pr-7": !ctl.touch, "pr-11": ctl.touch }}>
           <Chevron open={open()} />
-          <span class="min-w-0 flex-1 truncate text-[13px] font-medium" data-testid="area-label">
-            {view()?.label}
+          {/* 별칭 (2026-11-27): `민지 · ` gives way first, so a narrow sidebar keeps the area's own name. */}
+          <span class="flex min-w-0 flex-1 text-[13px] font-medium">
+            <Show when={view()?.alias}>
+              {(alias) => (
+                <span class="min-w-0 shrink-[999] truncate whitespace-pre" data-testid="area-alias">
+                  {`${alias()} · `}
+                </span>
+              )}
+            </Show>
+            <span class="min-w-0 truncate" data-testid="area-label">
+              {view()?.label}
+            </span>
           </span>
           <span
             class={`min-w-0 flex-none truncate text-[11.5px] ${TONE[view()?.status.tone ?? "idle"]}`}

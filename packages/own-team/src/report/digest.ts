@@ -11,6 +11,7 @@ import { Identity } from "../git/identity.js"
 import { Git } from "../git/run.js"
 import { Merge } from "../integrate/merge.js"
 import { IntegrateOp } from "../integrate/op.js"
+import { OwnerAlias } from "../registry/alias.js"
 import { Keys } from "../registry/keys.js"
 import type { Services } from "../services.js"
 import { Fold } from "./fold.js"
@@ -780,7 +781,7 @@ function viewerLines(facts: Facts, quote: number) {
 
 /**
  * `  · 세이브 v3(save-v3) · 작업 중 · 사용자와 직접 작업 중 · 줄기 save-v3 · 역할 "…" · 담당: "…" · 동료 리뷰어(reviewer)`:
- * another area.
+ * another area; `  · 민지 · 세이브 v3(save-v3) · …` when its owner seat has an alias (별칭).
  */
 function otherLine(facts: Facts, item: AreaFacts, quote: number) {
   const area = item.area
@@ -798,7 +799,7 @@ function otherLine(facts: Facts, item: AreaFacts, quote: number) {
     ...(report ? [`담당: ${quoted(report.text, quote)}`] : []),
     ...(peers.length === 0 ? [] : [`동료 ${peers.join(", ")}`]),
   ]
-  return `  · ${escaped(area.name)}(${area.id.slice("ar_".length)}) · ${parts.join(" · ")}`
+  return `  · ${escaped(OwnerAlias.label(area))}(${area.id.slice("ar_".length)}) · ${parts.join(" · ")}`
 }
 
 /**
@@ -953,7 +954,17 @@ function areaLine(facts: Facts, item: AreaFacts, quote: number, focus?: OwnTeam.
     ...direct,
     ...pause,
   ]
-  return `- ${area.name}: ${parts.join(" · ")}`
+  return `- ${facts.viewer === undefined ? aliased(area) : area.name}: ${parts.join(" · ")}`
+}
+
+/**
+ * The area as the main's update names it: `민지 · UI(ui)` when the owner seat has an alias (별칭, so the main can tell
+ * name and slug apart from the alias it may use in `team_dispatch`), else the name alone as before. An owner's or a
+ * peer's own line never shows its alias (no persona, no prompt change for that owner).
+ */
+function aliased(area: OwnTeam.Area) {
+  if (!area.owner.alias) return area.name
+  return `${escaped(OwnerAlias.label(area))}(${area.id.slice("ar_".length)})`
 }
 
 /** `직접 작업 중(2026-11-14 13:02부터) · 모아 둔 보고 3개`: a held area's direct work and the reports kept for it. */

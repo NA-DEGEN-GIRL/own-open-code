@@ -16,7 +16,7 @@ import { createEventBus } from "@/data/events"
 import { TEAM_META, TEAM_SCOPE, type TeamMethod, type TeamRpc } from "@/data/team-rpc"
 import { createTeamStore, type TeamStore } from "@/team/store"
 import { teamText } from "@/team/strings"
-import { teamPill } from "./header"
+import { teamPill, teamPillLabel } from "./header"
 import { teamBanners, type TeamFacts } from "./session-banners"
 
 const TEAM = "tm_0123456789ab"
@@ -164,6 +164,23 @@ describe("header pill (06 §9.5)", () => {
       expect(held).toMatchObject({ kind: "area", key: "own.team.pill.paused" })
     }
     expect(ko("own.team.pill.paused", { area: "inventory-ui" })).toBe("영역: inventory-ui · 메인 멈춤")
+  })
+
+  test("별칭: the whole text names `별칭 · 영역`, a crowded header keeps the area's name (the alias is in the lead)", async () => {
+    const store = await loaded({ inventory: { owner: { ...OWNERS.owner, alias: "민지" } } })
+    const pill = teamPill(store, OWNER)
+    expect(pill).toMatchObject({ kind: "area", key: "own.team.pill.owner", area: "inventory-ui", alias: "민지" })
+    expect(teamPillLabel(ko, pill!)).toEqual({ full: "영역: 민지 · inventory-ui · 담당", lead: "영역: 민지 · " })
+    const en = (key: Parameters<typeof teamText.text>[1], params?: Record<string, string | number>) =>
+      teamText.text("en", key, params)
+    expect(teamPillLabel(en, pill!).full.endsWith(en("own.team.pill.ownerShort", { area: "inventory-ui" }))).toBe(true)
+    // Without an alias the whole text is as before; a peer's pill never carries the owner's alias.
+    expect(teamPillLabel(ko, teamPill(await loaded(), OWNER)!)).toEqual({
+      full: "영역: inventory-ui · 담당",
+      lead: "영역: ",
+    })
+    const peer = await loaded({ inventory: { ...PEERS, owner: { ...OWNERS.owner, alias: "민지" } } })
+    expect(teamPill(peer, REVIEWER)).not.toHaveProperty("alias")
   })
 
   test("a replaced owner conversation says so", async () => {

@@ -583,7 +583,12 @@ describe("사용자가 정하는 영역 (06 §2.7, §9.4, 2026-10-26)", () => {
     expect(roleMax((feature) => feature === "direct")).toBe(ROLE_MAX)
     expect(roleMax(() => false)).toBe(200)
     expect(roleMax(undefined)).toBe(ROLE_MAX)
-    expect(roleLeft("가".repeat(201), roleMax(() => false))).toBe(-1)
+    expect(
+      roleLeft(
+        "가".repeat(201),
+        roleMax(() => false),
+      ),
+    ).toBe(-1)
     expect(ko("own.team.createArea.roleOver", { n: 1 })).toBe("1자 넘었어요")
     expect(ko("own.team.createArea.roleLeft", { n: 1 })).toBe("1자 남음")
     // The role fields have no native limit, so a pasted role is not cut where nobody sees it.
@@ -628,7 +633,8 @@ describe("담당 대화 바꾸기 (06 §6.8, 2026-11-12)", () => {
     (await OwnTeam.Definition.methods[method].input["~standard"].validate(input)).issues === undefined
 
   test("the features and the admin scope are the protocol's; a seat move is its own op with its own card", () => {
-    for (const feature of ["seat", "owner-note"] as const) expect(OwnTeam.Feature.literals).toContain(feature)
+    for (const feature of ["seat", "owner-note", "owner-alias"] as const)
+      expect(OwnTeam.Feature.literals).toContain(feature)
     expect(OwnTeam.MethodScope["area.seat"]).toBe("admin")
     expect(TEAM_SCOPE["area.seat"]).toBe("admin")
     expect(OwnTeam.OpKind.literals).toContain("seat")
@@ -698,6 +704,8 @@ describe("담당 대화 바꾸기 (06 §6.8, 2026-11-12)", () => {
       account: "이 대화의 계정을 확인할 수 없어요. 모델을 고른 뒤 다시 해 주세요",
       unknown: "이 대화의 계정을 지금 확인할 수 없어요. 잠시 뒤 다시 해 주세요",
       note: "담당 메모는 1,024자 이하로 적어요",
+      alias: "별칭은 줄바꿈 없이 12자 이하로 적어요",
+      "alias-taken": "팀의 다른 영역이나 동료가 이미 쓰는 이름이에요",
     }
     for (const [why, text] of Object.entries(words))
       expect(seatErrorText(ko, new OwnRpcError("seat_invalid", "m", { why })), why).toBe(text)

@@ -297,6 +297,10 @@ export function make(deps: Deps, peers: Module.Peers, overrides: Partial<Config>
     state.slot = next
     if (!changed || !state.started) return
     log.info("claude_slot_changed", { detected: next.detected, verified: next.verified })
+    // The Claude accounts are listed only while the slot is detected, and a change here moves no registry revision:
+    // clients read `accounts.list` again on this (CL, 2026-11-27). A list read before claude-auth's first detection
+    // (a new Location's plugin list still describes the previous generation) otherwise stayed without them.
+    void deps.emitter.global("plugin.status", { plugin: "claudeAuth", phase: phase() })
     // This Location's provider fold reads `claudeSlot()`; other Locations reload on their own refresh.
     void peers()
       .slots.reload()

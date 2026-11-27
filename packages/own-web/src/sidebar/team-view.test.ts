@@ -821,6 +821,7 @@ describe("area menu groups (06 §9.4, 2026-10-16)", () => {
       "main",
       "preset",
       "role",
+      "alias",
       "userMade",
       "paths",
       "integrate",
@@ -1056,6 +1057,7 @@ describe("사용자가 정하는 영역 (06 §9.4, 2026-10-26)", () => {
       "main",
       "preset",
       "role",
+      "alias",
       "userMade",
     ])
     expect(areaActions({ area: owned, has: (feature) => feature !== "area-edit", allowed: every })).not.toContain(

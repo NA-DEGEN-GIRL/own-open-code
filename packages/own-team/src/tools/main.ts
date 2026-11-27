@@ -3,6 +3,7 @@ export * as MainTools from "./main.js"
 import type { Schema } from "effect"
 import type { SessionID } from "@opencode/schema/session-id"
 import type { OwnTeam } from "@own/protocol"
+import { OwnerAlias } from "../registry/alias.js"
 import type { Services } from "../services.js"
 import type { Locate } from "../sessions/locate.js"
 
@@ -76,11 +77,15 @@ export async function check(services: Services.Context, sessionID: string) {
   return judge(await services.locate.session(sessionID))
 }
 
-/** An active area named by the model: its id (`ar_x`), slug (`x`) or name. */
+/**
+ * An active area named by the model: its id (`ar_x`), slug (`x`) or name, else its owner alias (별칭, without case;
+ * `OwnerAlias.problem` keeps an alias from naming another area, and an exact id or name still wins).
+ */
 export async function area(services: Services.Context, teamID: string, name: string) {
   const id = name.startsWith("ar_") ? name : `ar_${name}`
-  return (await services.registry.areas.list(teamID)).find(
-    (item) => item.state !== "retired" && (item.id === id || item.name === name),
+  const active = (await services.registry.areas.list(teamID)).filter((item) => item.state !== "retired")
+  return (
+    active.find((item) => item.id === id || item.name === name) ?? active.find((item) => OwnerAlias.matches(item, name))
   )
 }
 

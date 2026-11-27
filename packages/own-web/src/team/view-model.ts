@@ -170,6 +170,8 @@ export function teamProject(input: {
 /** What an area row shows (06 §9.4): `cl-cu · 컴퓨터 사용 · 담당`, `.worktrees\cl-cu`, the main and preset lines. */
 export interface AreaRow {
   readonly label: string
+  /** The owner seat's alias (별칭, 2026-11-27), shown before the label where it fits. Absent otherwise. */
+  readonly alias?: string
   readonly path: string
   readonly main: string
   readonly preset: string
@@ -200,7 +202,7 @@ export function areaRow(
   text: TeamText,
   area: Pick<
     OwnTeam.AreaView,
-    "name" | "subtitle" | "directory" | "state" | "broken" | "status" | "paused" | "retirable" | "userMade"
+    "name" | "subtitle" | "directory" | "state" | "broken" | "status" | "paused" | "retirable" | "userMade" | "owner"
   >,
   input: {
     /** The team's main folder: area folders inside it show their path from there. */
@@ -222,6 +224,7 @@ export function areaRow(
   const missing = isMissing(area)
   return {
     label: [area.name, area.subtitle, text("own.team.role.owner")].filter(Boolean).join(" · "),
+    ...(area.owner.alias ? { alias: area.owner.alias } : {}),
     path: shortPath(area.directory, input.home),
     main: mainLine(text, input.main),
     preset: presetLine(text, input.preset.name),
@@ -260,6 +263,7 @@ export type AreaAction =
   | "main"
   | "preset"
   | "role"
+  | "alias"
   | "userMade"
   | "paths"
   | "integrate"
@@ -285,8 +289,9 @@ export type AreaAction =
  * `동료 추가…` (a new peer conversation in the area's folder, 2026-10-09) only for an active area, with `peers`.
  * `팀 메인과 상의하기…` (2026-10-16) only for an active area when the team main is known (`discuss`): it fills the team
  * main's composer with a draft about this area. `역할 바꾸기…` and `내가 정한 영역` (2026-10-26, `area.edit`) for an
- * active area. `메인에게 넘기기` (2026-11-14, feature `direct`) only while the user works with the area directly and
- * Main 멈춤 is off: `area.pause{on: false}` hands it back to the main.
+ * active area; `별칭 바꾸기…` (2026-11-27, `area.edit{alias}`, feature `owner-alias`) for an active area.
+ * `메인에게 넘기기` (2026-11-14, feature `direct`) only while the user works with the area directly and Main 멈춤 is
+ * off: `area.pause{on: false}` hands it back to the main.
  */
 export function areaActions(input: {
   readonly area: Pick<OwnTeam.AreaView, "owner" | "shape" | "state" | "origin" | "broken" | "paused" | "directWork">
@@ -311,6 +316,7 @@ export function areaActions(input: {
     ["main", live && can("area-main", "area.main")],
     ["preset", live && can("area-preset", "area.preset")],
     ["role", live && can("area-edit", "area.edit")],
+    ["alias", live && can("owner-alias", "area.edit")],
     ["userMade", live && can("area-edit", "area.edit")],
     ["paths", live && area.shape === "code" && can("paths", "area.paths")],
     ["integrate", live && can("integrate", "area.integrate")],
@@ -338,7 +344,7 @@ export type AreaGroup = "talk" | "requests" | "settings" | "work" | "structure" 
 export const AREA_GROUPS: ReadonlyArray<readonly [AreaGroup, ReadonlyArray<AreaAction>]> = [
   ["talk", ["open", "discuss", "addPeer", "rotate"]],
   ["requests", ["handBack", "pause", "outbox"]],
-  ["settings", ["main", "preset", "role", "userMade"]],
+  ["settings", ["main", "preset", "role", "alias", "userMade"]],
   ["work", ["integrate", "paths", "recreate"]],
   ["structure", ["rename", "split", "merge", "convert", "move"]],
   ["danger", ["retire", "unadopt"]],
@@ -589,6 +595,8 @@ export function moveCandidates(input: {
 export const PEER_LABEL_MAX = 40
 export const PEER_ROLE_MAX = 1_024
 export const OWNER_NOTE_MAX = 1_024
+/** `OwnTeam.OWNER_ALIAS_MAX`: the owner alias (별칭, `area.edit{alias}`, 2026-11-27). */
+export const OWNER_ALIAS_MAX = 12
 /** `OwnTeam.PATHS_MAX`: the folders one `area.paths` call may add (2026-11-14; 8 before). */
 export const PATHS_MAX = 64
 
@@ -682,6 +690,41 @@ export function noteForm(note: string) {
   const text = note.trim()
   const left = OWNER_NOTE_MAX - text.length
   return { note: text, left, ok: left >= 0 }
+}
+
+/**
+ * The owner alias as its editor holds it (별칭, `area.edit{alias}`, 2026-11-27): trimmed as own.team stores it, at most
+ * {@link OWNER_ALIAS_MAX} characters on one line, not one of `taken` (the team's other active area names, slugs and
+ * aliases and every peer's label and key, compared without case: own.team checks the same and refuses with
+ * `seat_invalid`). An empty one removes the alias. `left` below 0 is how far it is over.
+ */
+export function aliasForm(alias: string, taken: readonly string[]) {
+  const text = alias.trim()
+  const left = OWNER_ALIAS_MAX - text.length
+  const line = !/\p{Cc}/u.test(text) && !text.startsWith("ar_")
+  const wanted = text.toLowerCase()
+  const free = text === "" || !taken.some((name) => name.trim().toLowerCase() === wanted)
+  return { alias: text, left, line, free, ok: left >= 0 && line && free }
+}
+
+/** The names an alias of `areaID` may not take ({@link aliasForm}): the team's other active areas and every peer. */
+export function aliasTaken(entry: Pick<TeamEntry, "areas" | "order">, areaID: string) {
+  return entry.order.flatMap((id) => {
+    const area = entry.areas[id]
+    if (!area || area.state === "retired") return []
+    return [
+      ...(area.id === areaID ? [] : [area.name, area.id.slice("ar_".length), area.owner.alias ?? ""]),
+      ...(area.peers ?? []).flatMap((peer) => [peer.label, peer.key]),
+    ].filter(Boolean)
+  })
+}
+
+/**
+ * `민지 · UI`: the alias before the area name when its owner seat has one (별칭), else the name alone. Narrow places
+ * show the name alone (the header pill's short form, the room's labels on a phone).
+ */
+export function aliasLabel(area: Pick<OwnTeam.AreaView, "owner" | "name">) {
+  return area.owner.alias ? `${area.owner.alias} · ${area.name}` : area.name
 }
 
 /** A slug the team does not use yet: V6 from the name, `area` without Latin letters or digits, then `-2`, `-3`, …. */
