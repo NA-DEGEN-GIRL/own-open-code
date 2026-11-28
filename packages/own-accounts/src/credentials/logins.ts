@@ -58,6 +58,17 @@ export interface Api extends Module.Lifecycle {
    * §3.2c): its tokens stay unused until a new login, and the account shows `needs_reauth`.
    */
   rejected(account: Account.Info, reason: string): Promise<void>
+  /**
+   * The provider answered a request of the account with a success (RS, 2026-11-28): an `auth_failed` a connection
+   * test's 401 left on an account own holds the credential of ends, as its next passing test would end it. A linked
+   * source keeps its own check (the source file decides).
+   */
+  accepted(account: Account.Info): Promise<void>
+  /**
+   * The provider refused the account's credential a second time, after the refresh the first refusal asked for (RS):
+   * an account own holds the credential of shows `auth_failed` until a success, a passing test or a new key or login.
+   */
+  refused(account: Account.Info): Promise<void>
   /** `accounts.update{replaceKey}`: probe, then store with `keepPrev` (02 §3.3). */
   replaceKey(account: Account.Info, key: string): Promise<ReplaceResult>
   /**
@@ -271,6 +282,9 @@ export function create(deps: Deps, peers: Module.Peers, internal: Internal = {})
       log.warn("login_rejected", { accountID: account.id, reason })
       await tracker.apply(account, { ok: false, problem: "needs_reauth", detail: reason })
     },
+
+    accepted: (account) => (deps.remote ? Promise.resolve() : tracker.accepted(account)),
+    refused: (account) => (deps.remote ? Promise.resolve() : tracker.refused(account)),
 
     forget: async (account, options) => {
       tracker.forget(account.id)

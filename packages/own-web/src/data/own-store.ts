@@ -546,7 +546,10 @@ export function createOwnStore(input: {
   function apply(event: OwnEvent) {
     switch (event.name) {
       case "accounts.changed":
-        if (state.revision !== event.data.revision) void loadAccounts().catch(report)
+        // RS (2026-11-28): the revision this window holds is read again too. The service announces a card change that
+        // moves no registry revision with the revision it has (a Claude login written again, Claude Agent's login
+        // check, its models' windows); only an older revision, out of order, is skipped.
+        if (event.data.revision >= (state.revision ?? 0)) void loadAccounts().catch(report)
         // A plan's model list (its tiers) or the account set changed what a main offers.
         reloadOffers()
         break

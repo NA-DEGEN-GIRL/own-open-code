@@ -2,9 +2,11 @@
 // process with the REAL ssh.exe (temp config and known_hosts, see env.ts), the release bundle of this PC and the
 // broker test double of the fake-SSH harness (the full broker is phase B). Opt-in: OWN_REAL_HOST=dev-host.
 //
-// Everything this suite starts on the host is ours (the own-channel service, `sleep`/`python3` stand-ins for a reused
-// pid and a busy port) and is stopped by the suite or by the cleanup suite (z-cleanup.test.ts).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+// Everything this suite starts on the host is ours and lives in the run's test root (decisions RL35, env.ts
+// ensureHostRun, which this phase calls first): the own-channel service (own-remote's `remoteTest` option) and the
+// `sleep`/`python3` stand-ins for a reused pid and a busy port (copies in `<root>/bin`, stopped with rh_kill). The
+// suite or the cleanup suite (z-cleanup.test.ts) stops them.
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
@@ -18,8 +20,7 @@ import { SshRunner } from "../../src/ssh/runner.js"
 import { minimalEnv, shortArgs } from "../../src/vendor/ssh/command.js"
 import * as Harness from "../harness/remote.js"
 import * as Env from "./env.js"
-
-const run = Env.enabled ? describe : describe.skip
+import { phase } from "./isolate.js"
 const BUILD = "real-host-a"
 
 async function until<T>(read: () => Promise<T | undefined | false> | T | undefined | false, timeoutMs = 30_000, stepMs = 250) {
@@ -32,7 +33,7 @@ async function until<T>(read: () => Promise<T | undefined | false> | T | undefin
   }
 }
 
-run(`real host ${Env.ALIAS}: transport, install, lifecycle (phase A)`, () => {
+phase("a-transport", `real host ${Env.ALIAS}: transport, install, lifecycle (phase A)`, () => {
   const state = {} as {
     controller: Controller
     operations: Operations
@@ -41,6 +42,7 @@ run(`real host ${Env.ALIAS}: transport, install, lifecycle (phase A)`, () => {
     hostId: string
     events: Array<{ name: string; data: any }>
     ports: Awaited<ReturnType<typeof Env.ports>>
+    run: Env.HostRun
   }
   const ownHome = () => state.controller.record(state.hostId)!.remote!.ownHome
   const view = () => state.controller.view(state.hostId)!
@@ -57,11 +59,11 @@ run(`real host ${Env.ALIAS}: transport, install, lifecycle (phase A)`, () => {
    */
   async function stopService() {
     const result = await Env.hostSh(String.raw`set -u
-reg="$HOME/.local/state/opencode/service-own.json"
+reg="$XDG_STATE_HOME/opencode/service-own.json"
 pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$reg" 2>/dev/null | head -n 1)
-own_tmp="$HOME/.local/share/own-open-code/tmp"
+own_tmp="$XDG_DATA_HOME/own-open-code/tmp"
 mkdir -p "$own_tmp" && chmod 700 "$own_tmp"
-TMPDIR="$own_tmp" "$HOME/.local/share/own-open-code/app/current/opencode" service stop </dev/null >/dev/null 2>&1
+TMPDIR="$own_tmp" "$XDG_DATA_HOME/own-open-code/app/current/opencode" service stop </dev/null >/dev/null 2>&1
 i=0; while [ -n "$pid" ] && [ -d "/proc/$pid" ] && [ $i -lt 20 ]; do sleep 0.5; i=$((i+1)); done
 echo "PID=$pid"; if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo ALIVE=1; else echo ALIVE=0; fi
 `)
@@ -71,6 +73,8 @@ echo "PID=$pid"; if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo ALIVE=1; els
   beforeAll(async () => {
     Env.prepareSshFiles()
     state.ports = await Env.ports()
+    // The run's test root on the host (decisions RL35): the install, its XDG roots, registration and port live there.
+    state.run = await Env.ensureHostRun()
     state.events = []
     state.broker = Harness.fakeBroker()
     state.unprovide = Broker.provideLocal(BUILD, state.broker.broker)
@@ -87,6 +91,7 @@ echo "PID=$pid"; if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo ALIVE=1; els
         readyTimeoutMs: 25_000,
         backoffMs: [3_000, 5_000, 10_000],
         ownerTimeoutMs: 300_000,
+        remoteTest: { root: state.run.root, port: state.run.port },
       },
     })
     state.operations = new Operations(state.controller)
@@ -101,14 +106,17 @@ echo "PID=$pid"; if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo ALIVE=1; els
     state.broker?.close()
   }, 60_000)
 
-  test("host facts and the before listing (read only)", async () => {
-    const file = path.join(Env.EVIDENCE, "before.txt")
-    if (fs.existsSync(file)) await Env.assertListingHost(fs.readFileSync(file, "utf8"))
-    if (!fs.existsSync(file)) {
-      const before = await Env.hostSh(Env.SNAPSHOT_SCRIPT)
-      expect(before.code).toBe(0)
-      Env.evidence("before.txt", before.stdout)
-    }
+  test("host facts (read only) and the run's test root", async () => {
+    // The root was made fresh for this run, and the run belongs to this host account.
+    const root = Env.kv(
+      (
+        await Env.hostSh(
+          String.raw`echo "MARKER=$(cat "$OWN_RH_ROOT/.own-realhost-run")"; echo "HOST=$(id -un)@$(hostname)"`,
+        )
+      ).stdout,
+    )
+    expect(root.get("MARKER")).toBe(state.run.runId)
+    expect(root.get("HOST")).toBe(state.run.host)
     const facts = await Env.hostSh(String.raw`uname -srm; ldd --version | head -n 1; id -u; echo "SHELL=$SHELL"
 findmnt -no OPTIONS -T /tmp; findmnt -no OPTIONS -T "$HOME"; loginctl show-user "$(id -u)" -p Linger
 cat /proc/sys/kernel/yama/ptrace_scope; command -v opencode || echo "no upstream opencode on PATH"`)
@@ -173,12 +181,16 @@ cat /proc/sys/kernel/yama/ptrace_scope; command -v opencode || echo "no upstream
     expect(current.platform).toMatchObject({ os: "linux", arch: "x86_64", target: "linux-x64-baseline", libc: "glibc" })
     expect(current.hostIdentity).toMatch(/^sha256:[0-9a-f]{64}$/)
     const record = state.controller.record(state.hostId)!
+    // Every remote path lies in the run's test root (decisions RL35), and the service gets the run's port.
     expect(record.remote).toMatchObject({
-      ownHome: `${record.remote!.home}/.local/share/own-open-code`,
-      configDir: `${record.remote!.home}/.config/own-open-code`,
-      stateDir: `${record.remote!.home}/.local/state/opencode`,
-      socketDir: `${record.remote!.home}/.local/share/own-open-code/run`,
+      ownHome: `${state.run.root}/data/own-open-code`,
+      configDir: `${state.run.root}/config/own-open-code`,
+      upstreamConfigDir: `${state.run.root}/config/opencode`,
+      stateDir: `${state.run.root}/state/opencode`,
+      dataDir: `${state.run.root}/data/opencode`,
+      socketDir: `${state.run.root}/data/own-open-code/run`,
     })
+    expect(record.remotePort).toBe(state.run.port)
     const inspect = state.controller.host(state.hostId)!.inspect!
     Env.evidence("inspect.json", inspect)
   }, 120_000)
@@ -256,9 +268,9 @@ cat /proc/sys/kernel/yama/ptrace_scope; command -v opencode || echo "no upstream
     Env.evidence("prepare-execute.json", { executed, seconds: (Date.now() - started) / 1000 })
     expect(executed.ok && executed.output.ok).toBe(true)
     const version = await Env.hostSh(String.raw`set -u
-app="$HOME/.local/share/own-open-code/app"
-TMPDIR="$HOME/.local/share/own-open-code/tmp" "$app/${Env.VERSION}/opencode" --version; echo "EXIT=$?"
-stat -c '%a %n' "$HOME/.local/share/own-open-code" "$app" "$app/${Env.VERSION}" "$app/${Env.VERSION}/opencode" "$HOME/.local/share/own-open-code/run" "$HOME/.local/share/own-open-code/tmp"
+app="$XDG_DATA_HOME/own-open-code/app"
+TMPDIR="$XDG_DATA_HOME/own-open-code/tmp" "$app/${Env.VERSION}/opencode" --version; echo "EXIT=$?"
+stat -c '%a %n' "$XDG_DATA_HOME/own-open-code" "$app" "$app/${Env.VERSION}" "$app/${Env.VERSION}/opencode" "$XDG_DATA_HOME/own-open-code/run" "$XDG_DATA_HOME/own-open-code/tmp"
 echo "CURRENT=$(readlink "$app/current")"; head -n 3 "$app/${Env.VERSION}/.verified"; file -b "$app/${Env.VERSION}/opencode" 2>/dev/null | cut -c1-120`)
     Env.evidence("rg2-version.txt", version.stdout + version.stderr)
     expect(version.stdout).toContain(Env.VERSION)
@@ -287,12 +299,12 @@ echo "CURRENT=$(readlink "$app/current")"; head -n 3 "$app/${Env.VERSION}/.verif
     expect(locals.every((address) => address.startsWith(`${result.loopback}:`))).toBe(true)
     const epoch = result.epoch
     const host = await Env.hostSh(String.raw`set -u
-own="$HOME/.local/share/own-open-code"; reg="$HOME/.local/state/opencode/service-own.json"
+own="$XDG_DATA_HOME/own-open-code"; reg="$XDG_STATE_HOME/opencode/service-own.json"
 pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$reg" | head -n 1)
 echo "PID=$pid"; echo "EXE=$(readlink /proc/$pid/exe)"
 echo "SOCK=$(stat -c '%a %U %F' "$own/run/broker-${epoch}.sock" 2>&1)"
 echo "RUN=$(stat -c '%a %U' "$own/run")"
-echo "REG=$(stat -c '%a' "$reg")"; echo "SVC=$(stat -c '%a' "$HOME/.config/opencode/service-own.json") $(stat -c '%a' "$HOME/.config/own-open-code/service-own.json")"
+echo "REG=$(stat -c '%a' "$reg")"; echo "SVC=$(stat -c '%a' "$XDG_CONFIG_HOME/opencode/service-own.json") $(stat -c '%a' "$XDG_CONFIG_HOME/own-open-code/service-own.json")"
 echo "CURRENT_EPOCH=$(cat "$own/run/broker.current")"
 echo "LISTEN=$(ss -Htlnp 2>/dev/null | grep "pid=$pid," | awk '{print $4}' | tr '\n' ' ')"
 echo "ENV_NAMES=$(tr '\0' '\n' < /proc/$pid/environ | sed 's/=.*//' | sort | tr '\n' ' ')"
@@ -346,19 +358,19 @@ echo "SOCK_OWNER=$(ss -Hxlp 2>/dev/null | grep -F "broker-${epoch}.sock" | grep 
     const key = state.broker.keys.get(state.hostId)!.key
     const needles = [key.toString("base64url"), key.toString("base64"), key.toString("hex")]
     const script = String.raw`set -u
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 n=0
 for needle in ${needles.map((value) => `'${value}'`).join(" ")}; do
-  c=$(grep -rlaF -- "$needle" "$HOME/.local/share/own-open-code" "$HOME/.config/own-open-code" "$HOME/.config/opencode" \
-      "$HOME/.local/state/opencode" "$HOME/.local/share/opencode" "$HOME/.cache/opencode" 2>/dev/null | wc -l)
+  c=$(grep -rlaF -- "$needle" "$XDG_DATA_HOME/own-open-code" "$XDG_CONFIG_HOME/own-open-code" "$XDG_CONFIG_HOME/opencode" \
+      "$XDG_STATE_HOME/opencode" "$XDG_DATA_HOME/opencode" "$XDG_CACHE_HOME/opencode" 2>/dev/null | wc -l)
   e=$(tr '\0' '\n' < /proc/$pid/environ | grep -cF -- "$needle")
   a=$(tr '\0' ' ' < /proc/$pid/cmdline | grep -cF -- "$needle")
   p=$(ps -eo args | grep -v grep | grep -cF -- "$needle")
   echo "HITS_FILES=$c HITS_ENV=$e HITS_ARGV=$a HITS_PS=$p"
 done
-echo "LOG_FILES=$(find "$HOME/.local/share/opencode" -name '*.log' 2>/dev/null | wc -l)"
-echo "ARM_LOG_LINES=$(grep -rhaF 'broker.arm' "$HOME/.local/share/opencode" 2>/dev/null | wc -l)"
-grep -rhaF 'broker.arm' "$HOME/.local/share/opencode" 2>/dev/null | head -n 3 | cut -c1-400`
+echo "LOG_FILES=$(find "$XDG_DATA_HOME/opencode" -name '*.log' 2>/dev/null | wc -l)"
+echo "ARM_LOG_LINES=$(grep -rhaF 'broker.arm' "$XDG_DATA_HOME/opencode" 2>/dev/null | wc -l)"
+grep -rhaF 'broker.arm' "$XDG_DATA_HOME/opencode" 2>/dev/null | head -n 3 | cut -c1-400`
     const result = await Env.hostSh(script)
     Env.evidence("rg10-broker-key.txt", result.stdout)
     const lines = result.stdout.split("\n").filter((line) => line.startsWith("HITS_"))
@@ -370,14 +382,17 @@ grep -rhaF 'broker.arm' "$HOME/.local/share/opencode" 2>/dev/null | head -n 3 | 
   test("RG4: a leftover socket of an older epoch does not block the next tunnel and is removed", async () => {
     await state.controller.disconnect(state.hostId)
     const left = await Env.hostSh(String.raw`set -u
-run="$HOME/.local/share/own-open-code/run"
+run="$XDG_DATA_HOME/own-open-code/run"
 python3 -c 'import socket,sys; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1])' "$run/broker-1000.sock"
 echo "LEFT=$(stat -c '%F' "$run/broker-1000.sock")"`)
     expect(Env.kv(left.stdout).get("LEFT")).toBe("socket")
     const result = await connect()
     expect(result.stage).toBe("ready")
-    await until(() => state.broker.log.find((entry) => entry.event === "connected" && entry.epoch === result.epoch), 60_000)
-    const after = await Env.hostSh(String.raw`ls -A1 "$HOME/.local/share/own-open-code/run"`)
+    await until(
+      () => state.broker.log.find((entry) => entry.event === "connected" && entry.epoch === result.epoch),
+      60_000,
+    )
+    const after = await Env.hostSh(String.raw`ls -A1 "$XDG_DATA_HOME/own-open-code/run"`)
     Env.evidence("rg4-leftover.txt", after.stdout)
     expect(after.stdout).not.toContain("broker-1000.sock")
     expect(after.stdout).toContain(`broker-${result.epoch}.sock`)
@@ -411,11 +426,11 @@ echo "LEFT=$(stat -c '%F' "$run/broker-1000.sock")"`)
       }, 60_000, 2_000)
       expect(selfEnd.stdout.trim()).toBe("0")
       const hup = await Env.hostSh(String.raw`set -u
-kill -CONT ${sshd}; kill -HUP ${sshd}; sleep 2
+rh_session -CONT ${sshd}; rh_session -HUP ${sshd}; sleep 2
 if [ -d /proc/${sshd} ]; then echo OLD_ALIVE=1; else echo OLD_ALIVE=0; fi
-echo "NEW_SOCK=$(stat -c '%F' "$HOME/.local/share/own-open-code/run/broker-${next.epoch}.sock" 2>&1)"
-echo "OLD_SOCK=$(ls "$HOME/.local/share/own-open-code/run/broker-${old.epoch}.sock" 2>&1 | grep -c 'No such')"
-echo "CURRENT=$(cat "$HOME/.local/share/own-open-code/run/broker.current")"`)
+echo "NEW_SOCK=$(stat -c '%F' "$XDG_DATA_HOME/own-open-code/run/broker-${next.epoch}.sock" 2>&1)"
+echo "OLD_SOCK=$(ls "$XDG_DATA_HOME/own-open-code/run/broker-${old.epoch}.sock" 2>&1 | grep -c 'No such')"
+echo "CURRENT=$(cat "$XDG_DATA_HOME/own-open-code/run/broker.current")"`)
       const facts = Env.kv(hup.stdout)
       // The harness broker double completes hello/challenge/auth but answers a bare `ready` the real client refuses,
       // so the client keeps re-dialing: every successful auth after the SIGHUP proves the new epoch's socket, sshd
@@ -446,7 +461,7 @@ echo "CURRENT=$(cat "$HOME/.local/share/own-open-code/run/broker.current")"`)
       expect(remote.ok && remote.output.broker.epoch).toBe(next.epoch)
       expect(view().stage).toBe("ready")
     } finally {
-      await Env.hostSh(`kill -CONT ${sshd} 2>/dev/null; kill -HUP ${sshd} 2>/dev/null; true`)
+      await Env.hostSh(`rh_session -CONT ${sshd} 2>/dev/null; rh_session -HUP ${sshd} 2>/dev/null; true`)
     }
   }, 420_000)
 
@@ -457,7 +472,7 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   port=$((20000 + $(od -An -N2 -tu2 /dev/urandom | tr -d ' ') % 40000))
   ss -Htln | awk '{print $4}' | grep -q ":$port$" || break
 done
-nohup python3 -c 'import socket,sys,time; s=socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(1); time.sleep(900)' "$port" >/dev/null 2>&1 </dev/null &
+nohup "$(rh_bin python3)" -c 'import socket,sys,time; s=socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(1); time.sleep(900)' "$port" >/dev/null 2>&1 </dev/null &
 echo "PORT=$port"; echo "PID=$!"; sleep 1; echo "LISTEN=$(ss -Htln | awk '{print $4}' | grep -c ":$port$")"`)
     const busyFacts = Env.kv(busy.stdout)
     expect(busyFacts.get("LISTEN")).toBe("1")
@@ -475,7 +490,7 @@ echo "PORT=$port"; echo "PID=$!"; sleep 1; echo "LISTEN=$(ss -Htln | awk '{print
       const check = await Env.hostSh(`ss -Htln | awk '{print $4}' | grep -E ':${record.broker.tcpPort}$'`)
       expect(check.stdout.trim().split(/\s+/)).toEqual([`127.0.0.1:${record.broker.tcpPort}`])
     } finally {
-      await Env.hostSh(`kill ${busyFacts.get("PID")} 2>/dev/null; true`)
+      await Env.hostSh(`rh_kill ${busyFacts.get("PID")}`)
       await state.controller.disconnect(state.hostId)
       await state.controller.registry.patchHost(state.hostId, { broker: { mode: "socket", tcpPort: null } })
     }
@@ -489,14 +504,16 @@ echo "PORT=$port"; echo "PID=$!"; sleep 1; echo "LISTEN=$(ss -Htln | awk '{print
     const stopped = await stopService()
     expect(stopped.get("ALIVE")).toBe("0")
     const write = await Env.hostSh(String.raw`set -u
-reg="$HOME/.local/state/opencode/service-own.json"
+reg="$XDG_STATE_HOME/opencode/service-own.json"
 pid=999999; while [ -d /proc/$pid ]; do pid=$((pid - 1)); done
 printf '{"url":"http://127.0.0.1:1","password":"stale","version":"${Env.VERSION}","pid":%s}\n' "$pid" > "$reg"; chmod 600 "$reg"; echo "DEAD=$pid"`)
     const dead = Env.kv(write.stdout).get("DEAD")
     const result = await connect()
     expect(result.stage).toBe("ready")
     expect(result.error).toBeNull()
-    const after = await Env.hostSh(String.raw`sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/STALE_PID=\1/p' "$HOME/.local/state/opencode/service-own.json.stale"`)
+    const after = await Env.hostSh(
+      String.raw`sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/STALE_PID=\1/p' "$XDG_STATE_HOME/opencode/service-own.json.stale"`,
+    )
     Env.evidence("rg3-dead-pid.txt", after.stdout)
     expect(Env.kv(after.stdout).get("STALE_PID")).toBe(dead)
   }, 240_000)
@@ -505,9 +522,9 @@ printf '{"url":"http://127.0.0.1:1","password":"stale","version":"${Env.VERSION}
     await state.controller.disconnect(state.hostId)
     expect((await stopService()).get("ALIVE")).toBe("0")
     const other = await Env.hostSh(String.raw`set -u
-nohup /bin/sleep 900 >/dev/null 2>&1 </dev/null &
+nohup "$(rh_bin sleep)" 900 >/dev/null 2>&1 </dev/null &
 pid=$!; sleep 0.5
-reg="$HOME/.local/state/opencode/service-own.json"
+reg="$XDG_STATE_HOME/opencode/service-own.json"
 printf '{"url":"http://127.0.0.1:1","password":"stale","version":"${Env.VERSION}","pid":%s}\n' "$pid" > "$reg"; chmod 600 "$reg"
 echo "OTHER=$pid"; echo "EXE=$(readlink /proc/$pid/exe)"`)
     const pid = Env.kv(other.stdout).get("OTHER")!
@@ -515,20 +532,22 @@ echo "OTHER=$pid"; echo "EXE=$(readlink /proc/$pid/exe)"`)
       const result = await connect()
       expect(result.stage).toBe("ready")
       await Bun.sleep(5_000)
-      const check = await Env.hostSh(String.raw`if [ -d /proc/${pid} ]; then echo OTHER_ALIVE=1; else echo OTHER_ALIVE=0; fi
-sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/STALE_PID=\1/p' "$HOME/.local/state/opencode/service-own.json.stale"`)
+      const check =
+        await Env.hostSh(String.raw`if [ -d /proc/${pid} ]; then echo OTHER_ALIVE=1; else echo OTHER_ALIVE=0; fi
+sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/STALE_PID=\1/p' "$XDG_STATE_HOME/opencode/service-own.json.stale"`)
       Env.evidence("rg3-reused-pid.txt", other.stdout + check.stdout)
       expect(Env.kv(check.stdout).get("OTHER_ALIVE")).toBe("1")
       expect(Env.kv(check.stdout).get("STALE_PID")).toBe(pid)
     } finally {
-      await Env.hostSh(`[ "$(readlink /proc/${pid}/exe)" = /usr/bin/sleep ] && kill ${pid}; true`)
+      await Env.hostSh(`rh_kill ${pid}`)
     }
   }, 240_000)
 
   test("RG3: a hung service of the same version → service_unresponsive (paused), never killed automatically", async () => {
     await state.controller.disconnect(state.hostId)
-    const stop = await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
-kill -STOP "$pid" && echo "HUNG=$pid"`)
+    const stop =
+      await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
+rh_kill -STOP "$pid" && echo "HUNG=$pid"`)
     const pid = Env.kv(stop.stdout).get("HUNG")!
     try {
       const result = await connect()
@@ -537,7 +556,7 @@ kill -STOP "$pid" && echo "HUNG=$pid"`)
       expect(result).toMatchObject({ paused: true, error: "service_unresponsive" })
       expect(Env.kv(check.stdout).get("STATE")).toBe("T")
     } finally {
-      await Env.hostSh(`kill -CONT ${pid} 2>/dev/null; true`)
+      await Env.hostSh(`rh_kill -CONT ${pid}`)
     }
     const back = await connect()
     expect(back.stage).toBe("ready")
@@ -546,18 +565,23 @@ kill -STOP "$pid" && echo "HUNG=$pid"`)
   test("RG3: a user-changed service hostname (0.0.0.0) stops ensure with service_not_loopback and starts nothing", async () => {
     await state.controller.disconnect(state.hostId)
     expect((await stopService()).get("ALIVE")).toBe("0")
-    await Env.hostSh(String.raw`f="$HOME/.config/opencode/service-own.json"; sed -i 's/"hostname":"127.0.0.1"/"hostname":"0.0.0.0"/' "$f"; grep -c '0.0.0.0' "$f"`)
+    await Env.hostSh(
+      String.raw`f="$XDG_CONFIG_HOME/opencode/service-own.json"; sed -i 's/"hostname":"127.0.0.1"/"hostname":"0.0.0.0"/' "$f"; grep -c '0.0.0.0' "$f"`,
+    )
     try {
       const result = await connect()
-      const check = await Env.hostSh(String.raw`echo "REG=$([ -f "$HOME/.local/state/opencode/service-own.json" ] && echo present || echo absent)"
+      const check =
+        await Env.hostSh(String.raw`echo "REG=$([ -f "$XDG_STATE_HOME/opencode/service-own.json" ] && echo present || echo absent)"
 echo "ANY=$(ss -Htln | awk '{print $4}' | grep -c '^0.0.0.0:${state.controller.record(state.hostId)!.remotePort}$')"
-echo "OURS=$(for p in $(ps -u "$(id -u)" -o pid=); do readlink /proc/$p/exe 2>/dev/null; done | grep -c own-open-code/app)"`)
+echo "OURS=$(for p in $(ps -u "$(id -u)" -o pid=); do readlink /proc/$p/exe 2>/dev/null; done | grep -c "^$OWN_RH_ROOT/data/own-open-code/app/")"`)
       Env.evidence("rg3-not-loopback.json", { view: result, remote: check.stdout })
       expect(result).toMatchObject({ paused: true, error: "service_not_loopback" })
       expect(Env.kv(check.stdout).get("ANY")).toBe("0")
       expect(Env.kv(check.stdout).get("OURS")).toBe("0")
     } finally {
-      await Env.hostSh(String.raw`f="$HOME/.config/opencode/service-own.json"; sed -i 's/"hostname":"0.0.0.0"/"hostname":"127.0.0.1"/' "$f"`)
+      await Env.hostSh(
+        String.raw`f="$XDG_CONFIG_HOME/opencode/service-own.json"; sed -i 's/"hostname":"0.0.0.0"/"hostname":"127.0.0.1"/' "$f"`,
+      )
     }
     const back = await connect()
     expect(back.stage).toBe("ready")
@@ -565,7 +589,8 @@ echo "OURS=$(for p in $(ps -u "$(id -u)" -o pid=); do readlink /proc/$p/exe 2>/d
 
   test("end of phase A: disconnect leaves the service running on the host (04 §6.2)", async () => {
     await state.controller.disconnect(state.hostId)
-    const check = await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+    const check =
+      await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 [ -n "$pid" ] && [ -d "/proc/$pid" ] && echo RUNNING=1 || echo RUNNING=0`)
     expect(Env.kv(check.stdout).get("RUNNING")).toBe("1")
     fs.writeFileSync(path.join(Env.ROOT, "host-id"), state.hostId)

@@ -280,10 +280,12 @@ async function frames(room: Locator, moving: boolean) {
 async function placed(page: Page) {
   const room = (await page.getByTestId("team-room-canvas").boundingBox())!
   const marks = page.getByTestId("team-room-mark")
+  // A badge can go between the count and its box (an owner's status moved on: `?` answered, `!` cleared); a badge
+  // that is no longer drawn has no box to check (RL34-T, the release tier's load).
   const badges = await Promise.all(
-    Array.from({ length: await marks.count() }, async (_, index) => (await marks.nth(index).boundingBox())!),
+    Array.from({ length: await marks.count() }, (_, index) => marks.nth(index).boundingBox()),
   )
-  for (const box of [...(await boxes(page)), ...badges]) {
+  for (const box of [...(await boxes(page)), ...badges.filter((item) => item !== null)]) {
     expect(box.x).toBeGreaterThanOrEqual(room.x - 1)
     expect(box.x + box.width).toBeLessThanOrEqual(room.x + room.width + 1)
     expect(box.y).toBeGreaterThanOrEqual(room.y - 1)

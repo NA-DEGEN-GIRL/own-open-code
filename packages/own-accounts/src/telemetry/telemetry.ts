@@ -1232,8 +1232,11 @@ export function create(deps: Deps, peers: Module.Peers): Api {
     authFailures.delete(info.account.id)
     if (runtime.limits.exhaustion(info.account.id)) runtime.limits.clearExhaustion(info.account.id)
     relay.succeeded(info.account.id)
+    // RS: a connection test's 401 left `인증 실패` on the card while requests work again.
+    if (peers().slots.account(info.account.id)?.status === "auth_failed") void peers().logins.accepted(info.account)
     // A side question's line comes from core's own usage (`recordSide`), not from the stream.
-    if ((event.kind === "generate" && !event.side) || event.kind === "title") streamUsage(event, info, response.clone(), now)
+    if ((event.kind === "generate" && !event.side) || event.kind === "title")
+      streamUsage(event, info, response.clone(), now)
     // The compaction's own line sums all of its requests; its cache entry is the last one's (CC-12).
     const sent = event.kind === "compaction" ? memory(event.sessionID).compactionSent : undefined
     if (sent)
@@ -1367,6 +1370,8 @@ export function create(deps: Deps, peers: Module.Peers): Api {
     if (count < AUTH_REPEAT && !result.reauth) return { class: "transient", accountID }
     const until = untilOf(accountID, undefined, now)
     exhaust(event.sessionID, info.account, { class: "auth", windowId: null, until, reason: result.reason })
+    // RS: the registry says so, so every view does (a rejected login is `needs_reauth` through `rejected` already).
+    if (!result.reauth) await peers().logins.refused(info.account)
     if (info.account.credential?.type === "linked-codex-source")
       alert({
         code: "codex_source_stale",
@@ -1855,7 +1860,8 @@ export function create(deps: Deps, peers: Module.Peers): Api {
       costUSD: input.costUSD ?? null,
       usageSource: tokens ? "stream" : "estimate",
     })
-    const cost = input.costUSD === undefined ? null : { unit: "USD" as const, amount: input.costUSD, source: "ratecard" as const }
+    const cost =
+      input.costUSD === undefined ? null : { unit: "USD" as const, amount: input.costUSD, source: "ratecard" as const }
     await commit(`image_${OwnID.ulid(input.at)}`, { ...line, cost, hit: null })
   }
 

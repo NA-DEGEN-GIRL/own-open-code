@@ -7,7 +7,7 @@ import path from "node:path"
 import { Account } from "@own/protocol"
 import { ClaudeLogin } from "../../src/claude/login.js"
 import { login } from "../support/claude-auth-bundle.js"
-import { call, ok } from "../plugins/support.js"
+import { call, ok, recordEvents, until } from "../plugins/support.js"
 import { request, world } from "./support.js"
 
 /** Polls the login until it is no longer waiting (the fake CLI is a Bun process: it takes a moment to start). */
@@ -81,7 +81,10 @@ describe("adding a Claude account", () => {
     // Evidence for a failure seen once under load (2.2.6-own.18 tier, not reproduced alone): the whole status and folder.
     const closed = await finished(failed, attempt.attemptID)
     if (closed.state !== "failed" || fs.existsSync(first.folder))
-      console.error("login.test evidence (closed window)", JSON.stringify({ closed, folder: fs.existsSync(first.folder) }))
+      console.error(
+        "login.test evidence (closed window)",
+        JSON.stringify({ closed, folder: fs.existsSync(first.folder) }),
+      )
     expect(closed.state).toBe("failed")
     expect(fs.existsSync(first.folder)).toBe(false)
 
@@ -313,5 +316,47 @@ describe("login folders nothing registers", () => {
     expect(fs.existsSync(left)).toBe(false)
     expect(fs.existsSync(kept)).toBe(true)
     expect(fs.existsSync(fresh)).toBe(true)
+  })
+})
+
+// RS (2026-11-28, the user's AC-01): account 1 on a login folder of its own showed "로그인 토큰이 만료됐어요 · 다음 요청에서
+// 새로 고쳐요" after a successful `다시 로그인`, until a request. Its relogin writes nothing into the registry, so no
+// revision moved and no client read the list again. Now the leader tells the clients as soon as the plugin's logins were
+// read again: the card is fresh without a request, a restart or the next 15 s look.
+describe("logging in again", () => {
+  test("account 1's relogin tells the clients at once; the card has no expired line", async () => {
+    await using w = await world()
+    const events = recordEvents(w.deps)
+    const folder = path.join(w.deps.runtime.layout.claudeAccounts, "acc_claude_slot_own")
+    fs.mkdirSync(folder, { recursive: true })
+    const key = ClaudeLogin.key(folder)
+    w.fake.accounts[key] = "tok-old"
+    await w.peers().slots.mutate((current) => ({
+      ...current,
+      claudeSlot: { accountID: "acc_claude_slot", label: "AC-01", shortLabel: "C", color: "orange", configDir: folder },
+    }))
+    const revision = w.registry.revision
+    // The login expired before this service started: no refresh is on record, the card says it is due.
+    w.fake.expires[key] = w.clock.now() - 60_000
+    await w.claude.start()
+    const view = () =>
+      w.claude
+        .views({ verified: true, version: "0.4.0-fake" }, { windows: () => [], summary: () => ({ worst: null }) })
+        .find((item) => item.id === Account.ID.claudeSlot)!
+    expect(view().claude?.refresh).toEqual({ state: "due" })
+    const plan = await ok(w.claude.addPlan, { accountID: Account.ID.claudeSlot })
+    expect(plan.move).toBeUndefined()
+    // The patched plugin reads the new login once its file changed (claude-auth patch RS): here, the fake's expiry.
+    w.fake.expires[key] = w.clock.now() + 3_600_000
+    const before = events.length
+    const { attemptID } = await ok(w.claude.addExecute, { nonce: plan.nonce })
+    expect((await finished(w, attemptID)).state).toBe("added")
+    expect(w.registry.revision).toBe(revision)
+    await until(() => events.slice(before).some((event) => event.name === "accounts.changed"))
+    expect(events.slice(before).find((event) => event.name === "accounts.changed")?.payload).toMatchObject({
+      revision,
+    })
+    expect(view().claude?.refresh).toBeUndefined()
+    expect(view().status).toBe("ready")
   })
 })

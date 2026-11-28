@@ -130,7 +130,7 @@ export class Operations {
     const session = await this.#session(hostId)
     try {
       return await this.#controller.runner.run({
-        args: [...shortArgs(target), target.host, command],
+        args: [...shortArgs(target), target.host, this.#controller.remoteCommand(command)],
         env: session.env,
         stdin,
         timeout,
@@ -190,7 +190,14 @@ export class Operations {
     if (!inspected.ok) return this.#failure(inspected.failure)
     const inspect = inspected.inspect
     const record = this.#controller.record(hostId)!
-    const paths = record.remote ?? RemoteModel.remotePaths(inspect, record.shellEnv, record.installRoot)
+    const paths =
+      record.remote ??
+      RemoteModel.remotePaths(
+        inspect,
+        record.shellEnv,
+        record.installRoot,
+        this.#controller.input.options.remoteTest?.root,
+      )
     const located = await Bundle.locate(this.#controller.bundlesDir, inspect.target)
     if (!located.ok) return { ok: false, error: "bundle_missing", data: { target: inspect.target, path: located.path } } as Failed
     const needBytes = located.bundle.bytes * 3

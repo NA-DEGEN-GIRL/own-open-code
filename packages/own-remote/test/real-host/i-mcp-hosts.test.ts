@@ -1,25 +1,27 @@
 // Real-host phase I (04 §13 "MCP", MH 2026-11-26): own.accounts' host-side MCP code on the real Linux host, in an
 // isolated test root. Opt-in: OWN_REAL_HOST=build-host (light; lab too). Self-contained: it does not need phase A's
-// install and never touches the host's own install, service or config, the user's ssh files or their processes.
+// install (it makes the run's test root when there is none) and never touches the host's own install, service or
+// config, the user's ssh files or their processes.
 //
-// - The root is `/tmp/own-<uid>-rh-mcp-<rand>` (z-cleanup's namespace); HOME, XDG_* and TMPDIR point inside it.
+// - The root is `<run root>/tmp/mcp-<rand>` (the run's test root, decisions RL35, which z-cleanup removes); HOME,
+//   XDG_* and TMPDIR point inside it. ssh goes through the suite's temp config like every phase (env.ts).
 // - Uploaded: the release's Linux service program (`opencode` of `linux-x64-baseline.tar.gz`), the driver
 //   (mcp-driver.ts bundled for bun) and the tiny fake MCP server shipped in the repo (own-accounts' e2e kit). The
 //   program runs both as bun (`BUN_BE_BUN=1`): the driver and the server it installs.
 // - Checks: the probe in the login environment (runtimes, docker without sudo, the program as bun), the analysis
-//   against it, `~/…` made absolute, the server off without its value and listing its tools with it, the fold's config,
-//   no value in the host's file, no fixture process left. Nothing is downloaded (the pre-fetch plans are only read).
+//   against it, `~/…` made absolute, the server off without its value (its test starts nothing) and listing its tools
+//   with it, the fold's config, a value that is not a secret set on the host itself (on without the PC), what a fresh
+//   Location of the host folds (every installed server on, the host-set one's tools from exactly that config), no
+//   value in the host's file, no fixture process left. Nothing is downloaded (the pre-fetch plans are only read).
 // - afterAll removes the root and checks it is gone.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
-import { spawn, spawnSync } from "node:child_process"
+import { afterAll, beforeAll, expect, test } from "bun:test"
+import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { ALIAS, ensureHostRun, hostCommand } from "./env.js"
+import { phase } from "./isolate.js"
 
-const ALIAS = process.env.OWN_REAL_HOST ?? ""
-const enabled = process.platform === "win32" && ["build-host", "dev-host", "lab"].includes(ALIAS)
-const run = enabled ? describe : describe.skip
-const SSH = "C:\\Windows\\System32\\OpenSSH\\ssh.exe"
 /** Windows' own bsdtar (an MSYS tar on PATH would read `D:` as a remote host). */
 const TAR = "C:\\Windows\\System32\\tar.exe"
 const REPO = path.resolve(import.meta.dir, "../../../..")
@@ -30,24 +32,9 @@ const EVIDENCE = path.join(LOCAL, "evidence")
 
 type Json = Record<string, any>
 
-/** One POSIX script on the host through the user's own ssh setup (BatchMode: never a prompt), stdin optional. */
-function host(script: string, input?: Buffer, timeoutMs = 300_000): Promise<{ code: number | null; stdout: string; stderr: string }> {
-  return new Promise((resolve) => {
-    const child = spawn(SSH, ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-o", "ClearAllForwardings=yes", "-T", ALIAS, script], {
-      windowsHide: true,
-      stdio: ["pipe", "pipe", "pipe"],
-    })
-    let stdout = ""
-    let stderr = ""
-    child.stdout.setEncoding("utf8").on("data", (text: string) => (stdout += text))
-    child.stderr.setEncoding("utf8").on("data", (text: string) => (stderr += text))
-    const timer = setTimeout(() => child.kill(), timeoutMs)
-    child.on("close", (code) => {
-      clearTimeout(timer)
-      resolve({ code, stdout, stderr })
-    })
-    child.stdin.end(input ?? Buffer.alloc(0))
-  })
+/** One POSIX script on the host (the suite's temp ssh config, the run's prelude), stdin optional. */
+function host(script: string, input?: Buffer, timeoutMs = 300_000) {
+  return hostCommand(script, input ?? Buffer.alloc(0), timeoutMs)
 }
 
 function results(output: string) {
@@ -61,10 +48,11 @@ function results(output: string) {
   ) as Json
 }
 
-run(`real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`, () => {
+phase("i-mcp-hosts", `real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`, () => {
   const state = {} as { root: string; out: Json; raw: string }
 
   beforeAll(async () => {
+    await ensureHostRun()
     fs.rmSync(LOCAL, { recursive: true, force: true })
     fs.mkdirSync(path.join(LOCAL, "upload", "home", "fixture"), { recursive: true })
     fs.mkdirSync(EVIDENCE, { recursive: true })
@@ -87,7 +75,7 @@ run(`real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`
     })
     if (packed.status !== 0) throw new Error(`pack failed: ${packed.stderr}`)
     const made = await host(
-      'set -eu; root=$(mktemp -d "/tmp/own-$(id -u)-rh-mcp-XXXXXX"); chmod 700 "$root"; tar -xzf - -C "$root"; chmod 755 "$root/opencode"; mkdir -p "$root/xdg/config" "$root/xdg/data" "$root/xdg/state" "$root/xdg/cache" "$root/tmp"; echo "ROOT=$root"',
+      'set -eu; root=$(mktemp -d "$OWN_RH_ROOT/tmp/mcp-XXXXXX"); chmod 700 "$root"; tar -xzf - -C "$root"; chmod 755 "$root/opencode"; mkdir -p "$root/xdg/config" "$root/xdg/data" "$root/xdg/state" "$root/xdg/cache" "$root/tmp"; echo "ROOT=$root"',
       fs.readFileSync(path.join(LOCAL, "upload.tgz")),
     )
     const root = /ROOT=(\S+)/.exec(made.stdout)?.[1]
@@ -111,7 +99,9 @@ run(`real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`
 
   afterAll(async () => {
     if (!state.root) return
-    const removed = await host(`root='${state.root}'; case "$root" in /tmp/own-"$(id -u)"-rh-mcp-*) rm -rf "$root";; esac; [ -e "$root" ] && echo LEFT || echo GONE`)
+    const removed = await host(
+      `root='${state.root}'; case "$root" in "$OWN_RH_ROOT"/tmp/mcp-*) rm -rf "$root";; esac; [ -e "$root" ] && echo LEFT || echo GONE`,
+    )
     expect(removed.stdout).toContain("GONE")
     fs.rmSync(path.join(LOCAL, "upload"), { recursive: true, force: true })
     fs.rmSync(path.join(LOCAL, "upload.tgz"), { force: true })
@@ -149,7 +139,8 @@ run(`real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`
   test("installed with `~/…`: off without its value, its tools with it; no value in the host's file; nothing left", () => {
     expect(state.out.SAVED.args[0]).toBe(`${state.root}/home/fixture/mcp-stdio.ts`)
     expect(state.out.SAVED.values).toBe("missing")
-    expect(state.out.MISSING).toMatchObject({ ok: false, failure: "exited" })
+    // Off without its value, and its test starts nothing (it once ran it without the value).
+    expect(state.out.MISSING).toMatchObject({ type: "mcp_secret_missing", data: { name: "API_KEY" } })
     expect(state.out.SENT).toMatchObject({ ok: true, tools: [{ name: "lookup" }, { name: "summarize" }] })
     expect(state.out.VIEW).toEqual({ values: "ready", check: true })
     expect(state.out.FOLD).toEqual({
@@ -159,6 +150,21 @@ run(`real host ${ALIAS}: MCP servers of this PC on the host (phase I, isolated)`
     })
     expect(state.out.PREFETCH.npx.kind).toBe("npm")
     expect(state.out.LEFT).toBe(0)
+  })
+
+  test("a value that is not a secret set on the host (llm-router's state folder): on without the PC, `~` resolved", () => {
+    expect(state.out.HOSTSET).toEqual({
+      values: "none",
+      dir: `${state.root}/home/own-mcp-test/state`,
+      test: expect.objectContaining({ ok: true, tools: [expect.objectContaining({ name: "lookup" })] }),
+    })
+  })
+
+  test("a fresh host conversation's Location loads what the card shows: both servers on, the host-set one's tools", () => {
+    // own.accounts' fold of the host's list in a new Location (what core and its Code Mode catalog get), and the
+    // host-set server started from exactly that config. A real session's catalog is the fake-SSH e2e's
+    // (own-accounts test/remote/e2e/mcp-hosts.test.ts): this phase starts no own service on the host.
+    expect(state.out.FRESH).toEqual({ servers: ["router", "tiny"], disabled: [], router: { ok: true, tools: ["lookup"] } })
   })
 })
 

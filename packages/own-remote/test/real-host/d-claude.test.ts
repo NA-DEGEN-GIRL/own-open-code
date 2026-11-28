@@ -42,7 +42,7 @@
 // D1–D13 run with the slot's own account only: account 1's folder is the FAKE Claude Code home (`claude-auth.json`, as
 // the patched plugin reads own's account list, not CLAUDE_CONFIG_DIR). Nothing is acknowledged for the slot on this PC
 // (the plugin ships with the app); the remote consent names the bundle's pin.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
@@ -53,8 +53,8 @@ import { writeFakeClaudeAuth } from "../../../own-accounts/test/support/fake-cla
 import { Notice } from "../../../own-accounts/src/plugins/notice.js"
 import * as Env from "./env.js"
 import * as Stack from "./stack.js"
+import { phaseIf } from "./isolate.js"
 
-const run = Env.heavyHost ? describe : describe.skip
 const CLIENT = "real-host-d"
 /** FAKE Claude Code login (never real credentials); D2 scans the host for each value. */
 const TOKEN1 = "sk-ant-oat01-ownRealHostFakeAccessToken0000000001"
@@ -116,6 +116,7 @@ const MARKERS = [
   "[D14-ONE]",
   "[D14-TWO]",
   "[D14-MAIN]",
+  "[D15-DEFAULT]",
 ] as const
 
 type Json = Record<string, any>
@@ -572,7 +573,9 @@ function installBundle(dir: string, credentials: string) {
   return { kind: "fake-fixture" as const, pin }
 }
 
-run(`real host ${Env.ALIAS}: the Claude slot through this PC's egress relay (phase D, RG18)`, () => {
+const PHASE_TITLE = `real host ${Env.ALIAS}: the Claude slot through this PC's egress relay (phase D, RG18)`
+
+phaseIf(Env.heavyHost)("d-claude", PHASE_TITLE, () => {
   const state = {} as {
     upstream: ReturnType<typeof startUpstream>
     pcSink: Stack.Sink
@@ -804,22 +807,22 @@ r() {
 }
 ${lines.join("\n")}`
   const hygieneScript = () => String.raw`set -u
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
-roots="$HOME/.local/share/own-open-code $HOME/.config/own-open-code $HOME/.local/state/own-open-code $HOME/.config/opencode $HOME/.local/state/opencode $HOME/.local/share/opencode $HOME/.cache/opencode"
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
+roots="$XDG_DATA_HOME/own-open-code $XDG_CONFIG_HOME/own-open-code $XDG_STATE_HOME/own-open-code $XDG_CONFIG_HOME/opencode $XDG_STATE_HOME/opencode $XDG_DATA_HOME/opencode $XDG_CACHE_HOME/opencode"
 # A credentials file's key, quoted as JSON writes it: since upstream v2.2 the opencode binary bundles the Claude Agent
 # SDK, whose code reads the bare name (RL6).
 for needle in ${FAKES.map((value) => `'${value}'`).join(" ")} '"claudeAiOauth"'; do
-  c=$(grep -rlaF -- "$needle" $roots /tmp/own-$(id -u)* 2>/dev/null | wc -l)
+  c=$(grep -rlaF -- "$needle" $roots "$OWN_RH_ROOT/tmp" 2>/dev/null | wc -l)
   e=$(tr '\0' '\n' < /proc/$pid/environ 2>/dev/null | grep -cF -- "$needle")
   a=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null | grep -cF -- "$needle")
   p=$(ps -eo args | grep -v grep | grep -cF -- "$needle")
   echo "HITS=$c/$e/$a/$p"
 done
-echo "MARKER_BILLING=$(grep -rlaF -- 'x-anthropic-billing-header' "$HOME/.local/share/own-open-code/app/current/plugins" 2>/dev/null | wc -l)"
-echo "MARKER_SALT=$(grep -rlaF -- '59cf53e54c78' "$HOME/.local/share/own-open-code/app/current/plugins" 2>/dev/null | wc -l)"
-echo "PLUGINS=$(ls "$HOME/.local/share/own-open-code/app/current/plugins" | tr '\n' ' ')"
-echo "CLAUDE_AUTH_PATHS=$(find "$HOME/.local/share/own-open-code" "$HOME/.local/share/opencode" -iname '*claude-auth*' 2>/dev/null | wc -l)"
-echo "CLAUDE_ACCOUNT_FILES=$(ls "$HOME"/.local/share/opencode/claude-* 2>/dev/null | wc -l)"
+echo "MARKER_BILLING=$(grep -rlaF -- 'x-anthropic-billing-header' "$XDG_DATA_HOME/own-open-code/app/current/plugins" 2>/dev/null | wc -l)"
+echo "MARKER_SALT=$(grep -rlaF -- '59cf53e54c78' "$XDG_DATA_HOME/own-open-code/app/current/plugins" 2>/dev/null | wc -l)"
+echo "PLUGINS=$(ls "$XDG_DATA_HOME/own-open-code/app/current/plugins" | tr '\n' ' ')"
+echo "CLAUDE_AUTH_PATHS=$(find "$XDG_DATA_HOME/own-open-code" "$XDG_DATA_HOME/opencode" -iname '*claude-auth*' 2>/dev/null | wc -l)"
+echo "CLAUDE_ACCOUNT_FILES=$(ls "$XDG_DATA_HOME"/opencode/claude-* 2>/dev/null | wc -l)"
 # Only our service's descendants count: other programs of the user on this host run their own claude -p.
 n=0; for c in $(pgrep -f 'claude -p' 2>/dev/null); do q=$c; while [ -n "$q" ] && [ "$q" -gt 1 ]; do [ "$q" = "$pid" ] && { n=$((n+1)); break; }; q=$(ps -o ppid= -p "$q" 2>/dev/null | tr -d ' '); done; done
 echo "CLAUDE_P=$n"
@@ -862,7 +865,7 @@ echo "== /tmp .bun-uid"; ls -A1 /tmp 2>/dev/null | grep -E "^\.bun-$(id -u)-" ||
 
   beforeAll(async () => {
     state.uid = Env.kv((await Env.hostSh("echo UID=$(id -u)")).stdout).get("UID")!
-    state.project = `/tmp/own-${state.uid}-rh-claude`
+    state.project = `${Env.hostRun().root}/tmp/rh-claude`
     state.upstream = startUpstream(() => state.project)
     state.pcSink = await Stack.startSink(await Env.freeLocalPort(40_000, 49_999))
     // The FAKE Claude Code home of this PC's service (B12): every path the plugin may read or write is in the temp root.
@@ -935,8 +938,11 @@ PY
 echo "PNG=$(stat -c %s "${state.project}/big.png")"; echo OK=1`)
     expect(Env.kv(made.stdout).get("OK")).toBe("1")
     expect(Number(Env.kv(made.stdout).get("PNG"))).toBeGreaterThan(4 * 1024 * 1024)
-    const before = fs.readFileSync(path.join(Env.EVIDENCE, "before.txt"), "utf8")
-    state.bunBefore = Env.section(before, "== /tmp .bun-uid").filter((line) => line !== "none")
+    // /tmp/.bun-<uid>-* when the phase starts (read only): no own Bun run of the phase may add one.
+    const bun = await Env.hostSh(
+      String.raw`echo "== /tmp .bun-uid"; ls -A1 /tmp 2>/dev/null | grep -E "^\.bun-$(id -u)-" || echo none`,
+    )
+    state.bunBefore = Env.section(bun.stdout, "== /tmp .bun-uid").filter((line) => line !== "none")
 
     // The PC's slot: the bundle loaded (no consent, 02 §8.2), Claude Code's (fake) login imported, the remote notice
     // accepted with the bundle's pin, the host switched on.
@@ -1371,8 +1377,8 @@ echo "PNG=$(stat -c %s "${state.project}/big.png")"; echo OK=1`)
         `echo "EPOCH=$(r "$s" POST 'http://localhost/v1/messages?beta=true' 'x-own-egress: v1.${egress.epoch + 1000}.8.${random}')"`,
         `echo "PATH404=$(r "$s" POST 'http://localhost/v1/complete')"`,
         // The stub: a loopback listener of the remote service other than its API port; a request without MAC reaches the PC.
-        String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)`,
-        String.raw`api=$(sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"http:\/\/127\.0\.0\.1:\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)`,
+        String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)`,
+        String.raw`api=$(sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"http:\/\/127\.0\.0\.1:\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)`,
         String.raw`for port in $(ss -Htlnp 2>/dev/null | grep "pid=$pid," | awk '{print $4}' | sed -n 's/^127\.0\.0\.1:\([0-9]*\)$/\1/p'); do`,
         `  [ "$port" = "$api" ] && continue`,
         `  echo "STUB_$port=$(r "" POST "http://127.0.0.1:$port/v1/messages?beta=true")"`,
@@ -1802,7 +1808,42 @@ echo "PNG=$(stat -c %s "${state.project}/big.png")"; echo OK=1`)
     expect(windows.some((window) => window.accountID === SECOND)).toBe(true)
   }, 900_000)
 
-  test("D2 again at the end: hygiene after every scenario, and no new /tmp/.bun-<uid>-* since the before listing", async () => {
+  // RS (2026-11-28, the user's build-host): the switcher of a new host conversation chose a Claude account with the
+  // host's `plugin.claudeAuth.default.set`, which the host refuses (`remote_managed`), and jumped to the accounts page.
+  // own-web now chooses it on the PC; the PC's mirror carries it to the host, whose next new conversation runs on it.
+  test("D15: the Claude account new host conversations start on is chosen on the PC; the host refuses to choose it", async () => {
+    const refused = await remoteRpc("plugin.claudeAuth.default.set", { accountID: SECOND })
+    await local("plugin.claudeAuth.default.set", { accountID: SECOND })
+    try {
+      const fresh = await session("relay chosen default")
+      const chosen = await Stack.until(
+        async () => {
+          const output = (await remoteRpc("plugin.claudeAuth.session.get", { sessionID: fresh })).body?.output as
+            | Json
+            | undefined
+          return output?.accountID === SECOND ? output : undefined
+        },
+        120_000,
+        1_000,
+      )
+      const from = state.upstream.seen.length
+      await prompt(fresh, "[D15-DEFAULT] on the account chosen on the PC")
+      await waitIdle(fresh)
+      const calls = seenWith("[D15-DEFAULT]", from)
+      Env.evidence("d15-default.json", {
+        refused: refused.body,
+        chosen,
+        signedBy: calls.map((item) => (item.authorization === `Bearer ${TOKEN3}` ? "token3" : "other")),
+      })
+      expect(refused.body).toMatchObject({ type: "remote_managed" })
+      expect(chosen).toMatchObject({ accountID: SECOND, bound: false })
+      expect(calls.map((item) => item.authorization)).toEqual([`Bearer ${TOKEN3}`])
+    } finally {
+      await local("plugin.claudeAuth.default.set", { accountID: "acc_claude_slot" })
+    }
+  }, 600_000)
+
+  test("D2 again at the end: hygiene after every scenario, and no new /tmp/.bun-<uid>-* since the phase began", async () => {
     const result = await hygiene("d2-hygiene-end")
     // TMPDIR=<OWN_HOME>/tmp for every own Bun run: nothing new under /tmp.
     expect(result.bunNow.filter((entry) => !state.bunBefore.includes(entry))).toEqual([])

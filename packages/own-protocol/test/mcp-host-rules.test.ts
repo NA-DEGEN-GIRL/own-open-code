@@ -440,3 +440,31 @@ describe("hash and host paths", () => {
     expect(McpHostRules.hostPath("a~b", "/home/u")).toBe("a~b")
   })
 })
+
+describe("the AI's brief", () => {
+  test("a value that is not a secret may be set for the host in `fixed`; a secret comes from the PC (llm-router)", () => {
+    const source = local("node", ["D:\projects\llm-router-mcp\bin\llm-router-mcp.js"], {
+      env: ["LLM_ROUTER_MCP_STATE_DIR"],
+      name: "llm-router",
+    })
+    const analysis = McpHostRules.analyze(source, { home: HOME, probe: probe() })
+    expect(analysis.result).toBe("assist")
+    expect(analysis.values).toEqual([{ name: "LLM_ROUTER_MCP_STATE_DIR", kind: "env", secret: false }])
+    const input = { host: "build-host", source, analysis, probe: probe(), shown: "node …", tool: McpHostRules.TOOL }
+    const ko = McpHostRules.brief({ ...input, locale: "ko" })
+    expect(ko).toContain("LLM_ROUTER_MCP_STATE_DIR (비밀 아님: 이 호스트에 맞게 정해도 됨)")
+    expect(ko).toContain("(command, args, cwd, fixed)")
+    expect(ko).not.toContain("비밀 값은 사용자가 PC에서 따로 보내야")
+    const en = McpHostRules.brief({ ...input, locale: "en" })
+    expect(en).toContain("LLM_ROUTER_MCP_STATE_DIR (not a secret: may be set for this host)")
+    const github = local("npx", ["-y", "@example/github-mcp"], { env: ["GITHUB_TOKEN"], name: "github" })
+    const secret = McpHostRules.brief({
+      ...input,
+      locale: "ko",
+      source: github,
+      analysis: McpHostRules.analyze(github, { home: HOME, probe: probe() }),
+    })
+    expect(secret).toContain("GITHUB_TOKEN (비밀)")
+    expect(secret).toContain("비밀 값은 사용자가 PC에서 따로 보내야 서버가 켜져요.")
+  })
+})

@@ -6,8 +6,13 @@
 // - Analyses every server this PC knows (own's and the config files', disabled ones too) per host (`McpHostRules`)
 //   and keeps it calm: one summary line per host, the servers' rows on demand, details under each row.
 // - Installs: `mcp.host.save` with the translated definition (no value), then the user's own send step for values
-//   (`mcp.hosts.send`, never by default), a pre-fetch, and the host's connection test. `AI에게 설치 맡기기` starts a new
-//   conversation on the host with a self-contained brief (`McpHostRules.brief`) and the install job.
+//   (`mcp.hosts.send`, never by default), a pre-fetch, and the host's connection test (not while the host waits for
+//   values: it would start nothing). `AI에게 설치 맡기기` shows the brief, then the host's new-conversation screen with
+//   the "모델 @ 계정" switcher as a picker (`openSwitcherToPick` without a team), the next new conversation's model
+//   chosen; only its apply starts a new conversation on the host with that model, the self-contained brief
+//   (`McpHostRules.brief`) and the install job. Closing it starts nothing.
+// - An installed row shows what the host runs (hosts-model `live`, `hostValues`, `reasonsOf`): one state, the host's
+//   command line, values set on the host with their value, and no reason that was about this PC's definition.
 // - A phone or another PC sees each host's installed servers only (`mcp.host.view` is `read`); installing, sending
 //   and the probe are `local`.
 import type { ConfigEntry } from "@opencode/client"
@@ -20,14 +25,21 @@ import { useI18n } from "@/i18n"
 import { Dialog, Notice, Spinner, Tag, type TagTone } from "@/limits/kit"
 import { useRouter } from "@/routing/router"
 import { remoteStore } from "@/servers"
+import { inFocusedPane } from "@/shell/pane-context"
 import { showToast } from "@/switcher/toast"
 import { fileTransport } from "./manage-model"
 import { mcpHostTarget, setHostLines, setMcpHostTarget } from "./hosts-line"
 import {
+  assistIntent,
   direct,
   hostInputs,
-  job,
+  hostShown,
+  hostValues,
+  keepHostValues,
+  live,
+  nextStep,
   orphans,
+  reasonsOf,
   rows,
   shown,
   summary,
@@ -181,12 +193,13 @@ export default function McpHosts(props: McpHostsProps) {
     const runtime = runtimeOf(id)
     const host = hosts[id]
     if (!runtime || host?.status !== "ready") return undefined
-    const transport = McpHostRules.translate(row.source, row.analysis, {
+    const translated = McpHostRules.translate(row.source, row.analysis, {
       ...(host.probe ? { probe: host.probe } : {}),
       ...(choice.fills ? { args: choice.fills } : {}),
       ...(choice.cwd ? { cwd: choice.cwd } : {}),
     })
-    if (!transport) throw new Error("not translatable")
+    if (!translated) throw new Error("not translatable")
+    const transport = keepHostValues(translated, row)
     const saved = await runtime.rpc.call("mcp.host.save", {
       ...(row.installed ? { id: row.installed.id as never } : {}),
       name: row.source.name as never,
@@ -201,7 +214,13 @@ export default function McpHosts(props: McpHostsProps) {
     if (names.length > 0 && ref)
       await data.local().rpc.call("mcp.hosts.send", { hostId: id as never, server: server.id as never, source: ref as never, names: [...names] })
     if (transport.type === "local") await runtime.rpc.call("mcp.host.prefetch", { id: server.id as never }).catch(() => undefined)
-    const check = await runtime.rpc.call("mcp.host.test", { id: server.id as never })
+    // Still waiting for values the user did not send: the host keeps it off, and its test starts nothing.
+    const off = (error: unknown) =>
+      error instanceof OwnRpcError && error.type === "mcp_secret_missing" ? ("off" as const) : Promise.reject(error)
+    const check =
+      server.values === "missing" && names.length === 0
+        ? ("off" as const)
+        : await runtime.rpc.call("mcp.host.test", { id: server.id as never }).catch(off)
     void load(id)
     void refetchSends()
     return check
@@ -219,12 +238,13 @@ export default function McpHosts(props: McpHostsProps) {
     )
     setBusy(row.source.key, false)
     if (done === null) return
+    const failed = done !== "off" && done?.ok === false
     showToast({
-      tone: done?.ok === false ? "danger" : undefined,
-      message: text(done?.ok === false ? "own.mcph.toast.installedFailed" : "own.mcph.toast.installed", {
-        name: row.source.name,
-        host: hostName(id),
-      }),
+      tone: failed ? "danger" : undefined,
+      message: text(
+        done === "off" ? "own.mcph.toast.installedOff" : failed ? "own.mcph.toast.installedFailed" : "own.mcph.toast.installed",
+        { name: row.source.name, host: hostName(id) },
+      ),
     })
   }
 
@@ -301,18 +321,34 @@ export default function McpHosts(props: McpHostsProps) {
     })
   }
 
-  function startAssist(id: string, row: Row) {
-    const work = job(row.source)
-    if (!work) return
+  /**
+   * The brief's `모델 고르고 시작…`: the brief closes, the host's new-conversation screen opens (the switcher lives in its
+   * pane, which this settings page hides) and the switcher picks this conversation's "모델 @ 계정" there (the host's
+   * accounts and Claude verdict, the next new conversation's model chosen). Only its apply puts the brief into the
+   * composer, which then sends it; closing it leaves the screen empty.
+   */
+  async function chooseAndStart(id: string, row: Row) {
+    const intent = assistIntent(id, row, briefOf(id, row))
+    if (!intent) return
     setAssisting(undefined)
-    requestStart({
-      serverKey: id,
-      text: briefOf(id, row),
-      metadata: { own: { mcpInstall: work } },
-      permissions: [{ action: McpHostRules.TOOL, resource: "*", effect: "allow" }],
-    })
-    showToast({ message: text("own.mcph.toast.assist", { host: hostName(id) }) })
     router.navigate({ name: "home", serverKey: id })
+    // The switcher's picker loads with its popover chunk, as 영역 만들기 loads it.
+    const { openSwitcherToPick } = await import("@/switcher/team-flow")
+    // Once the host's screen is laid out: its composer's `모델 @ 계정` button is the anchor.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    openSwitcherToPick({
+      serverKey: id,
+      anchor: inFocusedPane('[data-testid="composer-switcher"]'),
+      labels: {
+        title: text("own.mcph.pick.title"),
+        hint: text("own.mcph.pick.hint", { host: hostName(id) }),
+        apply: text("own.mcph.pick.apply"),
+      },
+      onPick: () => {
+        requestStart(intent)
+        showToast({ message: text("own.mcph.toast.assist", { host: hostName(id) }) })
+      },
+    })
   }
 
   const current = () => chosen()
@@ -385,7 +421,7 @@ export default function McpHosts(props: McpHostsProps) {
                 const host = id()
                 const results = await Promise.all(
                   picks.map((pick) => install(host, pick.row, { send: pick.send }).then(
-                    (check) => check?.ok !== false,
+                    (check) => check === "off" || check?.ok !== false,
                     () => false,
                   )),
                 )
@@ -415,7 +451,7 @@ export default function McpHosts(props: McpHostsProps) {
                 onClick={() => {
                   const row = assisting()
                   const id = current()
-                  if (row && id) startAssist(id, row)
+                  if (row && id) void chooseAndStart(id, row)
                 }}
               >
                 {text("own.mcph.assistConfirm.start")}
@@ -429,6 +465,7 @@ export default function McpHosts(props: McpHostsProps) {
                 <p class="m-0 text-[12.5px]">
                   {text("own.mcph.assistConfirm.lead", { host: hostName(pick().id), name: pick().row.source.name })}
                 </p>
+                <p class="m-0 text-[12px] text-own-muted">{text("own.mcph.assistConfirm.model", { host: hostName(pick().id) })}</p>
                 <pre
                   class="own-mono m-0 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded-md border border-own-border p-2 text-[11.5px] wrap-anywhere"
                   data-testid="mcp-hosts-brief"
@@ -505,7 +542,7 @@ function HostPanel(props: {
   const text = useMcpHostsText()
   const counts = () => summary(props.rows)
   const rowOf = (key: string) => props.rows.find((row) => row.source.key === key)!
-  const installable = () => props.rows.filter((row) => row.state === "ready" || row.state === "differs").length
+  const installable = () => props.rows.filter((row) => nextStep(row) === "install" || nextStep(row) === "update").length
   return (
     <div class="flex flex-col gap-2" data-testid="mcp-hosts-panel" data-host={props.hostId} data-status={props.host.status}>
       <div class="flex flex-wrap items-center gap-2 text-[12.5px]">
@@ -521,6 +558,15 @@ function HostPanel(props: {
           </button>
         </Show>
       </div>
+      {/* Where the host keeps them: not an OpenCode config file, so a user or an agent on the host can find them. */}
+      <Show when={props.host.status === "ready" ? props.host.view.file : undefined}>
+        {(file) => (
+          <span class="text-[12px] text-own-muted" data-testid="mcp-hosts-file">
+            {text("own.mcph.hostFile", { host: props.name })}{" "}
+            <code class="own-mono break-all text-own-text">{file()}</code>
+          </span>
+        )}
+      </Show>
       <Show when={props.host.status === "old"}>
         <Notice tone="warn" testid="mcp-hosts-old">
           {text("own.mcph.oldNote")}
@@ -666,17 +712,28 @@ function HostRow(props: {
   const row = () => props.row
   const inputs = () => hostInputs(row().analysis)
   const canDirect = () => direct(row(), { ...fills }, cwd())
-  const assistable = () =>
-    row().source.transport.type === "local" &&
-    (row().state === "prepare" || row().state === "assist" || row().state === "unknown")
+  const step = () => nextStep(row())
   const action = () => {
-    const state = row().state
-    if (state === "ready") return "install" as const
-    if (state === "differs") return "update" as const
-    return undefined
+    const next = step()
+    return next === "install" || next === "update" ? next : undefined
   }
   const pkg = () => row().analysis.package
-  const check = () => row().installed?.check
+  /** What the host runs now, one state (hosts-model `live`). */
+  const state = () => live(row())
+  const off = () => {
+    const now = state()
+    return now?.kind === "off" ? now : undefined
+  }
+  /** The last test's line; none while off (a test then starts nothing, an older one says nothing about now). */
+  const checkLine = () => {
+    const now = state()
+    if (now?.kind === "connected") return text("own.mcph.check.ok", { n: now.tools })
+    if (now?.kind === "failed") return text("own.mcph.check.failed", { reason: now.check.error ?? now.check.failure ?? "" })
+    if (now?.kind === "untested") return text("own.mcph.check.none")
+    return undefined
+  }
+  /** Values the host waits for that are not secrets: the AI sets them for the host (`AI에게 설치 맡기기`). */
+  const hostSettable = () => row().installed !== undefined && step() === "assist" && off() !== undefined
   const choice = (): Choice => ({
     ...(inputs().args.length ? { fills: { ...fills } } : {}),
     ...(cwd().trim() ? { cwd: cwd().trim() } : {}),
@@ -717,7 +774,7 @@ function HostRow(props: {
             </button>
           )}
         </Show>
-        <Show when={props.local && assistable()}>
+        <Show when={props.local && step() === "assist"}>
           <button
             type="button"
             class="own-btn"
@@ -740,9 +797,18 @@ function HostRow(props: {
           {text(expanded() ? "own.mcph.less" : "own.mcph.more")}
         </button>
       </div>
-      <Show when={row().installed?.values === "missing"}>
-        <span class="text-[12px] text-own-warn" data-testid="mcp-hosts-off">
-          {text("own.mcph.offUntilSent")}
+      <Show when={off()}>
+        {(now) => (
+          <span class="text-[12px] text-own-warn" data-testid="mcp-hosts-off">
+            {now().waiting.length > 0
+              ? text("own.mcph.offWaiting", { names: now().waiting.join(", ") })
+              : text("own.mcph.offUntilSent")}
+          </span>
+        )}
+      </Show>
+      <Show when={hostSettable()}>
+        <span class="text-[12px] text-own-muted" data-testid="mcp-hosts-off-host">
+          {text("own.mcph.offHostValues")}
         </span>
       </Show>
       <Show when={row().changed}>
@@ -776,9 +842,23 @@ function HostRow(props: {
             </Show>
             <Show when={row().source.disabled}> · {text("own.mcph.disabledHere")}</Show>
           </span>
-          <code class="own-mono break-all text-[11.5px] text-own-text">{shown(row().source)}</code>
+          <Show
+            when={row().installed}
+            fallback={<code class="own-mono break-all text-[11.5px] text-own-text">{shown(row().source)}</code>}
+          >
+            {(server) => (
+              <>
+                <span>{text("own.mcph.onHost")}</span>
+                <code class="own-mono break-all text-[11.5px] text-own-text" data-testid="mcp-hosts-host-command">
+                  {hostShown(server())}
+                </code>
+                <span>{text("own.mcph.onPc")}</span>
+                <code class="own-mono break-all text-[11.5px]">{shown(row().source)}</code>
+              </>
+            )}
+          </Show>
           <ul class="m-0 flex list-disc flex-col gap-0.5 pl-4" data-testid="mcp-hosts-reasons">
-            <For each={row().analysis.reasons}>{(reason) => <li>{reasonLine(text, reason)}</li>}</For>
+            <For each={reasonsOf(row())}>{(reason) => <li>{reasonLine(text, reason)}</li>}</For>
           </ul>
           <Show when={props.local && !row().installed && (inputs().args.length > 0 || inputs().cwd !== undefined)}>
             <div class="flex flex-col gap-1.5">
@@ -831,21 +911,22 @@ function HostRow(props: {
             onSend={props.onSend}
             onUnsend={props.onUnsend}
           />
-          <Show when={check()}>
-            {(result) => (
-              <span data-testid="mcp-hosts-check" data-ok={result().ok ? "" : undefined}>
-                {result().ok
-                  ? text("own.mcph.check.ok", { n: result().tools.length })
-                  : text("own.mcph.check.failed", { reason: result().error ?? result().failure ?? "" })}
+          <Show when={checkLine()}>
+            {(line) => (
+              <span data-testid="mcp-hosts-check" data-ok={state()?.kind === "connected" ? "" : undefined}>
+                {line()}
               </span>
             )}
           </Show>
           <Show when={props.local && row().installed}>
             {(server) => (
               <div class="flex flex-wrap gap-2 pt-0.5">
-                <button type="button" class="own-btn" data-size="sm" data-testid="mcp-hosts-test" onClick={() => props.onTest(server())}>
-                  {text("own.mcph.test")}
-                </button>
+                {/* While the host waits for values it keeps the server off, and a test would start nothing. */}
+                <Show when={!off()}>
+                  <button type="button" class="own-btn" data-size="sm" data-testid="mcp-hosts-test" onClick={() => props.onTest(server())}>
+                    {text("own.mcph.test")}
+                  </button>
+                </Show>
                 <button
                   type="button"
                   class="own-btn"
@@ -866,9 +947,10 @@ function HostRow(props: {
 }
 
 /**
- * The values step: each value with its name and whether it looks secret, never its value. Before an install the user
- * checks what goes (nothing is checked first); after it, `이 키를 <host>에 보내기` sends the values, and what was sent can
- * be withdrawn.
+ * The values step: each value with its name and whether it looks secret, never its value from this PC. Before an
+ * install the user checks what goes (nothing is checked first); after it, `이 키를 <host>에 보내기` sends the values the
+ * host waits for, and what was sent can be withdrawn. A value the host set for itself (not a secret) shows as such
+ * with the host's value: it is not this PC's to send.
  */
 function Values(props: {
   readonly host: string
@@ -880,7 +962,8 @@ function Values(props: {
   readonly onUnsend: () => void
 }) {
   const text = useMcpHostsText()
-  const list = () => props.row.analysis.values
+  const list = () => hostValues(props.row)
+  const fromPc = () => list().filter((value) => value.from === "pc")
   const sent = () => props.row.send
   return (
     <div class="flex flex-col gap-1" data-testid="mcp-hosts-values">
@@ -888,34 +971,49 @@ function Values(props: {
       <Show when={list().length > 0} fallback={<span>{text("own.mcph.valuesNone")}</span>}>
         <For each={list()}>
           {(value) => (
-            <label class="flex items-center gap-2">
-              <input
-                type="checkbox"
-                disabled={!props.local || props.row.installed !== undefined}
-                checked={props.row.installed ? (sent()?.names.includes(value.name) ?? false) : props.picked[value.name] === true}
-                data-testid="mcp-hosts-value"
-                data-name={value.name}
-                onChange={(event) => props.onPick(value.name, event.currentTarget.checked)}
-              />
-              <span class="own-mono">{value.name}</span>
-              <Show when={value.secret}>
-                <Tag tone="plain">{text("own.mcph.secret")}</Tag>
-              </Show>
-              <Show when={sent()?.names.includes(value.name)}>
-                <Tag tone="ok">{text("own.mcph.sent")}</Tag>
-              </Show>
-            </label>
+            <Show
+              when={value.from === "host" ? value : undefined}
+              fallback={
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    disabled={!props.local || props.row.installed !== undefined}
+                    checked={props.row.installed ? (sent()?.names.includes(value.name) ?? false) : props.picked[value.name] === true}
+                    data-testid="mcp-hosts-value"
+                    data-name={value.name}
+                    onChange={(event) => props.onPick(value.name, event.currentTarget.checked)}
+                  />
+                  <span class="own-mono">{value.name}</span>
+                  <Show when={value.secret}>
+                    <Tag tone="plain">{text("own.mcph.secret")}</Tag>
+                  </Show>
+                  <Show when={sent()?.names.includes(value.name)}>
+                    <Tag tone="ok">{text("own.mcph.sent")}</Tag>
+                  </Show>
+                </label>
+              }
+            >
+              {(own) => (
+                <span class="flex flex-wrap items-center gap-2" data-testid="mcp-hosts-value-host" data-name={own().name}>
+                  <span class="own-mono">{own().name}</span>
+                  <Tag tone="ok">{text("own.mcph.setOnHost")}</Tag>
+                  <code class="own-mono break-all text-own-text">{own().value}</code>
+                </span>
+              )}
+            </Show>
           )}
         </For>
-        <span class="text-own-faint">{text("own.mcph.sendNote", { host: props.host })}</span>
-        <Show when={props.local && props.row.installed}>
+        <Show when={fromPc().length > 0}>
+          <span class="text-own-faint">{text("own.mcph.sendNote", { host: props.host })}</span>
+        </Show>
+        <Show when={props.local && props.row.installed && fromPc().length > 0}>
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
               class="own-btn"
               data-size="sm"
               data-testid="mcp-hosts-send"
-              onClick={() => props.onSend(list().map((value) => value.name))}
+              onClick={() => props.onSend(fromPc().map((value) => value.name))}
             >
               {text("own.mcph.send", { host: props.host })}
             </button>
@@ -943,7 +1041,7 @@ function Review(props: {
   readonly onInstall: (picks: ReadonlyArray<{ readonly row: Row; readonly send: ReadonlyArray<string> }>) => Promise<void>
 }) {
   const text = useMcpHostsText()
-  const candidates = () => props.rows.filter((row) => row.state === "ready" || row.state === "differs")
+  const candidates = () => props.rows.filter((row) => nextStep(row) === "install" || nextStep(row) === "update")
   const [skip, setSkip] = createStore<Record<string, boolean>>({})
   const [values, setValues] = createStore<Record<string, Record<string, boolean>>>({})
   const [working, setWorking] = createSignal(false)

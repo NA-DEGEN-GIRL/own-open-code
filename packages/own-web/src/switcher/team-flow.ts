@@ -386,13 +386,25 @@ export function areaOf(seq: number) {
   return slot && (slot.seq === undefined || slot.seq === seq) ? slot.target : undefined
 }
 
-/** 영역 만들기 (06 §9.4, 2026-10-26): the switcher picks a model for a new area of `teamID`, nothing else. */
+/**
+ * The switcher as a picker: it chooses a "모델 @ 계정" and hands it back, nothing else.
+ *
+ * - With `teamID`, 영역 만들기 (06 §9.4, 2026-10-26): a model for a new area of that team, with the team's R4 filter and
+ *   `팀과 같게` on top (`null`).
+ * - Without it, a new conversation another screen starts on `serverKey` (04 §13.1 `AI에게 설치 맡기기`, MH): the
+ *   accounts and models a new conversation there may use, the same rules as on that server's new-conversation screen
+ *   (an SSH host's accounts only, its Claude verdict), the next new conversation's model preselected. Applying sets
+ *   that server's new-conversation target as the new-conversation switcher does (a Claude account becomes the default
+ *   one), then hands the choice back. Closing it hands nothing back.
+ */
 export interface PickRequest {
   readonly serverKey: ServerKey
-  readonly teamID: string
-  /** The model picked before; absent = 팀과 같게. */
+  readonly teamID?: string
+  /** The model picked before; absent = 팀과 같게 (a team's pick) or the next new conversation's (otherwise). */
   readonly current?: TargetRef
   readonly anchor?: HTMLElement | null
+  /** A pick without a team: the title's suffix, the line under the lists and the apply button, in the caller's words. */
+  readonly labels?: { readonly title: string; readonly hint: string; readonly apply: string }
   /** The choice: a model, or `null` for 팀과 같게. */
   readonly onPick: (ref: TargetRef | null) => void
 }

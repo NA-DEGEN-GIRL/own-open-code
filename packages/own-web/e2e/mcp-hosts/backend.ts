@@ -9,7 +9,9 @@
 //          │  that exits unless API_KEY is set) and one conversation for the host line
 //          └─ oldbox: installed at an older release (own-remote's stub service), never updated
 //   L's own MCP servers: `tiny` (that program, value API_KEY), `ctx` (an address with a header), `winonly` (a Windows
-//   program), `script` (a python script of this PC).
+//   program), `script` (a python script of this PC), `llm-router` (a node script of this PC with a state folder value,
+//   2.4.1-own.5's report; the fake model installs it as the host's `own-router-mcp` with the folder set for the host).
+//   Two API key accounts, Alpha and Beta: the AI's install conversation runs on the one chosen in the switcher.
 // Fake values only; every file lives under temp roots removed on exit; no real host, no ~/.ssh, no package download.
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -25,6 +27,7 @@ import { REPO_ROOT, startOpencodeServer } from "../../../own-accounts/test/e2e-k
 import { removeTree } from "../../../own-accounts/test/e2e-kit/harness/remove"
 import { startFakeOpenAIResponses } from "../../../own-accounts/test/e2e-kit/fakes/openai-responses"
 import { FAKE_MCP_STDIO } from "../../../own-accounts/test/e2e-kit/fakes/mcp-stdio"
+import { afterToolResult } from "../../../own-accounts/test/e2e-kit"
 import { PROVIDER_LOG, SECRET, STATE_FILE } from "./support"
 
 export const DEV_PORT = Number(process.env.OWN_WEB_E2E_MCP_HOSTS_PORT ?? 5431)
@@ -32,6 +35,7 @@ const VERSION = "2.0.18-own.9"
 const OLD_VERSION = "2.0.18-own.8"
 const MODEL = "gpt-5.5"
 const KEY = "sk-proj-ownWebMcpHostsE2eKey00000000001"
+const KEY_BETA = "sk-proj-ownWebMcpHostsE2eKey00000000002"
 const ACCOUNTS_PLUGIN = path.join(REPO_ROOT, "packages/own-accounts")
 const REMOTE_PLUGIN = path.join(REPO_ROOT, "packages/own-remote")
 const STUB_SERVICE = path.join(REMOTE_PLUGIN, "test/harness/fake-service.ts")
@@ -63,20 +67,41 @@ fs.writeFileSync(
   ["@echo off", "set FAKE_MCP_REQUIRE=API_KEY", `"${process.execPath}" "${FAKE_MCP_STDIO}" lookup summarize %*`, ""].join("\r\n"),
 )
 
+// `own-router-mcp`: the same fake server as llm-router of 2.4.1-own.5's report, which needs its state folder (not a
+// secret) to start.
+fs.writeFileSync(
+  path.join(bin, "own-router-mcp.cmd"),
+  ["@echo off", "set FAKE_MCP_REQUIRE=LLM_ROUTER_MCP_STATE_DIR", `"${process.execPath}" "${FAKE_MCP_STDIO}" lookup summarize %*`, ""].join("\r\n"),
+)
+
 fs.mkdirSync(path.dirname(PROVIDER_LOG), { recursive: true })
 fs.rmSync(PROVIDER_LOG, { force: true })
 const responses = startFakeOpenAIResponses({
   models: [MODEL],
+  // Each account's requests by name: the AI's install conversation runs on the account chosen in the switcher.
+  credentials: { [KEY]: { domain: "alpha" }, [KEY_BETA]: { domain: "beta" } },
   responder: (request) => {
+    const brief = request.body.includes("[MCP 서버 설치]")
     fs.appendFileSync(
       PROVIDER_LOG,
       JSON.stringify({
         at: Date.now(),
         tool: request.body.includes("own_mcp_install"),
-        brief: request.body.includes("[MCP 서버 설치]"),
+        brief,
+        account: request.identity,
+        router: brief && request.body.includes("llm-router"),
         secret: request.body.includes(SECRET),
       }) + "\n",
     )
+    // llm-router's install conversation: the AI registers the host's own command with its state folder set for the
+    // host (the brief says it is not a secret), as the user's AI did on build-host.
+    if (brief && request.body.includes("llm-router") && request.body.includes("own_mcp_install") && !afterToolResult(request))
+      return {
+        type: "tool-call",
+        name: "own_mcp_install",
+        input: { command: "own-router-mcp", args: [], fixed: { LLM_ROUTER_MCP_STATE_DIR: "~/.local/state/llm-router" } },
+      }
+    if (afterToolResult(request)) return { type: "text", text: "결과: 설치됨 — llm-router" }
     return { type: "text", text: "결과: 못 함 — 이 시험의 모델은 명령을 실행하지 않아요" }
   },
 })
@@ -190,7 +215,15 @@ async function until<T>(read: () => Promise<T | undefined>, timeoutMs: number) {
 
 const added = await rpc("own.accounts", "accounts.add.key", { kind: "oai", label: "Alpha", key: KEY })
 const account = added.account as { id: string; providerID: string }
-await server.waitForModels([{ providerID: account.providerID, id: MODEL }])
+// A second account: the AI's install conversation may run on another than the last one used.
+const beta = (await rpc("own.accounts", "accounts.add.key", { kind: "oai", label: "Beta", key: KEY_BETA })).account as {
+  id: string
+  providerID: string
+}
+await server.waitForModels([
+  { providerID: account.providerID, id: MODEL },
+  { providerID: beta.providerID, id: MODEL },
+])
 
 // The PC's MCP servers.
 const servers: Record<string, string> = {}
@@ -207,6 +240,13 @@ await save("ctx", {
 })
 await save("winonly", { type: "local", command: "C:\\Tools\\own-win-mcp.exe", args: ["--stdio"], env: [] })
 await save("script", { type: "local", command: "python", args: ["C:\\mcp\\weather.py"], env: [] })
+// 2.4.1-own.5's report: a node script of this PC with one value that is not a secret (its state folder, this PC's path).
+await save("llm-router", {
+  type: "local",
+  command: "node",
+  args: ["D:\\projects\\llm-router-mcp\\bin\\llm-router-mcp.js"],
+  env: [{ name: "LLM_ROUTER_MCP_STATE_DIR", value: "D:\\projects\\llm-router-mcp\\state" }],
+})
 
 fs.writeFileSync(
   path.join(harness.testRoot, "e2e-remote.json"),

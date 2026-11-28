@@ -111,7 +111,9 @@ function event(type: string, data: Readonly<Record<string, unknown>>): Hub.Incom
   return { id: `evt_${type}_${Math.random()}`, created: 1, type, data } as never
 }
 
-async function eventually(check: () => boolean | Promise<boolean>, ms = 5_000) {
+// 15 s (was 5 s): the release tier's own-team unit run took 25 minutes under the PC's load, and a warm handoff's
+// synthetic turn came later than 5 s once (RL34-T); a wait that holds ends as soon as it holds.
+async function eventually(check: () => boolean | Promise<boolean>, ms = 15_000) {
   const end = Date.now() + ms
   while (!(await check())) {
     if (Date.now() > end) throw new Error("condition not reached")

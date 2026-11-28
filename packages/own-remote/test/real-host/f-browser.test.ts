@@ -3,7 +3,7 @@
 // `out/`, unpackaged, on the workspace's Electron, off screen, its own userData) shows a host conversation and its
 // browser pane. Opt-in: OWN_REAL_HOST=build-host (or lab; nothing heavy here).
 //
-// On the host everything lives in one temp root /tmp/own-<uid>-rh-browser-<rand>: a page with a marker and a 5 MiB file
+// On the host everything lives in one temp root <run root>/tmp/rh-browser-<rand> (decisions RL35): a page with a marker and a 5 MiB file
 // served by a throwaway HTTP server bound to the host's 127.0.0.1 on a port free on both machines; afterAll stops the
 // server and removes the root (z-cleanup would remove a leftover root too). Checks:
 //  - open: `localhost:<port>` typed in the pane's address field loads the host's page (the port is free on this PC, so
@@ -17,7 +17,7 @@
 //
 // The shell and the UI: OWN_REAL_HOST_DESKTOP (default: this repository's packages/own-desktop, `bun run build` first)
 // and OWN_REAL_HOST_WEB (default: the release's `app\web`; a development run may name an own-web `dist`).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import fs from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
@@ -43,17 +43,17 @@ import {
   ROOT,
   SSH_CONFIG,
   VERSION,
-  enabled,
+  hostRun,
   evidence,
   freeLocalPort,
   freeOnBoth,
   hostSh,
   kv,
 } from "./env.js"
+import { phase } from "./isolate.js"
 import { MODEL, ensureCompat, startStack, until, type Stack } from "./stack.js"
 import { local, pairApp, remoteFetch, remoteSession, type Endpoint } from "./team-fixture.js"
 
-const run = enabled ? describe : describe.skip
 const CLIENT = "real-host-f"
 const DESKTOP = process.env.OWN_REAL_HOST_DESKTOP ?? path.join(REPO, "packages", "own-desktop")
 const WEB = process.env.OWN_REAL_HOST_WEB ?? path.join(APP, "web")
@@ -62,7 +62,7 @@ const PC_MARK = `this-pc-${Math.random().toString(36).slice(2, 10)}`
 const BIG_BYTES = 5 * 1024 * 1024
 const AGENT_PROMPT = "[browse-host] 서버의 개발 서버 화면을 봐 줘"
 
-run(`real host ${ALIAS}: the browser pane of an SSH conversation (phase F)`, () => {
+phase("f-browser", `real host ${ALIAS}: the browser pane of an SSH conversation (phase F)`, () => {
   const state = {} as {
     stack: Stack
     hostId: string
@@ -174,19 +174,19 @@ return JSON.stringify(page).slice(0, 4000)`,
     state.port = await ports()
     const made = await hostSh(String.raw`set -eu
 umask 077
-root=$(mktemp -d "/tmp/own-$(id -u)-rh-browser-XXXXXXXX")
+root=$(mktemp -d "$OWN_RH_ROOT/tmp/rh-browser-XXXXXXXX")
 mkdir -p "$root/site" "$root/app"
 printf '<!doctype html><meta charset="utf-8"><title>own ssh browser</title><p id="mark">${MARK}</p><p>served-from-the-host</p>\n' > "$root/site/index.html"
 head -c ${BIG_BYTES} /dev/zero > "$root/site/big.bin"
 cd "$root/site"
-setsid nohup python3 -m http.server ${state.port} --bind 127.0.0.1 < /dev/null > "$root/http.log" 2>&1 &
+setsid nohup "$(rh_bin python3)" -m http.server ${state.port} --bind 127.0.0.1 < /dev/null > "$root/http.log" 2>&1 &
 echo "ROOT=$root"
 echo "PID=$!"
 `)
     const facts = kv(made.stdout)
     state.root = facts.get("ROOT") ?? ""
     state.pid = facts.get("PID") ?? ""
-    if (made.code !== 0 || !/^\/tmp\/own-\d+-rh-browser-[A-Za-z0-9]{8}$/.test(state.root) || !/^\d+$/.test(state.pid))
+    if (made.code !== 0 || !state.root.startsWith(`${hostRun().root}/tmp/rh-browser-`) || !/^\d+$/.test(state.pid))
       throw new Error(`host server: ${made.stdout} ${made.stderr}`)
     await until(
       async () =>
@@ -262,9 +262,7 @@ echo "PID=$!"
     if (state.artifacts) removeNewOsArtifacts(state.artifacts)
     state.pc?.stop(true)
     if (state.root)
-      await hostSh(
-        `kill ${state.pid} 2>/dev/null; sleep 1; kill -9 ${state.pid} 2>/dev/null; rm -rf '${state.root}'; echo DONE=1`,
-      )
+      await hostSh(`rh_kill ${state.pid}; sleep 1; rh_kill -9 ${state.pid}; rm -rf '${state.root}'; echo DONE=1`)
     await state.stack?.stop()
     if (state.shellRoot) await removeTree(state.shellRoot).catch(() => undefined)
   }, 120_000)

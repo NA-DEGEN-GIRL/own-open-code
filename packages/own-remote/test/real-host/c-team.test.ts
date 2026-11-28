@@ -2,7 +2,7 @@
 // 실제 호스트): own.team inside the phase A host's own service, driven from this PC's release service (stack.ts: own-accounts
 // and own-remote, fake providers, the egress sink) through own-remote's tunnel. Opt-in: OWN_REAL_HOST=dev-host.
 //
-// Everything the phase makes on the host lives in one temp root /tmp/own-<uid>-team-<rand> (team-fixture.ts: an F1-like
+// Everything the phase makes on the host lives in one temp root <run root>/tmp/team-<rand> (team-fixture.ts: an F1-like
 // code repository and an F2-like LFS repository, bare `file://` origins, the teams' worktree roots next to them) or in
 // the 04 §5.3 install paths (the uploaded git-lfs under <OWN_HOME>/tools); afterAll removes the temp root and z-cleanup
 // the install. Model traffic only to the fakes on this PC (the judge's `[propose-…]` directives, own-team e2e
@@ -25,7 +25,7 @@
 // runs its claude on this PC and its read tool on the host; after a reconnect it resumes the same Claude conversation;
 // a switch to the second account resumes it there; no Claude login, token or e-mail is anywhere on the host. Every
 // token is fake; no model call leaves this PC.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { spawnSync } from "node:child_process"
 import { Option, Schema } from "effect"
 import fs from "node:fs"
@@ -47,16 +47,17 @@ import {
   APP,
   OWN_HOME,
   ROOT,
-  enabled,
   evidence,
   freeLocalPort,
   freeOnBoth,
+  hostRun,
   hostSh,
   kv,
   ports,
   releaseLfs,
   section,
 } from "./env.js"
+import { phase } from "./isolate.js"
 import { LINKED, MODEL, ensureCompat, startStack, until, type Stack } from "./stack.js"
 import {
   HEAVY,
@@ -83,7 +84,6 @@ import {
   type Fixtures,
 } from "./team-fixture.js"
 
-const run = enabled ? describe : describe.skip
 const CLIENT = "real-host-c"
 const LFS = releaseLfs()
 const NO_LFS = process.env.OWN_REAL_HOST_TEAM_NO_LFS === "1"
@@ -120,7 +120,7 @@ function githubReply(request: Parameters<ReturnType<typeof responder>>[0]) {
 
 type Area = OwnTeam.AreaView
 
-run(`real host ${ALIAS}: team (phase C)`, () => {
+phase("c-team", `real host ${ALIAS}: team (phase C)`, () => {
   const state = {} as {
     /** The Claude Agent items' accounts on this PC. */
     agents?: Array<{ readonly accountID: string; readonly folder: string }>
@@ -168,7 +168,7 @@ run(`real host ${ALIAS}: team (phase C)`, () => {
     const resolved = await local(state.stack, "resolve", { hostId: state.hostId })
     if (resolved.url === null) throw new Error(`host not ready: ${resolved.stage}`)
     state.endpoint = { url: resolved.url, token: resolved.token, controlDir: resolved.controlDir }
-    state.ownHome = `${resolved.home}/.local/share/own-open-code`
+    state.ownHome = `${hostRun().root}/data/own-open-code`
     return state.endpoint
   }
   /** drain now (stop), then wait until the service is gone on the host (b-stack's drain). */
@@ -196,7 +196,7 @@ run(`real host ${ALIAS}: team (phase C)`, () => {
     kv(
       (
         await hostSh(
-          String.raw`echo "PID=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" 2>/dev/null | head -n 1)"`,
+          String.raw`echo "PID=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" 2>/dev/null | head -n 1)"`,
         )
       ).stdout,
     ).get("PID") || undefined
@@ -335,8 +335,8 @@ run(`real host ${ALIAS}: team (phase C)`, () => {
     expect(health).toMatchObject({ guard: "ok", mode: "remote", buildId: manifest.build_id })
     // The managed config (04 §5.6): own-team third, in remote mode, then own-telemetry (04 §8.11.14, the relayed Claude
     // slot), own-harness (10 §6.1), own-omo (15 §1) and own-creator last (17 §10); the service env carries OWN_REMOTE=1.
-    const config = await hostSh(String.raw`cat "$HOME/.config/own-open-code/opencode.json"
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+    const config = await hostSh(String.raw`cat "$XDG_CONFIG_HOME/own-open-code/opencode.json"
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 echo; echo "OWN_REMOTE=$(tr '\0' '\n' < /proc/$pid/environ | sed -n 's/^OWN_REMOTE=//p')"`)
     const managed = JSON.parse(config.stdout.slice(0, config.stdout.lastIndexOf("}") + 1)) as {
       plugins: Array<{ package: string; options: { mode: string } }>
@@ -427,7 +427,7 @@ echo "MODES=$(stat -c '%a' "$tools" "$tools/current/git-lfs" | tr '\\n' ' ')"`)
       const environ = kv(
         (
           await hostSh(
-            String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+            String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 echo "PATH=$(tr '\0' '\n' < /proc/$pid/environ | sed -n 's/^PATH=//p')"`,
           )
         ).stdout,
@@ -1094,7 +1094,9 @@ echo "== disk"; stat -c '%s' '${area.directory}/src/icons/new.png'`)
     await hostSh(`rm -f '${holder}'`)
     // The holder keeps its command (and so its ticket) alive while the next commands read it from /proc; it never uses
     // its ticket, so a thief that asks first would have kept it before the start binding (MR12-3).
-    const holding = await startShell(sessionID, `echo $$ > '${holder}'; sleep 300`)
+    // Its pid becomes a copy of sleep in the run's root, so the cleanup below may stop it (rh_kill, decisions RL35).
+    const sleep = (await hostSh("rh_bin sleep")).stdout.trim()
+    const holding = await startShell(sessionID, `echo $$ > '${holder}'; exec '${sleep}' 300`)
     try {
       await ticketsOnTheHost(sessionID, holder)
     } finally {
@@ -1103,7 +1105,7 @@ echo "== disk"; stat -c '%s' '${area.directory}/src/icons/new.png'`)
         directory: state.gh.dir,
       }).catch((error: unknown) => ({ status: 0, body: String(error) }))
       await Bun.sleep(300)
-      const killed = await hostSh(`pid=$(cat '${holder}' 2>/dev/null); [ -n "$pid" ] && kill "$pid" 2>/dev/null; echo KILLED=$?`)
+      const killed = await hostSh(`pid=$(cat '${holder}' 2>/dev/null); [ -n "$pid" ] && rh_kill "$pid"; echo KILLED=$?`)
       evidence("c-github-holder.json", { ended, killed: killed.stdout })
       expect([200, 204]).toContain(ended.status)
     }
@@ -1196,19 +1198,20 @@ echo "== disk"; stat -c '%s' '${area.directory}/src/icons/new.png'`)
     const forms = GitHubMask.loginForms(GH_LOGIN, GH_TOKEN)
     const found = await hostSh(
       [
+        // The scan's own scratch folder lies in the run's root (TMPDIR), which it scans: its forms file is no hit.
         'dir=$(mktemp -d) || { echo SCAN_FAILED=mktemp; exit 1; }',
         `trap 'rm -rf "$dir"' EXIT`,
         `cat > "$dir/forms" <<'OWN_FORMS'`,
         ...forms,
         "OWN_FORMS",
-        String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)`,
-        'uid=$(id -u)',
-        'for d in "$HOME/.local/share/own-open-code" "$HOME/.local/state/own-open-code" "$HOME/.config/own-open-code" \\',
-        '         "$HOME/.local/share/opencode" "$HOME/.local/state/opencode" "$HOME/.config/opencode" "$HOME/.cache/opencode" \\',
-        '         /tmp/own-"$uid" /tmp/own-"$uid"-* "$HOME/.git-credentials" "$HOME/.netrc" "$HOME/.config/gh" \\',
-        '         "$HOME/.config/git" "$HOME/.bash_history" "$HOME/.zsh_history" "$HOME/.sh_history" "$HOME/.ash_history" \\',
-        '         "$HOME/.local/share/fish" /dev/shm; do',
-        `  [ -e "$d" ] && grep -rlaF -f "$dir/forms" "$d" 2>/dev/null | sed 's/^/HIT /'`,
+        String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)`,
+        "uid=$(id -u)",
+        'for d in "$XDG_DATA_HOME/own-open-code" "$XDG_STATE_HOME/own-open-code" "$XDG_CONFIG_HOME/own-open-code" \\',
+        '         "$XDG_DATA_HOME/opencode" "$XDG_STATE_HOME/opencode" "$XDG_CONFIG_HOME/opencode" "$XDG_CACHE_HOME/opencode" \\',
+        '         "$OWN_RH_ROOT" "$HOME/.git-credentials" "$HOME/.netrc" "$XDG_CONFIG_HOME/gh" "$HOME/.config/gh" \\',
+        '         "$XDG_CONFIG_HOME/git" "$HOME/.config/git" "$HOME/.bash_history" "$HOME/.zsh_history" "$HOME/.sh_history" \\',
+        '         "$HOME/.ash_history" "$XDG_DATA_HOME/fish" "$HOME/.local/share/fish" /dev/shm; do',
+        `  [ -e "$d" ] && grep -rlaF -f "$dir/forms" "$d" 2>/dev/null | grep -vF "$dir/" | sed 's/^/HIT /'`,
         "done",
         // The service's environment must be read: an unreadable one is no proof (it would count 0).
         String.raw`if [ -n "$pid" ] && tr '\0' '\n' < "/proc/$pid/environ" > "$dir/service" 2>/dev/null; then`,
@@ -1245,9 +1248,9 @@ echo "== disk"; stat -c '%s' '${area.directory}/src/icons/new.png'`)
 
   // Every Claude login file under the places a host service or Claude Code would keep one, with its time.
   const AGENT_CREDENTIALS = [
-    'for d in "$HOME/.local/share/own-open-code" "$HOME/.local/state/own-open-code" "$HOME/.config/own-open-code" \\',
-    '         "$HOME/.local/share/opencode" "$HOME/.local/state/opencode" "$HOME/.config/opencode" "$HOME/.cache/opencode" \\',
-    '         /tmp/own-"$(id -u)" /tmp/own-"$(id -u)"-* "$HOME/.claude" /dev/shm; do',
+    'for d in "$XDG_DATA_HOME/own-open-code" "$XDG_STATE_HOME/own-open-code" "$XDG_CONFIG_HOME/own-open-code" \\',
+    '         "$XDG_DATA_HOME/opencode" "$XDG_STATE_HOME/opencode" "$XDG_CONFIG_HOME/opencode" "$XDG_CACHE_HOME/opencode" \\',
+    '         "$OWN_RH_ROOT" "$HOME/.claude" /dev/shm; do',
     `  [ -e "$d" ] && find "$d" -name .credentials.json -printf 'CREDENTIALS %p %T@\\n' 2>/dev/null`,
     "done",
     "true",
@@ -1339,17 +1342,18 @@ echo "== disk"; stat -c '%s' '${area.directory}/src/icons/new.png'`)
   test("Claude Agent on the host: no Claude login, token or e-mail anywhere on the host (files, processes)", async () => {
     const found = await hostSh(
       [
+        // The scan's own scratch folder lies in the run's root (TMPDIR), which it scans: its forms file is no hit.
         'dir=$(mktemp -d) || { echo SCAN_FAILED=mktemp; exit 1; }',
         `trap 'rm -rf "$dir"' EXIT`,
         `cat > "$dir/forms" <<'OWN_FORMS'`,
         ...CA_TOKENS,
         CA_EMAIL,
         "OWN_FORMS",
-        'uid=$(id -u)',
-        'for d in "$HOME/.local/share/own-open-code" "$HOME/.local/state/own-open-code" "$HOME/.config/own-open-code" \\',
-        '         "$HOME/.local/share/opencode" "$HOME/.local/state/opencode" "$HOME/.config/opencode" "$HOME/.cache/opencode" \\',
-        '         /tmp/own-"$uid" /tmp/own-"$uid"-* "$HOME/.claude" /dev/shm; do',
-        `  [ -e "$d" ] && grep -rlaF -f "$dir/forms" "$d" 2>/dev/null | sed 's/^/HIT /'`,
+        "uid=$(id -u)",
+        'for d in "$XDG_DATA_HOME/own-open-code" "$XDG_STATE_HOME/own-open-code" "$XDG_CONFIG_HOME/own-open-code" \\',
+        '         "$XDG_DATA_HOME/opencode" "$XDG_STATE_HOME/opencode" "$XDG_CONFIG_HOME/opencode" "$XDG_CACHE_HOME/opencode" \\',
+        '         "$OWN_RH_ROOT" "$HOME/.claude" /dev/shm; do',
+        `  [ -e "$d" ] && grep -rlaF -f "$dir/forms" "$d" 2>/dev/null | grep -vF "$dir/" | sed 's/^/HIT /'`,
         "done",
         AGENT_CREDENTIALS,
         "for p in /proc/[0-9]*; do",

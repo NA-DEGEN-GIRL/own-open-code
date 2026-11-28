@@ -1350,9 +1350,21 @@ export function make(deps: Deps, peers: Module.Peers, overrides: Partial<Config>
           }
           for (const key of [...bindings.keys()]) if (key.startsWith("claude:team:")) bindings.delete(key)
         }),
-        hub.on("claudeSlot.changed", () => {
+        hub.on("claudeSlot.changed", (change) => {
           void sync()
             .then(refreshLoaded)
+            .then(() => {
+              if (change.reason !== "accounts") return
+              // RS (2026-11-28): an added, moved or logged-in-again account changes its card although the registry
+              // may not move (account 1's `다시 로그인` writes nothing there): the leader tells the clients now, after
+              // the plugin's logins were read again, instead of the next 15 s look (which only sees a changed refresh
+              // line). Clients read `accounts.list` again on an `accounts.changed` of the revision they hold.
+              watchShared()
+              watchRefresh()
+              void deps.emitter
+                .global("accounts.changed", { revision: peers().slots.snapshot().revision })
+                .catch((error: unknown) => log.warn("claude_accounts_event_failed", { error }))
+            })
             .catch((error: unknown) => log.warn("claude_sync_failed", { error }))
         }),
         hub.on("store.changed", (change) => {
@@ -1419,7 +1431,9 @@ export function make(deps: Deps, peers: Module.Peers, overrides: Partial<Config>
         ...(await boundTo(accountID)),
         ...(await Promise.all((await teamsBoundTo(accountID)).map((team) => teamRoots(team)))).flat(),
       ]
-      return [...new Set(roots.flatMap(tree))].filter((sessionID) => deps.runtime.sessions.get(sessionID)?.busy === true)
+      return [...new Set(roots.flatMap(tree))].filter(
+        (sessionID) => deps.runtime.sessions.get(sessionID)?.busy === true,
+      )
     },
 
     release: async (accountID) => {

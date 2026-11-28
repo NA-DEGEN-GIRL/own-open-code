@@ -85,6 +85,35 @@ export class Tracker {
     )
   }
 
+  /**
+   * RS (2026-11-28): a success from the provider ends an `auth_failed` of an account own holds the credential of (a
+   * connection test's 401, or {@link refused}; later requests with the refreshed token or the same key work).
+   */
+  accepted(account: Account.Info): Promise<void> {
+    return this.#settle(account, "auth_failed", { status: "ready", reason: "accepted" })
+  }
+
+  /**
+   * RS: the provider refused the account's credential again after the refresh its first refusal asked for (02 §5.2
+   * T-AUTH): the card, the limits tab and the picker say `인증 실패` (before, only a passing reason of the session did).
+   */
+  refused(account: Account.Info): Promise<void> {
+    return this.#settle(account, "ready", { status: "auth_failed", reason: "refused" })
+  }
+
+  /**
+   * A status a request's outcome moves `from`, on an account own holds the credential of: a linked source's status
+   * stays with its source file ({@link poll}). Resolves once the write (if any) is done; never rejects.
+   */
+  #settle(account: Account.Info, from: Account.Status, verdict: Verdict) {
+    const current = this.#peers().slots.account(account.id) ?? account
+    if (current.status !== from || Credentials.linked(current)) return Promise.resolve()
+    this.#reasons.set(account.id, verdict)
+    return this.#write(account.id, verdict).catch((error: unknown) =>
+      this.#log.warn("account_status_failed", { accountID: account.id, error }),
+    )
+  }
+
   /** Forgets an account (removal). */
   forget(accountID: string) {
     this.#reasons.delete(accountID)

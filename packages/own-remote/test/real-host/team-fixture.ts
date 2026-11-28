@@ -1,6 +1,6 @@
 /**
  * The team phase's fixtures and clients (06 §11.2 실제 호스트, §11.3 TG17): one temp root
- * `/tmp/own-<uid>-team-<rand>` on the approved host holding everything the phase makes there, and typed callers of the
+ * `<run root>/tmp/team-<rand>` (the run's test root, decisions RL35) on the approved host holding everything the phase makes there, and typed callers of the
  * remote service's own.team (through own-remote's tunnel) and of this PC's own.remote and own.accounts.
  *
  * The repositories are made on the host with plain git, because the host has no git-lfs until own uploads it (06 §4.13):
@@ -19,7 +19,7 @@
 import { Option, Schema } from "effect"
 import { OwnAccounts, OwnTeam } from "@own/protocol"
 import { OwnRemote } from "../../src/protocol/rpc-remote.js"
-import { GITCONFIG_SCRIPT, hostSh, kv, section } from "./env.js"
+import { GITCONFIG_SCRIPT, hostRun, hostSh, kv, section } from "./env.js"
 import type { Stack } from "./stack.js"
 
 /** The heavy folders of the `lfs` repository (06 §3.4 `heavy`). */
@@ -59,13 +59,17 @@ export interface Fixtures {
   readonly slow: string
 }
 
-/** `umask 077; mktemp -d /tmp/own-<uid>-team-XXXXXXXX` on the host, checked against that shape. */
+/** `umask 077; mktemp -d <run root>/tmp/team-XXXXXXXX` on the host, checked against that shape. */
 export async function makeRoot() {
-  const made = await hostSh(`umask 077 && mktemp -d "/tmp/own-$(id -u)-team-XXXXXXXX"`)
+  const made = await hostSh(`umask 077 && mktemp -d "$OWN_RH_ROOT/tmp/team-XXXXXXXX"`)
   const root = made.stdout.trim()
-  if (made.code !== 0 || !/^\/tmp\/own-\d+-team-[A-Za-z0-9]{8}$/.test(root))
-    throw new Error(`unexpected team root '${root}': ${made.stderr}`)
+  if (made.code !== 0 || !isTeamRoot(root)) throw new Error(`unexpected team root '${root}': ${made.stderr}`)
   return root
+}
+
+/** `<run root>/tmp/team-<8 characters>` of the current run. */
+function isTeamRoot(root: string) {
+  return root.startsWith(`${hostRun().root}/tmp/team-`) && /\/tmp\/team-[A-Za-z0-9]{8}$/.test(root)
 }
 
 /** Both repositories under `root` (see the file header). */
@@ -97,7 +101,7 @@ export async function makeFixtures(root: string): Promise<Fixtures> {
 
 /** Removes the team root: owner write back first (a protected shared folder, 06 §4.11), then `rm -rf`. */
 export async function removeRoot(root: string) {
-  if (!/^\/tmp\/own-\d+-team-[A-Za-z0-9]{8}$/.test(root)) throw new Error(`not a team root: ${root}`)
+  if (!isTeamRoot(root)) throw new Error(`not a team root: ${root}`)
   const removed = await hostSh(
     `chmod -R u+w -- '${root}' 2>/dev/null; rm -rf -- '${root}'; [ -e '${root}' ] && echo LEFT=1 || echo LEFT=0`,
   )

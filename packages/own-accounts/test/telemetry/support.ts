@@ -140,6 +140,10 @@ export interface LoginCalls {
   readonly headers: string[]
   /** `<accountID>:<reason>` of every `logins.rejected`. */
   readonly rejected: string[]
+  /** Every `logins.accepted` (RS): a success of an account its registry shows `auth_failed`. */
+  readonly accepted: string[]
+  /** Every `logins.refused` (RS): a second refusal of an account's credential. */
+  readonly refused: string[]
 }
 
 export function fakeLogins(
@@ -157,6 +161,12 @@ export function fakeLogins(
     },
     rejected: async (item: Account.Info, reason: string) => {
       calls.rejected.push(`${item.id}:${reason}`)
+    },
+    accepted: async (item: Account.Info) => {
+      calls.accepted.push(item.id)
+    },
+    refused: async (item: Account.Info) => {
+      calls.refused.push(item.id)
     },
   })
 }
@@ -223,7 +233,7 @@ export interface Setup extends TestDepsInput {
 export async function setup(input: Setup = {}) {
   const storage = memoryStorage()
   const test = await testDeps({ ...input, ctx: { storage, ...input.ctx } })
-  const calls: LoginCalls = { unauthorized: [], headers: [], rejected: [] }
+  const calls: LoginCalls = { unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }
   const modules = test.modules({
     slots: fakeSlots(input.registry ?? registry()),
     logins: fakeLogins(calls),

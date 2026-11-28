@@ -58,9 +58,16 @@ async function selectLines(page: Page, from: string, to: string) {
   await page.mouse.up()
 }
 
-/** Runs the dock's action with Enter and waits for the result. */
+/**
+ * Runs the dock's action with Enter and waits for the result. The dock takes the focus on its next frame (`focusDock`):
+ * an Enter pressed before that reaches the button that opened it, or the page, and the dock stays at its confirmation
+ * (RL34-T, a loaded PC: the frame came later than the key). The key goes once the focus is in the dock.
+ */
 async function confirm(page: Page) {
   await expect(dock(page)).toHaveAttribute("data-phase", "confirm")
+  await expect
+    .poll(() => dock(page).evaluate((node) => node.contains(document.activeElement)), { timeout: 20_000 })
+    .toBe(true)
   await page.keyboard.press("Enter")
   await expect(dock(page)).toHaveAttribute("data-phase", /done|failed/, { timeout: 60_000 })
 }

@@ -1,17 +1,17 @@
-// The real-host suites' before listing (env.ts) names the account and machine it was taken on (`== host`), and
-// a-transport and z-cleanup refuse a listing of another machine: z-cleanup removes whole the directories it shows
-// absent, so build-host's listing read on lab could remove folders lab's user has. Listings of older suite versions
-// name no host and are accepted.
+// The real-host guard's fingerprint (isolate.ts) names the account and machine it was taken on (`== host`), and a
+// listing of another machine is refused (`assertListingHost`): a fingerprint or run of build-host must never be read
+// as lab's. Listings of older suite versions name no host and are accepted.
 import { describe, expect, test } from "bun:test"
-import { SNAPSHOT_SCRIPT, assertListingHost } from "../real-host/env.js"
+import { assertListingHost } from "../real-host/env.js"
+import { fingerprintScript } from "../real-host/isolate.js"
 
 const listing = (host?: string) =>
   [...(host === undefined ? [] : ["== host", host]), "== gitconfig", "ABSENT", "== ls /home/dev/.config", "git"].join("\n")
 const reads = (stdout: string, code = 0) => async () => ({ code, stdout, stderr: code === 0 ? "" : "ssh: refused\n" })
 
 describe("real-host before listing host", () => {
-  test("the snapshot starts with the host section", () => {
-    expect(SNAPSHOT_SCRIPT.split("\n")[1]).toBe(`echo "== host"; echo "$(id -un)@$(hostname)"`)
+  test("the fingerprint starts with the host section", () => {
+    expect(fingerprintScript(undefined).split("\n")[3]).toBe(`echo "== host"; echo "$(id -un)@$(hostname)"`)
   })
 
   test("a listing of the same host passes", async () => {

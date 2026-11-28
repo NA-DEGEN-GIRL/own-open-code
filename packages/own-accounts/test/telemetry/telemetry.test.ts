@@ -316,6 +316,25 @@ describe("retry classification", () => {
     expect(t.emitted("account.status").at(-1)?.data).toMatchObject({ status: "auth_failed" })
     expect(t.emitted("alert").map((item) => item.data.code)).toEqual(["codex_source_stale"])
   })
+
+  // RS (2026-11-28): a connection test's 401 wrote `auth_failed`; the token refreshed (or the key works again) and the
+  // requests succeed, but the card, the limits tab and the picker kept `인증 실패` until another passing test.
+  test("a success on an account the registry shows auth_failed ends it (logins.accepted); a ready one is left alone", async () => {
+    await using t = await setup({
+      registry: registry([...DEFAULT_SEEDS.slice(0, 1), { ...DEFAULT_SEEDS[1]!, status: "auth_failed" }]),
+    })
+    await t.telemetry.onHttpResponse(httpEvent({ providerID: ANTH, response: new Response("{}", { status: 200 }) }))
+    await t.telemetry.onHttpResponse(httpEvent({ providerID: CODEX, response: new Response("{}", { status: 200 }) }))
+    expect(t.calls.accepted).toEqual([ANTH_ACCOUNT])
+  })
+
+  test("a second 401 tells logins the credential was refused (the card says 인증 실패); the first only refreshes", async () => {
+    await using t = await setup()
+    await t.telemetry.onRetry(retryEvent({ providerID: ANTH, status: 401, type: "provider.auth" }))
+    expect(t.calls.refused).toEqual([])
+    await t.telemetry.onRetry(retryEvent({ providerID: ANTH, status: 401, type: "provider.auth" }))
+    expect(t.calls.refused).toEqual([ANTH_ACCOUNT])
+  })
 })
 
 describe("Sign in with ChatGPT retry classification (02 §3.2c)", () => {
@@ -1321,7 +1340,7 @@ describe("balance poller", () => {
     const codex = startFakeCodex({ weeklyOnly: true })
     const tokens = codex.login({ accountID: "acct-poll", plan: "promax" })
     try {
-      const calls = { unauthorized: [], headers: [], rejected: [] }
+      const calls = { unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }
       const auth = { authorization: `Bearer ${tokens.accessToken}`, "chatgpt-account-id": tokens.accountID }
       await using t = await setup({
         options: { endpoints: { chatgpt: `${codex.url}/backend-api` } },
@@ -1374,7 +1393,7 @@ describe("balance poller", () => {
     const codex = startFakeCodex()
     const tokens = codex.login({ accountID: "acct-poll-off" })
     try {
-      const calls = { unauthorized: [], headers: [], rejected: [] }
+      const calls = { unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }
       await using t = await setup({
         options: { endpoints: { chatgpt: `${codex.url}/backend-api` } },
         registry: registry(

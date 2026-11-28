@@ -2,7 +2,8 @@
 // picker, through this run's release service (stack.ts) connected to the phase A host as in phase C. Opt-in:
 // OWN_REAL_HOST=build-host (or lab; nothing heavy here).
 //
-// Everything this phase writes on the host lives in one temp root /tmp/own-<uid>-rh-folders-<rand>; afterAll removes it
+// Everything this phase writes on the host lives in one temp root <run root>/tmp/rh-folders-<rand> (decisions RL35);
+// afterAll removes it
 // and puts the host service's folder back to its built-in default (z-cleanup removes a leftover root too). The built-in
 // default is only read, never created: on the user's host it is the user's real chat folder. Checks:
 //  - default: a host without the older default answers `~/own-chats` (or keeps `~/Documents/Own OpenCode` /
@@ -14,9 +15,10 @@
 //    with its owner root, a folder of the temp root without permissions is locked with the host user as owner,
 //    `새 폴더` makes a Korean-named folder and refuses the same name again.
 // Model traffic only to the fakes on this PC; no credential is real.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { lastUserText, type Responder } from "../../../own-accounts/test/e2e-kit"
-import { ALIAS, enabled, evidence, hostSh, kv } from "./env.js"
+import { ALIAS, evidence, hostRun, hostSh, kv } from "./env.js"
+import { phase } from "./isolate.js"
 import { MODEL, ensureCompat, startStack, until, type Stack } from "./stack.js"
 import { OwnAccounts } from "@own/protocol"
 import {
@@ -29,18 +31,19 @@ import {
   type Endpoint,
 } from "./team-fixture.js"
 
-const run = enabled ? describe : describe.skip
-
 /**
  * The one line the user runs on the host (own/reports/ssh-new-chat-2026-11-22.md) to set the host's default
  * conversation folder without the app: the host service's registration file gives its address and password, the
- * control folder is own's (`~/.local/share/own-open-code/control`). Only python3's standard library.
+ * control folder is own's (`~/.local/share/own-open-code/control`). Only python3's standard library. The test runs it
+ * with XDG_STATE_HOME and XDG_DATA_HOME read as the service does (the run's test root, decisions RL35; without them
+ * the line names the paths above).
  */
 function setFolderCommand(folder: string) {
   const script = [
     "import json,os,base64,urllib.request as u",
-    'r=json.load(open(os.path.expanduser("~/.local/state/opencode/service-own.json")))',
-    'c=os.path.expanduser("~/.local/share/own-open-code/control")',
+    "x=lambda k,d:os.environ.get(k) or os.path.expanduser(d)",
+    'r=json.load(open(os.path.join(x("XDG_STATE_HOME","~/.local/state"),"opencode/service-own.json")))',
+    'c=os.path.join(x("XDG_DATA_HOME","~/.local/share"),"own-open-code/control")',
     `b=json.dumps({"input":{"path":${JSON.stringify(folder)}}}).encode()`,
     'a="Basic "+base64.b64encode(("opencode:"+r["password"]).encode()).decode()',
     'q=u.Request(r["url"]+"/api/rpc/own.accounts/conversationFolder.set?location%5Bdirectory%5D="+u.quote(c),b,{"content-type":"application/json","authorization":a})',
@@ -52,7 +55,7 @@ const CLIENT = "real-host-h"
 const PROMPT = "[folderless] 안녕하세요"
 const ANSWER = "기본 대화 폴더에서 답했어요"
 
-run(`real host ${ALIAS}: the host's default conversation folder and folder picker (phase H)`, () => {
+phase("h-folders", `real host ${ALIAS}: the host's default conversation folder and folder picker (phase H)`, () => {
   const state = {} as {
     stack: Stack
     hostId: string
@@ -109,7 +112,7 @@ run(`real host ${ALIAS}: the host's default conversation folder and folder picke
     state.endpoint = { url: resolved.url, token: resolved.token, controlDir: resolved.controlDir }
     const made = await hostSh(String.raw`set -eu
 umask 022
-root=$(mktemp -d "/tmp/own-$(id -u)-rh-folders-XXXXXXXX")
+root=$(mktemp -d "$OWN_RH_ROOT/tmp/rh-folders-XXXXXXXX")
 mkdir -p "$root/browse/open" "$root/browse/closed"
 chmod 000 "$root/browse/closed"
 echo "ROOT=$root"
@@ -118,7 +121,7 @@ echo "USER=$(id -un)"
     const facts = kv(made.stdout)
     state.root = facts.get("ROOT") ?? ""
     state.user = facts.get("USER") ?? ""
-    if (made.code !== 0 || !/^\/tmp\/own-\d+-rh-folders-[A-Za-z0-9]{8}$/.test(state.root))
+    if (made.code !== 0 || !state.root.startsWith(`${hostRun().root}/tmp/rh-folders-`))
       throw new Error(`host root: ${made.stdout} ${made.stderr}`)
     state.chatsBefore = await chatsState()
   }, 600_000)

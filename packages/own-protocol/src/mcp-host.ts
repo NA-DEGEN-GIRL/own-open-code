@@ -65,7 +65,11 @@ const Fixed = Schema.Record(
   Schema.String.check(Schema.isMaxLength(4096)),
 )
 
-/** A host's command server: names of its values only; `fixed` plain variables the translation set (no PC value). */
+/**
+ * A host's command server: names of the values the PC sends (`env`); `fixed` plain variables set on the host (the
+ * translation's `BUN_BE_BUN`, or a value that is not a secret the install conversation set for this host). A name in
+ * `fixed` and not in `env` is the host's own: the server does not wait for the PC for it.
+ */
 export interface Local extends Schema.Schema.Type<typeof Local> {}
 export const Local = Schema.Struct({
   type: Schema.Literal("local"),
@@ -113,11 +117,16 @@ export const Server = Schema.Struct({
   updatedAt: EpochMillis,
 }).annotate({ identifier: "Own.McpHost.Server" })
 
-/** `mcp.host.view`: the host's installed servers and its home folder (where a mapped `~/…` points). */
+/**
+ * `mcp.host.view`: the host's installed servers, its home folder (where a mapped `~/…` points) and the file they are
+ * registered in (`<OWN_HOME>/mcp.json` there, not an OpenCode config file: the card names it, so a user or an agent
+ * on the host can find them). An older host leaves `file` out.
+ */
 export interface View extends Schema.Schema.Type<typeof View> {}
 export const View = Schema.Struct({
   servers: Schema.Array(Server),
   home: Schema.String,
+  file: optional(Schema.String),
 }).annotate({ identifier: "Own.McpHost.View" })
 
 /** Installs (no `id`) or updates a server on the host; `~/…` in the command, arguments and folder become absolute. */
@@ -234,17 +243,26 @@ export type SendsFile = typeof SendsFile.Type
 /** The tool's name and permission (every agent on a host denies it; the job's conversation allows it). */
 export const TOOL = McpHostRules.TOOL
 
-/** `metadata.own.mcpInstall` of the job's conversation: which PC server, its definition hash and value names. */
+/**
+ * `metadata.own.mcpInstall` of the job's conversation: which PC server, its definition hash and value names. `secrets`
+ * names the values the PC's analysis takes for secrets (`McpHostRules.Value.secret`): those come from the PC only. Any
+ * other value (a state folder, a mode) the AI may set for this host in the tool's `fixed`, and the server then no
+ * longer waits for the PC's copy of it, which would be this PC's path or setting anyway.
+ */
 export interface Job extends Schema.Schema.Type<typeof Job> {}
 export const Job = Schema.Struct({
   key: Pc.fields.key,
   hash: Pc.fields.hash,
   name: OwnMcp.Name,
   env: Schema.Array(Schema.String.check(Schema.isPattern(ENV_NAME))).check(Schema.isMaxLength(64)),
+  secrets: optional(Schema.Array(Schema.String.check(Schema.isPattern(ENV_NAME))).check(Schema.isMaxLength(64))),
   codemode: optional(Schema.Boolean),
 }).annotate({ identifier: "Own.McpHost.Job" })
 
-/** The tool's input: the command that works on the host now, and plain variables it needs (never a secret). */
+/**
+ * The tool's input: the command that works on the host now, and plain variables it needs (never a secret): the host's
+ * own ones and the job's values that are not secrets, set for this host.
+ */
 export const ToolInput = Schema.Struct({
   command: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(1024)),
   args: Schema.Array(Schema.String.check(Schema.isMaxLength(4096))).check(Schema.isMaxLength(64)),

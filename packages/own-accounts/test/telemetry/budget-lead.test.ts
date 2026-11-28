@@ -45,7 +45,7 @@ async function world(endpoint: string) {
       ...(account.kind === "ds" ? { pollBalance: true } : {}),
     })),
   })
-  const calls: LoginCalls = { unauthorized: [], headers: [], rejected: [] }
+  const calls: LoginCalls = { unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }
   const modules = t.modules({ logins: fakeLogins(calls), plugins: fakePlugins(false) })
   const events = recordEvents(t.deps.emitter)
   await modules.slots.start()

@@ -131,16 +131,26 @@ export const SOCKET_PATH_LIMIT = 100
  * Remote paths from the shell mode that builds the service environment (04 §5.3): the same `HOME` and XDG values the
  * service sees. Falls back to the non-login shell of inspect when that mode is unavailable.
  */
-export function remotePaths(inspect: Inspect, shellEnv: Registry.HostRecord["shellEnv"], installRoot?: string | null) {
+export function remotePaths(
+  inspect: Inspect,
+  shellEnv: Registry.HostRecord["shellEnv"],
+  installRoot?: string | null,
+  testRoot?: string,
+) {
   const mode = inspect.env[MODE_OF[shellEnv]]
   const base = mode.state === "ok" ? mode : inspect.env.SHL.state === "ok" ? inspect.env.SHL : undefined
   const home = (base?.HOME || inspect.home).replace(/\/+$/, "") || inspect.home
   const xdg = (value: string | undefined, fallback: string) =>
     value && posix.isAbsolute(value) ? value.replace(/\/+$/, "") : posix.join(home, fallback)
-  const data = xdg(base?.XDG_DATA_HOME, ".local/share")
-  const state = xdg(base?.XDG_STATE_HOME, ".local/state")
-  const config = xdg(base?.XDG_CONFIG_HOME, ".config")
-  const ownHome = installRoot && posix.isAbsolute(installRoot) ? installRoot.replace(/\/+$/, "") : posix.join(data, "own-open-code")
+  // A test root (Options `remoteTest`) wins over whatever the shell reported: nothing may land on a real install's path.
+  const roots = testRoot === undefined ? undefined : testXdg(testRoot)
+  const data = roots?.XDG_DATA_HOME ?? xdg(base?.XDG_DATA_HOME, ".local/share")
+  const state = roots?.XDG_STATE_HOME ?? xdg(base?.XDG_STATE_HOME, ".local/state")
+  const config = roots?.XDG_CONFIG_HOME ?? xdg(base?.XDG_CONFIG_HOME, ".config")
+  const ownHome =
+    roots === undefined && installRoot && posix.isAbsolute(installRoot)
+      ? installRoot.replace(/\/+$/, "")
+      : posix.join(data, "own-open-code")
   return {
     home,
     ownHome,
@@ -148,8 +158,43 @@ export function remotePaths(inspect: Inspect, shellEnv: Registry.HostRecord["she
     upstreamConfigDir: posix.join(config, "opencode"),
     stateDir: posix.join(state, "opencode"),
     dataDir: posix.join(data, "opencode"),
-    socketDir: socketDir(ownHome, home, inspect.uid),
+    // Under a test root the short-directory fallbacks stay inside it too (`<root>/.own-r/<hash>` before `/tmp`).
+    socketDir: socketDir(ownHome, testRoot ?? home, inspect.uid),
   } satisfies Registry.RemotePaths
+}
+
+/** The XDG roots of a test root (Options `remoteTest`, decisions RL35). */
+export function testXdg(root: string) {
+  return {
+    XDG_DATA_HOME: posix.join(root, "data"),
+    XDG_CONFIG_HOME: posix.join(root, "config"),
+    XDG_STATE_HOME: posix.join(root, "state"),
+    XDG_CACHE_HOME: posix.join(root, "cache"),
+  }
+}
+
+/**
+ * The remote command of an ssh call: unchanged, or under a test root `env XDG_DATA_HOME=<root>/data … <command>`, so
+ * the scripts, the login shells they start and the service those start all resolve their paths inside the root. The
+ * root is checked by the option's schema (an absolute path of `[A-Za-z0-9._/-]`), so it needs no quoting in any shell.
+ */
+export function remoteCommand(command: string, testRoot?: string) {
+  if (testRoot === undefined) return command
+  const roots = testXdg(testRoot)
+  return `env ${Object.entries(roots)
+    .map(([name, value]) => `${name}=${value}`)
+    .join(" ")} ${command}`
+}
+
+/**
+ * Under a test root, the shell mode that starts the service must keep the root's XDG values (a profile that sets its
+ * own would start the service on the real paths): the name of the first one it does not keep, else undefined.
+ */
+export function testRootLost(inspect: Inspect, shellEnv: Registry.HostRecord["shellEnv"], testRoot: string) {
+  const mode = inspect.env[MODE_OF[shellEnv]]
+  const base = mode.state === "ok" ? mode : inspect.env.SHL
+  const roots = testXdg(testRoot)
+  return (["XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CONFIG_HOME"] as const).find((name) => base[name] !== roots[name])
 }
 
 /**

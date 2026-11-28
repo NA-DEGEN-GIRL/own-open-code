@@ -954,7 +954,7 @@
     forward the agent or X11; the target parser refuses -o forwardagent/forwardx11*, -X and -Y, but upstream's -A,
     which OpenSSH applies over the -o, stays as the user's explicit per-host choice, 04 §7.2); shortArgs() adds ClearAllForwardings=yes; tunnelArgs() binds -L to 127.0.<k>.2, adds the
     broker -R (stream socket or TCP) and the Claude egress relay's second -R of the same form (04 §8.11.4.2), and runs
-    "sh -s"; tunnelArgs() puts ServerAliveInterval=4 and ServerAliveCountMax=2 ahead of sshArgs' upstream 15 and 3, so
+    "sh -s" (or the caller's command: the real-host gates' test root prefixes it, decisions RL35); tunnelArgs() puts ServerAliveInterval=4 and ServerAliveCountMax=2 ahead of sshArgs' upstream 15 and 3, so
     a silent link ends the tunnel 12 s after its last received byte (04 §6.3, own.15). Marked "own:".
   not_ported: "sshHosts left the module upstream (gui-extensions reads ~/.ssh/config elsewhere)"
   license: MIT (upstream LICENSE)

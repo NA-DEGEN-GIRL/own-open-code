@@ -365,7 +365,7 @@ const SPEC_ERRORS: Record<string, ReadonlyArray<MethodName>> = {
     "mcp.host.prefetch",
     "mcp.hosts.send",
   ],
-  mcp_secret_missing: ["mcp.save", "mcp.test", "mcp.hosts.send"],
+  mcp_secret_missing: ["mcp.save", "mcp.test", "mcp.host.test", "mcp.hosts.send"],
   mcp_registry_unavailable: ["mcp.registry.search"],
   mcp_host_only: [
     "mcp.host.view",

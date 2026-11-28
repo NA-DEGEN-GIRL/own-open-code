@@ -142,6 +142,9 @@ export default Plugin.define({
       if (remote) {
         stack.defer(await McpServers.register(deps, McpHostService.source(remote.api.mcp)))
         if (control) stack.defer(remote.api.mcp.on(() => void emitter.global("mcp.changed", {})))
+        // RL34: a change in any Location (the install tool runs in its conversation's) reaches open pages through the
+        // leader, the only instance that sends global events.
+        stack.defer(deps.runtime.broadcast.on("mcp.changed", () => void emitter.global("mcp.changed", {})))
       }
       if (install) stack.defer(install.stop)
       // The GitHub connection (16, GH): the `github_*` tools, git's logins and the bridge to own-team. On an SSH host the

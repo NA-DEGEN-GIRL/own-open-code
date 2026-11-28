@@ -2407,8 +2407,16 @@ export const Definition = Rpc.define({
     ),
     /** Removes a server from the host; the PC's record of values sent to it stays until `mcp.hosts.unsend`. */
     "mcp.host.remove": method(McpHost.IdInput, McpHost.View, OwnError.pick("mcp_not_found", "mcp_host_only")),
-    /** The connection test on the host, with the values the PC sent; the result is kept with the server. */
-    "mcp.host.test": method(McpHost.IdInput, OwnMcp.Check, OwnError.pick("mcp_not_found", "mcp_host_only")),
+    /**
+     * The connection test on the host, exactly as the host's Locations would start the server: with the values the PC
+     * sent, and not at all while they are missing (`mcp_secret_missing`, the older result dropped: the server is off).
+     * The result is kept with the server.
+     */
+    "mcp.host.test": method(
+      McpHost.IdInput,
+      OwnMcp.Check,
+      OwnError.pick("mcp_not_found", "mcp_secret_missing", "mcp_host_only"),
+    ),
     /** Fetches the server's package into the host user's caches (npm, uv), up to `PREFETCH_TIMEOUT_MS`. */
     "mcp.host.prefetch": method(McpHost.IdInput, McpHost.Prefetch, OwnError.pick("mcp_not_found", "mcp_host_only")),
     /** Sends these values of a server to a host's server (a copy in this PC's vault the broker hands to that host). */

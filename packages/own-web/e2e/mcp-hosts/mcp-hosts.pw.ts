@@ -1,9 +1,13 @@
 // 설정 > MCP 서버 `SSH 호스트에서 쓰기` (04 §13 "MCP", 03 §18.14, MH 2026-11-26) in Edge against the fake-SSH backend
 // (backend.ts): a calm summary per host; a server installed without its value stays off until `이 키를 <host>에
-// 보내기`; the host's connection test; the bulk review with nothing sent by default; `PC와 다름` after a change on this
-// PC and the one-click update; an older host; `AI에게 설치 맡기기` starting a host conversation with the brief whose
-// install tool only that conversation sees; a host conversation's dismissible line; the host settings page's line; and
-// the section at 360 px without sideways scrolling. The value is scanned for in the page and the host's files.
+// 보내기` (no connection test while off: it would start nothing); the host's connection test; the bulk review with
+// nothing sent by default; `PC와 다름` after a change on this PC and the one-click update; an older host; `AI에게 설치
+// 맡기기` choosing the conversation's "모델 @ 계정" in the switcher (the last one preselected, Enter starts; closing it
+// starts nothing; another account runs it) and starting a host conversation with the brief whose install tool only that
+// conversation sees; llm-router of 2.4.1-own.5's report installed by the AI with its state folder set on the host, whose
+// card then says one thing (on, the host's value, no reason about this PC); a host conversation's dismissible line; the
+// host settings page's line; and the section at 360 px without sideways scrolling. The value is scanned for in the page
+// and the host's files.
 import fs from "node:fs"
 import path from "node:path"
 import { expect, test, type BrowserContext, type Page } from "@playwright/test"
@@ -82,7 +86,7 @@ test("the section is calm: one summary per host, rows on demand; an older host s
   const summary = section(page).getByTestId("mcp-hosts-summary")
   await expect(summary.locator('[data-state="ready"]')).toBeVisible()
   await expect(summary.locator('[data-state="pc-only"]')).toContainText("이 PC 전용 1")
-  await expect(summary.locator('[data-state="assist"]')).toContainText("AI 도움 필요 1")
+  await expect(summary.locator('[data-state="assist"]')).toContainText("AI 도움 필요 2")
   await expect(section(page).getByTestId("mcp-hosts-row")).toHaveCount(0)
   await shot(page, "02-summary")
   await section(page).locator(`[data-testid="mcp-hosts-host"][data-host="${state.hosts.oldbox}"]`).click()
@@ -106,7 +110,12 @@ test("install without the value: off on the host until it is sent; then its test
   await tiny.getByTestId("mcp-hosts-install").click()
   await expect(tiny).toHaveAttribute("data-state", "installed", { timeout: 120_000 })
   await expect(tiny.getByTestId("mcp-hosts-off")).toContainText("값을 보내기 전에는")
-  await expect(tiny.getByTestId("mcp-hosts-check")).toContainText("연결 시험 실패")
+  await expect(tiny.getByTestId("mcp-hosts-off")).toContainText("API_KEY")
+  // One state: off. No test result, and no test while the host would start nothing.
+  await expect(tiny.getByTestId("mcp-hosts-check")).toHaveCount(0)
+  await expect(tiny.getByTestId("mcp-hosts-test")).toHaveCount(0)
+  // A secret is the user's to send, not the AI's to set.
+  await expect(tiny.getByTestId("mcp-hosts-assist-open")).toHaveCount(0)
   await shot(page, "04-installed-off")
   await tiny.getByTestId("mcp-hosts-send").click()
   await expect(tiny.getByTestId("mcp-hosts-off")).toHaveCount(0, { timeout: 60_000 })
@@ -151,32 +160,99 @@ test("a change on this PC shows `PC와 다름`; one click updates the host", asy
   await expect(tiny.getByTestId("mcp-hosts-off")).toHaveCount(0)
 })
 
-test("AI에게 설치 맡기기: a host conversation with the brief; only it sees the install tool", async () => {
-  await openSettings(page)
-  await showRows(page)
-  const script = row(page, "script")
-  await expect(script).toHaveAttribute("data-state", "assist")
-  await script.getByTestId("mcp-hosts-assist-open").click()
-  const dialog = page.getByTestId("mcp-hosts-assist")
+/**
+ * `AI에게 설치 맡기기` on a row, then the brief's `모델 고르고 시작…`: the host's new-conversation screen, where the switcher
+ * picks the conversation's model (nothing in its composer yet).
+ */
+async function chooseModel(target: Page, name: string) {
+  await openSettings(target)
+  await showRows(target)
+  await row(target, name).getByTestId("mcp-hosts-assist-open").click()
+  const dialog = target.getByTestId("mcp-hosts-assist")
   await expect(dialog.getByTestId("mcp-hosts-brief")).toContainText("[MCP 서버 설치]")
-  await expect(dialog.getByTestId("mcp-hosts-brief")).toContainText("sudo")
-  await shot(page, "08-assist-brief")
-  const before = providerRequests().length
   await dialog.getByTestId("mcp-hosts-assist-start").click()
+  await expect(dialog).toHaveCount(0)
+  await expect(target).toHaveURL(new RegExp(`/srv/${state.hosts.buildbox}/new$`))
+  const switcher = target.getByTestId("switcher")
+  await expect(switcher).toBeVisible()
+  await expect(switcher).toContainText("AI 설치 대화")
+  await expect(switcher.getByTestId("switcher-apply")).toHaveText("이 모델로 시작")
+  return switcher
+}
+
+test("AI에게 설치 맡기기: closing the model choice starts nothing", async () => {
+  const before = providerRequests().length
+  const switcher = await chooseModel(page, "script")
+  await shot(page, "08-assist-choose-model")
+  await expect(page.getByTestId("switcher-search")).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(switcher).toHaveCount(0)
+  // Nothing starts: the host's new conversation screen stays, its composer empty, no request with the brief.
+  await page.waitForTimeout(3_000)
+  await expect(page).toHaveURL(new RegExp(`/srv/${state.hosts.buildbox}/new$`))
+  await expect(page.locator("#own-composer-input")).toHaveValue("")
+  expect(providerRequests().slice(before).filter((item) => item.brief)).toEqual([])
+})
+
+test("AI에게 설치 맡기기: the last model is chosen, Enter starts the host conversation; only it sees the tool", async () => {
+  const switcher = await chooseModel(page, "script")
+  await expect(switcher.locator('[data-testid="switcher-account"][aria-selected="true"]')).toContainText("Alpha")
+  await expect(page.getByTestId("mcp-hosts-brief")).toHaveCount(0)
+  await expect(page.getByTestId("switcher-search")).toBeFocused()
+  const before = providerRequests().length
+  await page.keyboard.press("Enter")
   await expect(page).toHaveURL(new RegExp(`/srv/${state.hosts.buildbox}/s/`), { timeout: 180_000 })
   await expect.poll(() => providerRequests().slice(before).some((item) => item.brief), { timeout: 180_000 }).toBe(true)
   const sent = providerRequests().slice(before).filter((item) => item.brief)
-  expect(sent.every((item) => item.tool)).toBe(true)
+  expect(sent.every((item) => item.tool && item.account === "alpha")).toBe(true)
   // Every other request of the run (the host conversation's title, the plain ones) went without the tool.
   expect(providerRequests().filter((item) => !item.brief).every((item) => !item.tool)).toBe(true)
   await shot(page, "09-assist-conversation")
+})
+
+test("llm-router: another account runs the AI, which sets the state folder on the host; the card says one thing", async () => {
+  // The write of the install tool asks in `묻기`; this run lets it go (the approval itself is e2e/remote's and own-accounts').
+  await page.evaluate(() => localStorage.setItem("own.web.approval.newSession", "full"))
+  const router = () => row(page, "llm-router")
+  const switcher = await chooseModel(page, "llm-router")
+  await switcher.locator('[data-testid="switcher-account"]').filter({ hasText: "Beta" }).click()
+  await expect(switcher.locator('[data-testid="switcher-account"][aria-selected="true"]')).toContainText("Beta")
+  const before = providerRequests().length
+  await switcher.getByTestId("switcher-apply").click()
+  await expect(page).toHaveURL(new RegExp(`/srv/${state.hosts.buildbox}/s/`), { timeout: 180_000 })
+  await expect
+    .poll(() => providerRequests().slice(before).filter((item) => item.router && item.tool).length, { timeout: 180_000 })
+    .toBeGreaterThanOrEqual(2)
+  expect(providerRequests().slice(before).filter((item) => item.router).every((item) => item.account === "beta")).toBe(true)
+
+  await openSettings(page)
+  await showRows(page)
+  await expect(router()).toHaveAttribute("data-state", "installed", { timeout: 120_000 })
+  // Where the host registers it: own's list there, which the card names.
+  await expect(section(page).getByTestId("mcp-hosts-file")).toContainText("mcp.json")
+  await router().getByTestId("mcp-hosts-more").click()
+  const details = router().getByTestId("mcp-hosts-details")
+  // On, with the host's own command and value; nothing about this PC's script or path, nothing to send.
+  await expect(router().getByTestId("mcp-hosts-off")).toHaveCount(0)
+  await expect(details.getByTestId("mcp-hosts-check")).toContainText("연결됐어요 · 도구 2개", { timeout: 60_000 })
+  await expect(details.getByTestId("mcp-hosts-host-command")).toContainText("own-router-mcp")
+  const value = details.locator('[data-testid="mcp-hosts-value-host"][data-name="LLM_ROUTER_MCP_STATE_DIR"]')
+  await expect(value).toContainText("호스트에서 정함")
+  await expect(value).toContainText(".local/state/llm-router")
+  await expect(details.getByTestId("mcp-hosts-reasons")).not.toContainText("이 PC의 스크립트")
+  await expect(details.getByTestId("mcp-hosts-reasons")).not.toContainText("호스트의 값이 필요해요")
+  await expect(details.getByTestId("mcp-hosts-value")).toHaveCount(0)
+  await expect(details.getByTestId("mcp-hosts-send")).toHaveCount(0)
+  await expect(router().getByTestId("mcp-hosts-assist-open")).toHaveCount(0)
+  await shot(page, "09b-router-installed")
+  await page.evaluate(() => localStorage.removeItem("own.web.approval.newSession"))
 })
 
 test("the host settings page names what the host has and leads to the section", async () => {
   await page.goto("/settings/remote")
   await page.getByTestId("remote-settings-host").filter({ hasText: "buildbox" }).click()
   const line = page.getByTestId("remote-host-mcp")
-  await expect(line).toContainText("설치됨 2", { timeout: 60_000 })
+  await expect(line).toContainText("설치됨 3", { timeout: 60_000 })
   await line.getByTestId("remote-host-mcp-open").click()
   await expect(page).toHaveURL(/\/settings\/mcp/)
   await expect(section(page).getByTestId("mcp-hosts-panel")).toHaveAttribute("data-host", state.hosts.buildbox)

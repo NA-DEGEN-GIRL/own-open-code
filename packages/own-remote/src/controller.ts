@@ -297,7 +297,7 @@ export class Controller {
       target,
       loopback: k,
       localPort: port,
-      remotePort: null,
+      remotePort: this.input.options.remoteTest?.port ?? null,
       autoConnect: Registry.DEFAULTS.autoConnect,
       accounts: info?.looseHostKey ? { mode: "only", ids: [] } : Registry.DEFAULTS.accounts,
       leaseSeconds: Registry.DEFAULTS.leaseSeconds,
@@ -510,6 +510,11 @@ export class Controller {
     await this.#tunnel(id, attempt, strict, env)
   }
 
+  /** The remote command of every ssh call: unchanged, or under the test root of Options `remoteTest` (decisions RL35). */
+  remoteCommand(command: string) {
+    return RemoteModel.remoteCommand(command, this.input.options.remoteTest?.root)
+  }
+
   /**
    * inspect (04 §5.4): platform, identity, owner, journals, shell environments. Records paths and warnings.
    * Shared with `prepare.plan` and `update.plan`.
@@ -527,7 +532,7 @@ export class Controller {
     const record = this.registry.get(id)!
     this.#set(id, { stage: "checking" })
     const run = await this.runner.run({
-      args: [...shortArgs(target), target.host, "sh -s"],
+      args: [...shortArgs(target), target.host, this.remoteCommand("sh -s")],
       env,
       stdin: Scripts.inspect({ ownHome: record.installRoot ?? record.remote?.ownHome }),
       timeout: this.input.options.scriptTimeoutMs ?? 120_000,
@@ -554,8 +559,17 @@ export class Controller {
         ok: false,
         failure: { error: "ops_pending", detail: inspect.opsPending.map((op) => `${op.opId}:${op.kind}`).join(","), pause: true },
       }
-    const paths = RemoteModel.remotePaths(inspect, record.shellEnv, record.installRoot)
-    const warnings = new Set<string>(record.warnings.filter((warning) => warning === "loose_host_key" || warning === "config_forward_localhost"))
+    const testRoot = this.input.options.remoteTest?.root
+    const lost = testRoot === undefined ? undefined : RemoteModel.testRootLost(inspect, record.shellEnv, testRoot)
+    if (lost !== undefined)
+      return {
+        ok: false,
+        failure: { error: "input", detail: `the host's shell does not keep the test root's ${lost}`, pause: true },
+      }
+    const paths = RemoteModel.remotePaths(inspect, record.shellEnv, record.installRoot, testRoot)
+    const warnings = new Set<string>(
+      record.warnings.filter((warning) => warning === "loose_host_key" || warning === "config_forward_localhost"),
+    )
     for (const warning of RemoteModel.warnings(inspect, record.shellEnv)) warnings.add(warning)
     await this.registry.patchHost(id, {
       remote: paths,
@@ -640,6 +654,7 @@ export class Controller {
           { host: "127.0.0.1", port: remotePort },
           brokerForward,
           egressForward,
+          this.remoteCommand("sh -s"),
         ),
         env,
         script,
@@ -658,7 +673,12 @@ export class Controller {
         if (brokerForward && Failure.remoteForwardFailed(started.stderr)) {
           // 04 §7.4: a /tmp short directory lost on reboot is recreated; otherwise fall back to TCP.
           if ("socket" in brokerForward.remote && paths.socketDir.startsWith("/tmp/") && round === 0) {
-            await this.runner.run({ args: [...shortArgs(target), target.host, "sh -s"], env, stdin: Scripts.prepareSocketDir(paths.socketDir), timeout: 30_000 })
+            await this.runner.run({
+              args: [...shortArgs(target), target.host, this.remoteCommand("sh -s")],
+              env,
+              stdin: Scripts.prepareSocketDir(paths.socketDir),
+              timeout: 30_000,
+            })
             continue
           }
           await this.registry.patchHost(id, { broker: { mode: "tcp", tcpPort: null, egressTcpPort: null } })

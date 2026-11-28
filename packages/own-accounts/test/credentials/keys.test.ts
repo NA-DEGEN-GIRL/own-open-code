@@ -199,6 +199,26 @@ describe("key accounts", () => {
     expect(working).toMatchObject({ ok: true, output: { ok: true, status: "ready" } })
   })
 
+  // RS (2026-11-28): requests that work again end a test's `auth_failed` without another test.
+  test("a refused key shows auth_failed and ends once the provider accepts a request (logins.refused, accepted)", async () => {
+    await using provider = startFakeOpenAIResponses({ credentials: { [GOOD]: { domain: "org-a" } } })
+    await using h = await harness({ options: { endpoints: { openai: provider.baseURL } } })
+    const added = await call(h.logins.addKey, { kind: "oai", label: "work", key: GOOD })
+    if (!added.ok) throw new Error("add failed")
+    const id = added.output.account.id
+    // A second refusal in use (telemetry's T-AUTH) writes it, as a connection test's 401 does.
+    await h.logins.refused(h.modules.slots.account(id)!)
+    expect(h.modules.slots.account(id)?.status).toBe("auth_failed")
+    const before = h.modules.slots.snapshot().revision
+    await h.logins.accepted(h.modules.slots.account(id)!)
+    expect(h.modules.slots.account(id)?.status).toBe("ready")
+    expect(h.modules.slots.snapshot().revision).toBeGreaterThan(before)
+    // A ready account writes nothing.
+    const after = h.modules.slots.snapshot().revision
+    await h.logins.accepted(h.modules.slots.account(id)!)
+    expect(h.modules.slots.snapshot().revision).toBe(after)
+  })
+
   test("forget shreds the vault item only when asked", async () => {
     await using h = await harness({ options: { endpoints } })
     const added = await call(h.logins.addKey, { kind: "oai", label: "work", key: GOOD })

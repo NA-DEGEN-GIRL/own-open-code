@@ -124,7 +124,7 @@ describe("the host's own list (mcp.host.*)", () => {
     expect(await Bun.file(rig.t.deps.runtime.layout.mcp).text()).not.toContain("ghp_")
   })
 
-  test("a server with values is `missing` until the PC sent them; the test runs with them", async () => {
+  test("a server with values is `missing` until the PC sent them; the test runs with them, and never without", async () => {
     const pc = fakePc()
     await using rig = await hostRig(pc)
     const saved = await ok(rig.rpc["mcp.host.save"], {
@@ -140,15 +140,54 @@ describe("the host's own list (mcp.host.*)", () => {
       name: "github",
       transport: { ...tiny(["GITHUB_TOKEN"]), fixed: { FAKE_MCP_REQUIRE: "GITHUB_TOKEN" } } as McpHost.Transport,
     })
-    const without = await ok(rig.rpc["mcp.host.test"], { id })
-    expect(without).toMatchObject({ ok: false, failure: "exited" })
-    pc.send(id, { env: { GITHUB_TOKEN: TOKEN } })
+    // The host keeps it off without its value, so the test starts nothing either.
+    const without = await call(rig.rpc["mcp.host.test"], { id })
+    expect(without).toMatchObject({ ok: false, type: "mcp_secret_missing", data: { name: "GITHUB_TOKEN" } })
+    expect((await ok(rig.rpc["mcp.host.view"], {})).servers[0]).not.toHaveProperty("check")
+    // The test takes what the fold gives core: only the names the host waits for. A copy the PC holds of another name
+    // (one the host set itself since) stays out of it, as it stays out of the server the host's conversations start.
+    pc.send(id, { env: { GITHUB_TOKEN: TOKEN, FAKE_MCP_FAIL: "a name the host does not take reached the test" } })
     const withValues = await ok(rig.rpc["mcp.host.test"], { id })
     expect(withValues).toMatchObject({ ok: true, tools: [{ name: "search_docs" }] })
     const view = await ok(rig.rpc["mcp.host.view"], {})
     expect(view.servers[0]).toMatchObject({ values: "ready", check: { ok: true }, pc: PC })
     expect(JSON.stringify(view)).not.toContain(TOKEN)
     expect(await Bun.file(rig.t.deps.runtime.layout.mcp).text()).not.toContain(TOKEN)
+    // Withdrawn: off again, and the passed test no longer stands for it.
+    pc.withdraw(id)
+    expect(await call(rig.rpc["mcp.host.test"], { id })).toMatchObject({ ok: false, type: "mcp_secret_missing" })
+    expect((await ok(rig.rpc["mcp.host.view"], {})).servers[0]).toMatchObject({ values: "missing" })
+    expect((await ok(rig.rpc["mcp.host.view"], {})).servers[0]).not.toHaveProperty("check")
+  })
+
+  test("a server that does not need its value from the PC is not tested as if it did (2.4.1-own.5's llm-router)", async () => {
+    // The report's shape: a script that runs without LLM_ROUTER_MCP_STATE_DIR (it has a default), registered on the host
+    // waiting for the PC's copy. The test once ran it without the value (12 tools) while the fold kept it off.
+    const pc = fakePc()
+    await using rig = await hostRig(pc)
+    const waiting = await ok(rig.rpc["mcp.host.save"], {
+      name: "llm-router",
+      transport: { ...tiny(["LLM_ROUTER_MCP_STATE_DIR"]) } as McpHost.Transport,
+      pc: PC,
+    })
+    const id = waiting.servers[0]!.id
+    expect(waiting.servers[0]!.values).toBe("missing")
+    expect(await call(rig.rpc["mcp.host.test"], { id })).toMatchObject({ ok: false, type: "mcp_secret_missing" })
+    // Set on the host instead (not a secret): no longer waiting, and the test is what runs.
+    const own = await ok(rig.rpc["mcp.host.save"], {
+      id,
+      name: "llm-router",
+      transport: {
+        ...tiny(),
+        fixed: { LLM_ROUTER_MCP_STATE_DIR: "~/.local/state/llm-router", FAKE_MCP_REQUIRE: "LLM_ROUTER_MCP_STATE_DIR" },
+      } as McpHost.Transport,
+    })
+    const home = os.homedir().replace(/\/+$/, "")
+    expect(own.servers[0]).toMatchObject({
+      values: "none",
+      transport: { env: [], fixed: { LLM_ROUTER_MCP_STATE_DIR: `${home}/.local/state/llm-router` } },
+    })
+    expect(await ok(rig.rpc["mcp.host.test"], { id })).toMatchObject({ ok: true, tools: [{ name: "search_docs" }] })
   })
 
   test("the probe reads the service's environment, read only, and names programs asked for", async () => {
@@ -383,7 +422,7 @@ describe("the install tool (AI에게 설치 맡기기)", () => {
     expect(McpHostTool.decide("ask", "deny")).toBeUndefined()
   })
 
-  test("only a job's conversation registers; `fixed` never takes a PC value's name; the result carries the test", async () => {
+  test("only a job's conversation registers; `fixed` never takes a PC secret's name; the result carries the test", async () => {
     const pc = fakePc()
     const added: Array<{ name: string; execute: (input: unknown, context: unknown) => Promise<{ content: string }> }> =
       []
@@ -392,6 +431,16 @@ describe("the install tool (AI에게 설치 맡기기)", () => {
     const sessions: Record<string, unknown> = {
       job: { id: "job", permissions: [], metadata: { own: { mcpInstall: { ...job, env: [] } } } },
       leak: { id: "leak", permissions: [], metadata: { own: { mcpInstall: job } } },
+      marked: {
+        id: "marked",
+        permissions: [],
+        metadata: { own: { mcpInstall: { ...job, env: ["ROUTER_DSN"], secrets: ["ROUTER_DSN"] } } },
+      },
+      router: {
+        id: "router",
+        permissions: [],
+        metadata: { own: { mcpInstall: { ...job, key: "own:router", name: "llm-router", env: ["LLM_ROUTER_MCP_STATE_DIR"] } } },
+      },
       plain: { id: "plain", permissions: [], metadata: {} },
     }
     await using t = await testDeps({
@@ -418,6 +467,7 @@ describe("the install tool (AI에게 설치 맡기기)", () => {
       },
     })
     const tool = await McpHostTool.register(t.deps, pc.mcp)
+    const service = () => McpHostService.create(t.deps, pc.mcp)
     expect(added.map((item) => item.name)).toEqual([McpHost.TOOL])
     const context = (sessionID: string) => ({
       sessionID,
@@ -431,14 +481,40 @@ describe("the install tool (AI에게 설치 맡기기)", () => {
     await expect(execute({ command: "x", args: [], fixed: { API_KEY: "a" } }, context("leak"))).rejects.toThrow(
       "API_KEY",
     )
+    // A name the PC's analysis took for a secret, whatever it looks like.
+    await expect(execute({ command: "x", args: [], fixed: { ROUTER_DSN: "a" } }, context("marked"))).rejects.toThrow(
+      "ROUTER_DSN",
+    )
+    // The secret waits for the PC: registered off, no test run, and the AI is told why.
+    const off = await execute({ command: process.execPath, args: [FAKE_MCP_STDIO, "lookup"] }, context("leak"))
+    expect(off.content).toContain("have not been sent yet")
+    expect(off.content).not.toContain("Connection test")
+    await service().remove((await service().view()).servers[0]!.id)
     const result = await execute({ command: process.execPath, args: [FAKE_MCP_STDIO, "lookup"] }, context("job"))
     expect(result.content).toContain('Registered "tiny"')
     expect(result.content).toContain("Connection test: OK")
-    expect(asserted).toHaveLength(1)
-    const service = McpHostService.create(t.deps, pc.mcp)
-    expect((await service.view()).servers).toMatchObject([
+    // Every write asked the approval first (the off one above and this one).
+    expect(asserted).toHaveLength(2)
+    expect((await service().view()).servers).toMatchObject([
       { name: "tiny", pc: { key: PC.key, hash: PC.hash }, check: { ok: true } },
     ])
+    // A value that is not a secret (2.4.1-own.5's LLM_ROUTER_MCP_STATE_DIR): the AI sets it for this host, and the
+    // server runs without waiting for the PC's copy (this PC's path).
+    const router = await execute(
+      {
+        command: process.execPath,
+        args: [FAKE_MCP_STDIO, "lookup"],
+        fixed: { LLM_ROUTER_MCP_STATE_DIR: "~/.local/state/llm-router", FAKE_MCP_REQUIRE: "LLM_ROUTER_MCP_STATE_DIR" },
+      },
+      context("router"),
+    )
+    expect(router.content).toContain("Set on this host: LLM_ROUTER_MCP_STATE_DIR.")
+    expect(router.content).toContain("Connection test: OK")
+    expect((await service().view()).servers.find((server) => server.name === "llm-router")).toMatchObject({
+      values: "none",
+      check: { ok: true },
+      transport: { env: [], fixed: { LLM_ROUTER_MCP_STATE_DIR: expect.stringContaining(".local/state/llm-router") } },
+    })
     // Every agent denies the tool (the job's conversation allows it in its own rules).
     const list = [{ id: "build", permissions: [] as unknown[] }]
     agents[0]!({

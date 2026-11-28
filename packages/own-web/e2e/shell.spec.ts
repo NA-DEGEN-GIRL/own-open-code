@@ -470,6 +470,8 @@ async function headerOverlaps(page: import("@playwright/test").Page) {
  * `chip` the computer-use chip with its Stop button (computer/index.tsx ComputerChip), each where the header puts it.
  */
 function teamMainStandIns(header: HTMLElement, chip: boolean) {
+  // Applied again by `standInFit`: the pills of an earlier attempt go first (the plain conversation has neither).
+  header.querySelectorAll('[data-testid="team-pill"], [data-testid="computer-chip"]').forEach((node) => node.remove())
   const title = header.querySelector<HTMLElement>('[data-testid="header-title"]')!
   const label = header.querySelector<HTMLElement>('[data-testid="running-on"]')!
   title.textContent = "팀 메인"
@@ -517,6 +519,20 @@ async function openWithBothPanels(page: Page, width: number) {
   if ((await app.getAttribute("data-panel")) !== "open") await page.getByTestId("panel-toggle").click()
   await expect(app).toHaveAttribute("data-sidebar", "open")
   await expect(app).toHaveAttribute("data-panel", "open")
+}
+
+/**
+ * The stand-ins applied and measured. The pill draws its label again on a late render (an accounts or catalog read
+ * landing after the page's first one: `GPT-5.5 @ Alpha` came back over the stand-ins in the release tier's full runs,
+ * RL34-T), so the stand-ins go on again until a measurement saw them.
+ */
+async function standInFit(page: Page, apply: () => Promise<unknown>) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await apply()
+    const fit = await teamHeaderFit(page)
+    if (fit.label.startsWith("Claude Sonnet 4.5")) return fit
+  }
+  throw new Error("the header's stand-ins never held through a measurement")
 }
 
 /**
@@ -630,8 +646,7 @@ test.describe("header, composer and pages fit (03 §4.4, §4.6, §5.7)", () => {
   }) => {
     for (const width of [1440, 1366]) {
       await openWithBothPanels(page, width)
-      await page.getByTestId("header").evaluate(teamMainStandIns, false)
-      const fit = await teamHeaderFit(page)
+      const fit = await standInFit(page, () => page.getByTestId("header").evaluate(teamMainStandIns, false))
       const where = `${width} px: ${JSON.stringify(fit)}`
       // The short title is whole, and while the pill gives anything up the title has no room after its text (its
       // floor was 7.5rem, about 120 px, after a 47 px title).
@@ -658,8 +673,7 @@ test.describe("header, composer and pages fit (03 §4.4, §4.6, §5.7)", () => {
       const header = page.getByTestId("header")
       // A plain conversation has the room: nothing gives way.
       expect((await teamHeaderFit(page)).give, `${width} px, plain`).toBe("")
-      await header.evaluate(teamMainStandIns, true)
-      const fit = await teamHeaderFit(page)
+      const fit = await standInFit(page, () => header.evaluate(teamMainStandIns, true))
       const where = `${width} px: ${JSON.stringify(fit)}`
       expect(fit.account, where).toBeLessThanOrEqual(0.01)
       expect(fit.title, where).toBeGreaterThanOrEqual(fit.full - 1)
@@ -690,12 +704,13 @@ test.describe("header, composer and pages fit (03 §4.4, §4.6, §5.7)", () => {
     for (const width of [1366, 1280]) {
       await openWithBothPanels(page, width)
       const header = page.getByTestId("header")
-      await header.evaluate(teamMainStandIns, true)
-      await header.evaluate((node, name) => {
-        node.querySelector('[data-testid="running-on"] [data-part="account"]')!.textContent = name
-        node.querySelector('[data-testid="header-title"]')!.textContent = "장바구니 결제 흐름 성능 개선과 리뷰 반영"
-      }, LONG_ACCOUNT)
-      const fit = await teamHeaderFit(page)
+      const fit = await standInFit(page, async () => {
+        await header.evaluate(teamMainStandIns, true)
+        await header.evaluate((node, name) => {
+          node.querySelector('[data-testid="running-on"] [data-part="account"]')!.textContent = name
+          node.querySelector('[data-testid="header-title"]')!.textContent = "장바구니 결제 흐름 성능 개선과 리뷰 반영"
+        }, LONG_ACCOUNT)
+      })
       const where = `${width} px, an 80-character account: ${JSON.stringify(fit)}`
       expect(fit.give, where).toBe("cache computer team approval harness git title title-min")
       expect(fit.account > 0.01 && !fit.accountCapped, where).toBe(true)
@@ -715,13 +730,15 @@ test.describe("header, composer and pages fit (03 §4.4, §4.6, §5.7)", () => {
     await openWithBothPanels(page, 1280)
     {
       const header = page.getByTestId("header")
-      await header.evaluate(teamMainStandIns, true)
-      await header.evaluate((node) => {
-        node.querySelector('[data-testid="team-pill"]')!.remove()
-        node.querySelector('[data-testid="running-on"] [data-part="account"]')!.textContent = "디자인팀 공용 ChatGPT Pro 계정"
-        node.querySelector('[data-testid="header-title"]')!.textContent = "장바구니 결제 흐름 성능 개선과 리뷰 반영"
+      const fit = await standInFit(page, async () => {
+        await header.evaluate(teamMainStandIns, true)
+        await header.evaluate((node) => {
+          node.querySelectorAll('[data-testid="team-pill"]').forEach((pill) => pill.remove())
+          node.querySelector('[data-testid="running-on"] [data-part="account"]')!.textContent =
+            "디자인팀 공용 ChatGPT Pro 계정"
+          node.querySelector('[data-testid="header-title"]')!.textContent = "장바구니 결제 흐름 성능 개선과 리뷰 반영"
+        })
       })
-      const fit = await teamHeaderFit(page)
       const where = `1280 px, the chip without a team pill, a 22-character account: ${JSON.stringify(fit)}`
       expect(fit.give.split(" "), where).not.toContain("stop")
       await expect(header.getByTestId("computer-stop"), where).toBeVisible()

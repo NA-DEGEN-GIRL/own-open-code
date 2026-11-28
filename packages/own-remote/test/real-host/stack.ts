@@ -214,6 +214,8 @@ export async function startStack(
             backoffMs: [3_000, 5_000, 10_000],
             ownerTimeoutMs: input.ownerTimeoutMs ?? 600_000,
             lingerSeconds: 0,
+            // The run's test root on the host (decisions RL35): never a real install's paths or port.
+            remoteTest: { root: Env.hostRun().root, port: Env.hostRun().port },
             // This PC's own Tailscale is no part of the gates: while it runs, the gateway's pairing link would name the
             // tailnet's https origin instead of the loopback listener phase C pairs through (RL5).
             gateway: { tailscaleCommand: null },

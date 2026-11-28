@@ -55,6 +55,18 @@ export const Info = Schema.Struct({
   /** Remote `OWN_HOME` override for every host (tests: the fake remote uses a temp root). */
   remoteInstallRoot: optional(Schema.String),
   /**
+   * Tests only (the real-host gates, decisions RL35): every host's install, its XDG data, config, state and cache roots
+   * live under `root` (an absolute directory on the host: `<root>/data`, `<root>/config`, `<root>/state`,
+   * `<root>/cache`) and its service listens on `port`, so a gate run shares no path, registration or port with a real
+   * install of the same account. Remote commands run as `env XDG_…=<root>/… <command>`. Never set by the app.
+   */
+  remoteTest: optional(
+    Schema.Struct({
+      root: Schema.String.check(Schema.isPattern(/^\/[A-Za-z0-9._/-]+[A-Za-z0-9._-]$/)),
+      port: Schema.Int.check(Schema.isBetween({ minimum: 1024, maximum: 65_535 })),
+    }),
+  ),
+  /**
    * M1 gateway (05 §13.4). Whether it runs is `OWN_HOME\gateway.json` (set through `gateway.configure.*`); these only
    * move its inputs for development and tests.
    */

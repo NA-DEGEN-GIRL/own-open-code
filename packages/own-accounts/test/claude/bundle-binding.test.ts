@@ -391,6 +391,23 @@ describe.skipIf(!from)("every own login refreshes the same way (CR)", () => {
     ])
   })
 
+  // RS (2026-11-28, the user's AC-01): after a service start an expired login has no failed refresh on record (the
+  // plugin keeps failures in memory), so its card says `due`. The patched plugin read a login of its own folder again
+  // only while its last refresh had failed for good, so `다시 로그인` changed nothing on the card until a request.
+  test("an expired login never tried here: a new login in its folder shows before any request", async () => {
+    await using w = await world({ own: true, expired: true })
+    endpoint.calls = 0
+    expect(refreshOf(w)).toEqual(ids.map((id) => ({ id, status: "ready", refresh: { state: "due" } })))
+    await Bun.sleep(20)
+    login(w.folders.one, { token: "fake-access-cl01-new", refresh: "fake-refresh-new-1" })
+    login(w.folders.two, { token: "fake-access-cl02-new", refresh: "fake-refresh-new-2" })
+    w.clock.advance(15_000)
+    await until(() => refreshOf(w).every((view) => view.status === "ready" && view.refresh === undefined))
+    expect(endpoint.calls).toBe(0)
+    expect((await w.send("ses_one")).token).toBe("fake-access-cl01-new")
+    expect(endpoint.calls).toBe(0)
+  })
+
   test("own's log has every refresh, started, ok and failed, with what the endpoint said and never a token", async () => {
     await using w = await world({ own: true, expired: true })
     await bind(w)

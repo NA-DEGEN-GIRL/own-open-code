@@ -76,6 +76,7 @@ import {
   withChildWait,
   type FlowEnv,
 } from "./flow"
+import { announceRefusal, defaultRpc } from "./claude-choice"
 import { formatTokens } from "./format"
 import { newSessionDirectory, newSessionLookup, newSessionTarget } from "./new-session"
 import {
@@ -178,8 +179,11 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
 
   // ---- area mode (06 §10.1 `메인 바꾸기…`): the area's owner conversation stands in for the session ----
   const area = createMemo(() => areaOf(props.request.seq))
-  // ---- pick mode (영역 만들기, 2026-10-26): no conversation; the team main's context, the choice handed back ----
+  // ---- pick mode: no conversation, the choice handed back (team-flow.ts `PickRequest`). With a team (영역 만들기,
+  // 2026-10-26) in the team main's context; without one (AI에게 설치 맡기기, MH) as the server's new conversation ----
   const pick = createMemo(() => pickOf(props.request.seq))
+  /** A team's pick (영역 만들기): `팀과 같게`, the team's filter and folder. */
+  const teamPick = () => pick()?.teamID !== undefined
   const areaView = () => {
     const target = area()
     return target ? runtime.team.area(target.teamID, target.areaID) : undefined
@@ -208,10 +212,11 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
    * The folder model names and lists are read from: the session's or area's, else the new-session screen's lookup,
    * which skips a default conversation folder not created yet (its Location answers 404, ML); the composer reads the same.
    */
-  const modelFolder = () => (sessionID() || area() || pick() ? directory() : newSessionLookup(runtime, router.route()))
+  const modelFolder = () =>
+    sessionID() || area() || teamPick() ? directory() : newSessionLookup(runtime, router.route())
   // The area's conversations are rarely on screen: read their bindings (`currentRef`) while the switcher is open.
   createEffect(() => {
-    const ids = area() || pick() ? [areaView()?.owner.sessionID, teamMain()].flatMap((id) => (id ? [id] : [])) : []
+    const ids = area() || teamPick() ? [areaView()?.owner.sessionID, teamMain()].flatMap((id) => (id ? [id] : [])) : []
     if (ids.length) onCleanup(own.watchVisible(ids))
   })
   // Home route: the combination the composer shows for the next new session (03 §5.1). An area without a
@@ -220,7 +225,8 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
     const id = sessionID()
     if (id) return currentRef(runtime, id)
     const picking = pick()
-    if (picking) return picking.current ?? teamRef()
+    if (picking?.teamID !== undefined) return picking.current ?? teamRef()
+    if (picking?.current) return picking.current
     if (area()) return areaView()?.main?.model ?? teamRef()
     return newSessionTarget(runtime, props.request.serverKey, directory())
   })
@@ -239,10 +245,10 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
   }
   // Roles come from the registry: make sure it is read once this server's session is a team's.
   createEffect(() => {
-    if (teamOf() || area() || pick()) runtime.team.ensure()
+    if (teamOf() || area() || teamPick()) runtime.team.ensure()
   })
   /** An owner conversation and an area main list no other subscription of a team company (06 §10.1). */
-  const filtersTeam = () => area() !== undefined || pick() !== undefined || teamOf()?.role === "owner"
+  const filtersTeam = () => area() !== undefined || teamPick() || teamOf()?.role === "owner"
   const hasTurns = () => {
     const id = sessionID()
     if (!id) return false
@@ -325,7 +331,7 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
     })
   })
   const visibleAccounts = createMemo(() => [
-    ...((area() || pick()) && !state.query.trim() ? [SAME] : []),
+    ...((area() || teamPick()) && !state.query.trim() ? [SAME] : []),
     ...groups().flatMap((group) => group.accounts.map((account): string => account.id)),
   ])
   const account = () => (state.accountID ? own.state.accounts[state.accountID] : undefined)
@@ -516,7 +522,7 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
       if (request.target) return selectTarget(request.target)
       // An area that follows the team starts on `팀과 같게` (06 §10.1), and so does a pick without a model yet.
       if (area() && !areaView()?.main) return selectSame()
-      if (pick() && !pick()?.current) return selectSame()
+      if (teamPick() && !pick()?.current) return selectSame()
       const preset = request.accountID ? own.state.accounts[request.accountID] : undefined
       const fromCurrent = base ? runningOn(base.providerID) : undefined
       const first = visibleAccounts().find((id) => id !== SAME)
@@ -636,7 +642,7 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
   // ---- apply ----
   async function apply() {
     const picking = pick()
-    if (picking) {
+    if (picking?.teamID !== undefined) {
       // 영역 만들기: only the choice goes back (read before closing, as below).
       const choice = state.same ? null : target()
       if (choice === undefined) return
@@ -665,18 +671,25 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
       // A new conversation starts on the Claude account chosen here (02 §8.7: the account chosen last). A refusal is
       // never swallowed: the conversation would start on another Claude account; the Claude card says why.
       const method = selected.kind === "claude-sub" ? "plugin.claudeAuth.default.set" : "claudeAgent.default.set"
-      if (SHARED.has(selected.kind) && own.rpc.allowed(method)) {
-        const chosen = await own.rpc
+      // RS: a host's Claude subscription accounts are this PC's, so is their default (the host answers
+      // `remote_managed`); it reaches the host with the mirror.
+      const chooser = defaultRpc({
+        kind: selected.kind,
+        host: runtime.kind === "ssh",
+        server: own.rpc,
+        local: data.local().rpc,
+      })
+      if (SHARED.has(selected.kind) && chooser.allowed(method)) {
+        const refused = await chooser
           .call(method, { accountID: selected.id })
-          .then(() => true)
-          .catch(() => false)
-        if (!chosen) {
-          props.onClose()
-          return router.navigate({ name: "accounts" })
-        }
+          .then(() => undefined)
+          .catch((error: unknown) => error)
+        if (refused !== undefined) return claudeRefused(selected, refused)
       }
       chooseNewSessionTarget(env, { ...ref })
       if (speed) void requestSpeed(speedEnv, { sessionID: undefined, to, view: speed, ...withOffer })
+      // A pick without a team (AI에게 설치 맡기기): the new conversation it starts runs on this choice.
+      picking?.onPick({ ...ref })
       return props.onClose()
     }
     if (isSame()) {
@@ -690,14 +703,11 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
     if (claudeMoves()) {
       // 02 §8.10: a Claude Agent account takes the tree the same way, by hand only (its next turn runs there).
       const method = selected.kind === "claude-sub" ? "plugin.claudeAuth.session.set" : "claudeAgent.session.set"
-      const moved = await own.rpc
+      const refused = await own.rpc
         .call(method, { sessionID: id, accountID: selected.id })
-        .then(() => true)
-        .catch(() => false)
-      if (!moved) {
-        props.onClose()
-        return router.navigate({ name: "accounts" })
-      }
+        .then(() => undefined)
+        .catch((error: unknown) => error)
+      if (refused !== undefined) return claudeRefused(selected, refused)
       if (sameRef(current(), ref)) return props.onClose()
     }
     const opener = props.request.opener ?? props.request.anchor
@@ -749,6 +759,13 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
       }))
     }
     await applyAreaMain(env, { ...place, model: { ...ref }, later: moves && owner !== undefined })
+  }
+
+  /** A Claude account the service refused to choose: the reason in a toast, then this PC's Claude cards (RS). */
+  function claudeRefused(selected: Account.View, error: unknown) {
+    props.onClose()
+    announceRefusal({ locale: i18n.locale(), account: claudeAccountName(i18n, selected), error })
+    router.navigate({ name: "accounts" })
   }
 
   /** The reason row's action: this PC's Claude card, or the host's panel in 설정 > 원격 호스트. */
@@ -915,7 +932,8 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
   }
   const costLine = () => {
     if (state.same) return team("own.team.mainPicker.sameHint")
-    if (pick()) return team("own.team.createArea.pickHint")
+    const picking = pick()
+    if (picking) return picking.labels?.hint ?? team("own.team.createArea.pickHint")
     if (teamAccount()) return team("own.team.account.title")
     if (!sessionID() || !hasTurns()) return i18n.t("own.switcher.costNewSession")
     if (isSame()) return i18n.t("own.switcher.current")
@@ -949,7 +967,8 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
   const applyLabel = () => {
     const trouble = problem()
     if (trouble && trouble.reason !== "exhausted") return i18n.t("own.switcher.fix")
-    if (pick()) return team("own.team.createArea.pickApply")
+    const picking = pick()
+    if (picking) return picking.labels?.apply ?? team("own.team.createArea.pickApply")
     if (area()) return areaUnchanged() ? i18n.t("own.switcher.close") : i18n.t("own.switcher.apply")
     if (!sessionID()) return i18n.t("own.switcher.apply")
     if (isSame()) return speedChanged() && speedSettable() ? i18n.t("own.switcher.apply") : i18n.t("own.switcher.close")
@@ -1011,7 +1030,7 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
         <b id="own-sw-title" class="text-[13px]">
           {i18n.t("own.switcher.title")}
           <Show when={areaView()}>{(view) => <> · {view().name}</>}</Show>
-          <Show when={pick()}> · {team("own.team.createArea.title")}</Show>
+          <Show when={pick()}>{(picking) => <> · {picking().labels?.title ?? team("own.team.createArea.title")}</>}</Show>
         </b>
         <label class="own-sw-search">
           <span class="own-sr-only">{i18n.t("own.switcher.search")}</span>
@@ -1092,7 +1111,7 @@ export default function SwitcherPopover(props: SwitcherPopoverProps) {
           data-active={state.column === 0 ? "" : undefined}
           onMouseDown={keepFocus}
         >
-          <Show when={(area() || pick()) && !state.query.trim()}>
+          <Show when={(area() || teamPick()) && !state.query.trim()}>
             <div
               id={`own-sw-a-${SAME}`}
               class="own-sw-account"

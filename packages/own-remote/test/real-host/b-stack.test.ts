@@ -2,7 +2,7 @@
 // project states of 04 §5.6, RG20 served Codex rows on the host, 10 §6.14): this PC's release service with own-accounts (local) and own-remote (see stack.ts), the
 // phase A host and its running service.
 // Fake providers only; the remote service's https egress goes to this PC's sink. Opt-in: OWN_REAL_HOST=dev-host.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { createHash } from "node:crypto"
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -11,8 +11,8 @@ import { OwnAccounts } from "@own/protocol"
 import { OwnHarness } from "@own/protocol/rpc-harness"
 import * as Env from "./env.js"
 import * as Stack from "./stack.js"
+import { phase } from "./isolate.js"
 
-const run = Env.enabled ? describe : describe.skip
 const GRACE_SECONDS = 45
 const CLIENT = "real-host-b"
 
@@ -38,7 +38,7 @@ const rg17Responder = (request: { readonly body: string }) => {
 }
 const bodyText = (request: { body: string }) => request.body
 
-run(`real host ${Env.ALIAS}: full stack (phase B)`, () => {
+phase("b-stack", `real host ${Env.ALIAS}: full stack (phase B)`, () => {
   const state = {} as {
     stack: Stack.Stack
     uid: string
@@ -96,8 +96,15 @@ run(`real host ${Env.ALIAS}: full stack (phase B)`, () => {
     }, 120_000, 1_000)
     // The tunnel closes before the remote stop step runs: wait until the operation released the host (a plan has no
     // side effects), then check the service is really gone on the host.
-    await Stack.until(async () => (await state.stack.localRaw("own.remote", "drain.plan", { hostId: state.stack.hostId, action: "stop" })).status === 200, 120_000, 1_000)
-    const check = await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" 2>/dev/null | head -n 1)
+    await Stack.until(
+      async () =>
+        (await state.stack.localRaw("own.remote", "drain.plan", { hostId: state.stack.hostId, action: "stop" }))
+          .status === 200,
+      120_000,
+      1_000,
+    )
+    const check =
+      await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" 2>/dev/null | head -n 1)
 [ -n "$pid" ] && [ -d "/proc/$pid" ] && echo RUNNING=1 || echo RUNNING=0`)
     expect(Env.kv(check.stdout).get("RUNNING")).toBe("0")
   }
@@ -105,7 +112,7 @@ run(`real host ${Env.ALIAS}: full stack (phase B)`, () => {
   beforeAll(async () => {
     state.stack = await Stack.startStack({ responder: rg17Responder })
     state.uid = Env.kv((await Env.hostSh("echo UID=$(id -u)")).stdout).get("UID")!
-    state.project = `/tmp/own-${state.uid}-rh-project`
+    state.project = `${Env.hostRun().root}/tmp/rh-project`
     const made = await Env.hostSh(String.raw`set -u
 umask 077; mkdir -p "${state.project}" && printf '# real-host project\n\nremote project of the own real-host suite\n' > "${state.project}/README.md"
 echo "FORWARD=$(ss -Htln | awk '{print $4}' | grep -cE '^127.0.0.1:(${(await Env.ports()).provider}|${(await Env.ports()).sink})$')"`)
@@ -376,10 +383,16 @@ echo "FORWARD=$(ss -Htln | awk '{print $4}' | grep -cE '^127.0.0.1:(${(await Env
     fs.writeFileSync(`${file}.rg20`, JSON.stringify({ ...stored, kinds: { ...stored.kinds, codex: snapshot } }))
     fs.renameSync(`${file}.rg20`, file)
     // The host's own-accounts holds the row in its own codex-meta.json; it fetched no model list (no Codex egress).
-    const held = await Stack.until(async () => {
-      const read = await Env.hostSh(String.raw`grep -c '${marker}' "$HOME/.local/share/own-open-code/codex-meta.json" 2>/dev/null || echo 0`)
-      return Number(read.stdout.trim()) > 0 ? read.stdout.trim() : undefined
-    }, 90_000, 1_000)
+    const held = await Stack.until(
+      async () => {
+        const read = await Env.hostSh(
+          String.raw`grep -c '${marker}' "$XDG_DATA_HOME/own-open-code/codex-meta.json" 2>/dev/null || echo 0`,
+        )
+        return Number(read.stdout.trim()) > 0 ? read.stdout.trim() : undefined
+      },
+      90_000,
+      1_000,
+    )
     expect(Number(held)).toBeGreaterThan(0)
     // A host session on the codex harness: its request carries the row's instructions.
     const created = await remote("POST", "/api/session", {
@@ -472,13 +485,17 @@ echo "FORWARD=$(ss -Htln | awk '{print $4}' | grep -cE '^127.0.0.1:(${(await Env
         return current.stage === "ready" && current.epoch > old.epoch && current.broker.state === "connected" ? current : undefined
       }, 240_000, 1_000)
       const recoveredMs = Date.now() - started
-      await Stack.until(async () => {
-        const check = await Env.hostSh(`ps --ppid ${sshd} -o args= | grep -c '^sh -s' || true`)
-        return check.stdout.trim() === "0"
-      }, 60_000, 2_000)
-      const hup = await Env.hostSh(String.raw`kill -CONT ${sshd}; kill -HUP ${sshd}; sleep 2
+      await Stack.until(
+        async () => {
+          const check = await Env.hostSh(`ps --ppid ${sshd} -o args= | grep -c '^sh -s' || true`)
+          return check.stdout.trim() === "0"
+        },
+        60_000,
+        2_000,
+      )
+      const hup = await Env.hostSh(String.raw`rh_session -CONT ${sshd}; rh_session -HUP ${sshd}; sleep 2
 [ -d /proc/${sshd} ] && echo OLD_ALIVE=1 || echo OLD_ALIVE=0
-echo "NEW_SOCK=$(stat -c '%F' "$HOME/.local/share/own-open-code/run/broker-${next.epoch}.sock" 2>&1)"`)
+echo "NEW_SOCK=$(stat -c '%F' "$XDG_DATA_HOME/own-open-code/run/broker-${next.epoch}.sock" 2>&1)"`)
       await Bun.sleep(10_000)
       await resolve()
       const remoteHealth = (await remoteRpc("health", {})).body?.output
@@ -489,7 +506,7 @@ echo "NEW_SOCK=$(stat -c '%F' "$HOME/.local/share/own-open-code/run/broker-${nex
       expect(after.broker.state).toBe("connected")
       expect(remoteHealth?.broker).toMatchObject({ state: "connected", epoch: next.epoch })
     } finally {
-      await Env.hostSh(`kill -CONT ${sshd} 2>/dev/null; kill -HUP ${sshd} 2>/dev/null; true`)
+      await Env.hostSh(`rh_session -CONT ${sshd} 2>/dev/null; rh_session -HUP ${sshd} 2>/dev/null; true`)
     }
   }, 420_000)
 
@@ -498,19 +515,22 @@ echo "NEW_SOCK=$(stat -c '%F' "$HOME/.local/share/own-open-code/run/broker-${nex
     const needles = [Stack.KEYS.Alpha, Stack.KEYS.Bravo, tokens.access_token, tokens.refresh_token, tokens.id_token].filter(Boolean) as string[]
     const quoted = needles.map((value) => `'${value}'`).join(" ")
     const result = await Env.hostSh(String.raw`set -u
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 for needle in ${quoted}; do
-  c=$(grep -rlaF -- "$needle" "$HOME/.local/share/own-open-code" "$HOME/.config/own-open-code" "$HOME/.config/opencode" \
-      "$HOME/.local/state/opencode" "$HOME/.local/share/opencode" "$HOME/.cache/opencode" /tmp/own-$(id -u)* 2>/dev/null | wc -l)
+  c=$(grep -rlaF -- "$needle" "$XDG_DATA_HOME/own-open-code" "$XDG_CONFIG_HOME/own-open-code" "$XDG_CONFIG_HOME/opencode" \
+      "$XDG_STATE_HOME/opencode" "$XDG_DATA_HOME/opencode" "$XDG_CACHE_HOME/opencode" "$OWN_RH_ROOT/tmp" 2>/dev/null | wc -l)
   e=$(tr '\0' '\n' < /proc/$pid/environ | grep -cF -- "$needle")
   a=$(tr '\0' ' ' < /proc/$pid/cmdline | grep -cF -- "$needle")
   p=$(ps -eo args | grep -v grep | grep -cF -- "$needle")
   echo "HITS=$c/$e/$a/$p"
 done
-echo "MIRROR_FILES=$(ls "$HOME/.local/share/own-open-code" | tr '\n' ' ')"
-echo "MIRROR_KEYHINT=$(grep -c 'keyHint' "$HOME/.local/share/own-open-code/accounts.json" 2>/dev/null)"
-echo "DB=$(ls -la "$HOME/.local/share/opencode/" | awk 'NR>1{print $NF}' | tr '\n' ' ')"`)
-    Env.evidence("rg10-keys.txt", result.stdout.replaceAll(/HITS=.*/g, (line) => line))
+echo "MIRROR_FILES=$(ls "$XDG_DATA_HOME/own-open-code" | tr '\n' ' ')"
+echo "MIRROR_KEYHINT=$(grep -c 'keyHint' "$XDG_DATA_HOME/own-open-code/accounts.json" 2>/dev/null)"
+echo "DB=$(ls -la "$XDG_DATA_HOME/opencode/" | awk 'NR>1{print $NF}' | tr '\n' ' ')"`)
+    Env.evidence(
+      "rg10-keys.txt",
+      result.stdout.replaceAll(/HITS=.*/g, (line) => line),
+    )
     const hits = result.stdout.split("\n").filter((line) => line.startsWith("HITS="))
     expect(hits).toHaveLength(needles.length)
     for (const line of hits) expect(line).toBe("HITS=0/0/0/0")
@@ -539,9 +559,9 @@ echo "DB=$(ls -la "$HOME/.local/share/opencode/" | awk 'NR>1{print $NF}' | tr '\
   }, 60_000)
 
   // RG17 (04 §20.3) in the three project states of a host (04 §5.6). Each test builds its own repository under
-  // `/tmp/own-<uid>-rh-rg17` and removes it; the two that change the state restore the host to `instructions`, the
+  // `<run root>/tmp/rh-rg17` and removes it; the two that change the state restore the host to `instructions`, the
   // default it was added with, by another drain and restart.
-  const rg17Dir = () => `/tmp/own-${state.uid}-rh-rg17`
+  const rg17Dir = () => `${Env.hostRun().root}/tmp/rh-rg17`
   /**
    * The repository: AGENTS.md at its root and in `sub/`, a project skill, a project config naming one more instruction
    * file, and a plugin that records that it loaded and what it saw of every model request.
@@ -577,7 +597,8 @@ echo OK=1`)
   const rg17Remove = () => Env.hostSh(`rm -rf "${rg17Dir()}"; echo OK=1`)
   /** The two project variables of the running remote service, from its `/proc/<pid>/environ`: `[DISABLE, INSTRUCTIONS]`. */
   const rg17ServiceEnv = async () => {
-    const env = await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+    const env =
+      await Env.hostSh(String.raw`pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 echo "PROJECT_DISABLE=$(tr '\0' '\n' < /proc/$pid/environ | sed -n 's/^OPENCODE_CONFIG_PROJECT_DISABLE=//p')"
 echo "PROJECT_INSTRUCTIONS=$(tr '\0' '\n' < /proc/$pid/environ | sed -n 's/^OPENCODE_CONFIG_PROJECT_INSTRUCTIONS=//p')"`)
     const facts = Env.kv(env.stdout)

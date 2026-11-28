@@ -2,7 +2,9 @@
 // this PC knows (own's, imported ones included, and the config files' of the page's project, disabled ones too) as
 // `McpHostRules.Source`, its analysis against one host's probe, and the row state per host: installed (the host's
 // server came from this PC's key), `PC와 다름` (the PC's definition or own's values changed since), or what installing
-// would take. No Solid, no DOM; unit-tested in hosts.test.ts. The rules are own-protocol's `McpHostRules`.
+// would take. An installed row reads the host's own definition, not this PC's analysis: one state of what the host
+// runs ({@link live}), each value where it comes from ({@link hostValues}) and only the reasons that still hold
+// ({@link reasonsOf}). No Solid, no DOM; unit-tested in hosts.test.ts. The rules are own-protocol's `McpHostRules`.
 import type { ConfigEntry } from "@opencode/client"
 import type { OwnMcp } from "@own/protocol"
 import { McpHostRules } from "@own/protocol/mcp-host-rules"
@@ -28,6 +30,8 @@ export interface HostServer {
 export interface HostView {
   readonly servers: ReadonlyArray<HostServer>
   readonly home: string
+  /** The host's own list of them (`<OWN_HOME>/mcp.json` there); an older host leaves it out. */
+  readonly file?: string
 }
 
 /** `mcp.hosts.view`'s record. */
@@ -262,15 +266,124 @@ export function values(analysis: Analysis) {
   return analysis.values
 }
 
-/** The host's install conversation's job (own-protocol `McpHost.Job`) for a local source. */
-export function job(source: Source, rules: Rules = McpHostRules) {
+/**
+ * The host's install conversation's job (own-protocol `McpHost.Job`) for a local source: its value names, and the ones
+ * the analysis takes for secrets (only those must come from the PC; the AI may set the others for the host).
+ */
+export function job(source: Source, analysis: Analysis, rules: Rules = McpHostRules) {
   if (source.transport.type !== "local") return undefined
+  const secrets = analysis.values.flatMap((value) => (value.kind === "env" && value.secret ? [value.name] : []))
   return {
     key: source.key,
     hash: rules.hash(source),
     name: source.name,
     env: [...source.transport.env],
+    ...(secrets.length > 0 ? { secrets } : {}),
     ...(source.transport.codemode === undefined ? {} : { codemode: source.transport.codemode }),
+  }
+}
+
+/** The start intent (`composer/start-intent.ts`) of `AI에게 설치 맡기기`: the brief, the job, the tool's allow. */
+export function assistIntent(serverKey: string, row: Pick<Row, "source" | "analysis">, brief: string) {
+  const work = job(row.source, row.analysis)
+  if (!work) return undefined
+  return {
+    serverKey,
+    text: brief,
+    metadata: { own: { mcpInstall: work } },
+    permissions: [{ action: McpHostRules.TOOL, resource: "*", effect: "allow" as const }],
+  }
+}
+
+/** Where one value of an installed server comes from on its host. */
+export type HostValue =
+  | { readonly name: string; readonly secret: boolean; readonly from: "host"; readonly value: string }
+  | { readonly name: string; readonly secret: boolean; readonly from: "pc"; readonly sent: boolean }
+
+/**
+ * The values of a row as its host has them: set on the host (a name in the host's `fixed` that it does not wait for,
+ * shown with its value: never a secret), or from this PC (sent or not). Before an install, every value is from the PC.
+ */
+export function hostValues(row: Row): HostValue[] {
+  const transport = row.installed?.transport
+  const local = transport?.type === "local" ? transport : undefined
+  return row.analysis.values.map((value): HostValue => {
+    const own = local?.fixed?.[value.name]
+    if (local && own !== undefined && !local.env.includes(value.name))
+      return { name: value.name, secret: value.secret, from: "host", value: own }
+    return { name: value.name, secret: value.secret, from: "pc", sent: row.send?.names.includes(value.name) ?? false }
+  })
+}
+
+/**
+ * The one state of what an installed row's host runs, from the host's definition and its last test: `off` while values
+ * the host waits for from the PC have not come (the host keeps the server off, and a test then starts nothing, so an
+ * older result says nothing), else the last test's result, else untested.
+ */
+export type Live =
+  | { readonly kind: "off"; readonly waiting: ReadonlyArray<string> }
+  | { readonly kind: "connected"; readonly tools: number }
+  | { readonly kind: "failed"; readonly check: OwnMcp.Check }
+  | { readonly kind: "untested" }
+
+export function live(row: Row): Live | undefined {
+  const server = row.installed
+  if (!server) return undefined
+  if (server.values === "missing")
+    return {
+      kind: "off",
+      waiting: hostValues(row).flatMap((value) => (value.from === "pc" && !value.sent ? [value.name] : [])),
+    }
+  const check = server.check
+  if (!check) return { kind: "untested" }
+  return check.ok ? { kind: "connected", tools: check.tools.length } : { kind: "failed", check }
+}
+
+/**
+ * The reasons a row shows. Before an install, all of the analysis; once installed, the host runs its own command, so
+ * what this PC's definition would need on a host (its paths, its script, its runtime, its values) no longer applies:
+ * only what the server itself is (an address, a sign-in).
+ */
+export function reasonsOf(row: Row): ReadonlyArray<McpHostRules.Reason> {
+  if (!row.installed) return row.analysis.reasons
+  return row.analysis.reasons.filter((reason) => reason.code === "remote_url" || reason.code === "oauth")
+}
+
+/** The host's command line of an installed server (no value: the host stores none). */
+export function hostShown(server: HostServer) {
+  const transport = server.transport
+  if (transport.type === "remote") return `${maskAddress(transport.url)}${transport.query ? "?…" : ""}`
+  return [transport.command, ...transport.args].map((part) => (/\s/.test(part) ? `"${part}"` : part)).join(" ")
+}
+
+/**
+ * A row's next step: install what installs by itself, update an installed one whose PC definition changed when that
+ * definition still installs by itself, and the AI for the rest of the command servers: what needs setup or help, an
+ * update of what the AI set up (its host command is not this PC's translation), and an installed server that stays off
+ * only for values that are not secrets (the PC's copy would be this PC's path; the AI sets them for the host).
+ */
+export function nextStep(row: Row): "install" | "update" | "assist" | undefined {
+  if (row.state === "ready") return "install"
+  if (row.state === "differs" && row.analysis.result === "ready") return "update"
+  if (row.source.transport.type !== "local") return undefined
+  if (row.state === "prepare" || row.state === "assist" || row.state === "unknown") return "assist"
+  // Only the values changed: sending them again (the values step) is the update.
+  if (row.state === "differs") return row.changed?.definition ? "assist" : undefined
+  const state = live(row)
+  if (state?.kind !== "off") return undefined
+  const waiting = hostValues(row).filter((value) => state.waiting.includes(value.name))
+  return waiting.length > 0 && waiting.every((value) => !value.secret) ? "assist" : undefined
+}
+
+/** An update keeps the values the host set for itself (they are not this PC's to replace). */
+export function keepHostValues(transport: McpHostRules.HostTransport, row: Row): McpHostRules.HostTransport {
+  const own = hostValues(row).flatMap((value) => (value.from === "host" ? [[value.name, value.value] as const] : []))
+  if (transport.type !== "local" || own.length === 0) return transport
+  const names = own.map((item) => item[0])
+  return {
+    ...transport,
+    env: transport.env.filter((name) => !names.includes(name)),
+    fixed: { ...transport.fixed, ...Object.fromEntries(own) },
   }
 }
 

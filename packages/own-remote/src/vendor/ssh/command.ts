@@ -231,6 +231,8 @@ export function tunnelArgs(
   remote: { host: string; port: number },
   broker: Forward | undefined,
   egress?: Forward,
+  // own: the remote command; the real-host gates' test root prefixes it with its XDG roots (decisions RL35).
+  command = "sh -s",
 ) {
   return [
     "-o",
@@ -250,7 +252,7 @@ export function tunnelArgs(
     ...(broker ? remoteForward(broker) : []),
     ...(broker && egress ? remoteForward(egress) : []),
     target.host,
-    "sh -s",
+    command,
   ]
 }
 

@@ -624,6 +624,19 @@ async function renew(
     ...(polled.token.refreshExpiresAt === undefined ? {} : { refreshExpiresAt: polled.token.refreshExpiresAt }),
   })
   if (!stored) return { ok: false, problem: "vault_missing" }
+  // RS (2026-11-28): the card's `만료` tag reads the account's entry, which named the lapsed token's expiry until a test.
+  const expiresAt = polled.token.expiresAt
+  if (expiresAt !== undefined)
+    await GitHubStore.file(deps)
+      .update((current) =>
+        current.accounts.some((item) => item.id === entry.id)
+          ? {
+              ...current,
+              accounts: current.accounts.map((item) => (item.id === entry.id ? { ...item, expiresAt } : item)),
+            }
+          : undefined,
+      )
+      .catch((error: unknown) => deps.log.child("github").warn("github_renew_record_failed", { id: entry.id, error }))
   deps.log.child("github").info("github_renewed", { id: entry.id })
   // Every instance's masker learns the new token (`register.ts`).
   deps.runtime.broadcast.emit("github.changed", {})

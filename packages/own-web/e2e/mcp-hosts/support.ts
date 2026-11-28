@@ -3,7 +3,10 @@ import path from "node:path"
 import { checkoutTmp } from "../gateway/support"
 
 export const STATE_FILE = path.join(checkoutTmp("own-web-e2e-mcp-hosts"), "backend.json")
-/** Every model request the fake provider answered (`{at, tools}`: whether the install tool was offered). */
+/**
+ * Every model request the fake provider answered: whether the install tool was offered, whether it carried a brief
+ * (llm-router's: `router`), and the account it ran on (`alpha`, `beta`).
+ */
 export const PROVIDER_LOG = path.join(checkoutTmp("own-web-e2e-mcp-hosts"), "provider-requests.jsonl")
 /** The fake value sent to the host (never a real credential); the tests scan the host and the page for it. */
 export const SECRET = "fake-mcp-hosts-pw-key-0000000000Zq8"
@@ -35,11 +38,19 @@ export function backend(): BackendState {
   return state
 }
 
-export function providerRequests(): Array<{ readonly at: number; readonly tool: boolean; readonly brief: boolean }> {
+export interface ProviderRequest {
+  readonly at: number
+  readonly tool: boolean
+  readonly brief: boolean
+  readonly router: boolean
+  readonly account?: string
+}
+
+export function providerRequests(): ProviderRequest[] {
   if (!fs.existsSync(PROVIDER_LOG)) return []
   return fs
     .readFileSync(PROVIDER_LOG, "utf8")
     .split("\n")
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as { at: number; tool: boolean; brief: boolean })
+    .map((line) => JSON.parse(line) as ProviderRequest)
 }

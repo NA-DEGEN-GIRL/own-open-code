@@ -427,6 +427,43 @@ run("the Claude slot on a host through the PC's egress relay (fake SSH)", () => 
     expect(steps[0]).toMatchObject({ accountID: SECOND, server: state.hostId, providerID: "anthropic" })
   }, 240_000)
 
+  // RS (2026-11-28, the user's build-host): the switcher of a new host conversation chose AC-01 with the host's
+  // `plugin.claudeAuth.default.set`, which a host refuses (`remote_managed`: the Claude logins are this PC's), and the
+  // popover jumped to the accounts page. The account new conversations start on is chosen on this PC and reaches the
+  // host with the mirror; a new host conversation without a binding is then signed by it.
+  test("a new host conversation starts on the Claude account chosen on the PC; the host refuses to choose it itself", async () => {
+    const refused = await remoteRpc("plugin.claudeAuth.default.set", { accountID: SECOND })
+    expect(refused.body).toMatchObject({ type: "remote_managed" })
+    await localOk(OwnAccounts.ID, "plugin.claudeAuth.default.set", { accountID: SECOND })
+    try {
+      const created = await remote("POST", "/api/session", {
+        body: {
+          title: "chosen default",
+          model: { providerID: "anthropic", id: MODEL },
+          location: { directory: state.workspace },
+        },
+      })
+      const sessionID = created.body.data.id as string
+      const chosen = await until(
+        async () => {
+          const value = await remoteRpc("plugin.claudeAuth.session.get", { sessionID })
+          return value.body?.output?.accountID === SECOND ? value.body.output : undefined
+        },
+        60_000,
+        500,
+      )
+      expect(chosen).toMatchObject({ accountID: SECOND, bound: false })
+      state.fake.enqueue({ type: "text", text: "default answer" })
+      const before = state.front.seen.length
+      await remote("POST", `/api/session/${sessionID}/prompt`, { body: { text: "hello on the chosen default" } })
+      await remote("POST", `/api/experimental/session/${sessionID}/wait`)
+      const call = state.front.seen.slice(before).find((item) => item.body.includes("hello on the chosen default"))!
+      expect(call.authorization).toBe(`Bearer ${TOKEN2}`)
+    } finally {
+      await localOk(OwnAccounts.ID, "plugin.claudeAuth.default.set", { accountID: "acc_claude_slot" })
+    }
+  }, 240_000)
+
   test("cancelling the turn mid-stream closes the upstream request", async () => {
     const before = state.front.aborted.length
     const admitted = await remote("POST", `/api/session/${state.sessionID}/prompt`, { body: { text: SLOW } })

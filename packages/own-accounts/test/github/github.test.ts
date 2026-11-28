@@ -1731,6 +1731,38 @@ describe("GitHub's MCP sessions and the tool list (GH-15, GH-20 to GH-23)", () =
     ])
     expect(github().refreshes.length - before).toBe(1)
   })
+
+  // RS (2026-11-28): a renewal moves the card's `만료` tag to the new token's expiry, not only the next test.
+  test("a renewal records the new token's expiry on the account", async () => {
+    await using t = await rig()
+    await ok(t.rpc["github.settings.set"], { clientID: "Iv1.fakeRenewRecord1" })
+    const id = OwnGitHub.ID.create()
+    const refresh = "ghr_fakeRenewRecord000000000000000000Ab12"
+    const lapsed = t.control.clock.now() - 1
+    await GitHubStore.storeSecret(t.control.deps, id, {
+      token: "ghu_fakeLapsedToken00000000000000000Cd34",
+      refresh,
+      expiresAt: lapsed,
+    })
+    github().refreshTo(refresh, { token: "ghu_fakeRenewedRecord000000000000000Ef56", expiresIn: 8 * 3600 })
+    const entry: GitHubStore.Entry = {
+      id,
+      label: "앱",
+      site: OwnGitHub.GITHUB_COM,
+      login: "octo-app",
+      source: "device",
+      tokenKind: "app-user",
+      hint: "…Cd34",
+      write: false,
+      expiresAt: lapsed,
+      addedAt: 0,
+    }
+    await GitHubStore.file(t.control.deps).update((current) => ({ ...current, accounts: [...current.accounts, entry] }))
+    const answer = await GitHubService.tokenFor(t.control.deps, entry, (await t.file()).settings)
+    expect(answer).toEqual({ ok: true, token: "ghu_fakeRenewedRecord000000000000000Ef56" })
+    const recorded = (await t.file()).accounts.find((item) => item.id === id)?.expiresAt
+    expect(recorded).toBeGreaterThan(t.control.clock.now() + 7 * 3600_000)
+  })
 })
 
 /**

@@ -7,11 +7,13 @@
 //          model of its own
 //
 // The PC adds a server that needs a value (a fake stdio MCP server that exits without it). The host probes what it has,
-// gets the server installed without the value (off, its test fails), the user's explicit send makes the PC hand the value
-// to that host over the broker (on; the test passes; the host's Location connects it), a withdrawal turns it off again,
+// gets the server installed without the value (off, and its test starts nothing), the user's explicit send makes the
+// PC hand the value to that host over the broker (on; the test passes; the host's Location connects it), a withdrawal
+// turns it off again,
 // a rotated value on the PC shows as `differs` and never reaches the host by itself; the AI-assisted install runs in a
 // new host conversation that alone sees the install tool, asks before it writes (묻기) and registers the server with the
-// PC's key and hash. No value ever lands in the host's files, R's logs, an answer or a chat request.
+// PC's key and hash, setting a value that is not a secret (a state folder) for the host itself, so it runs without the
+// PC's copy. No value ever lands in the host's files, R's logs, an answer or a chat request.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test"
 import fs from "node:fs"
 import os from "node:os"
@@ -35,6 +37,7 @@ import {
   type Reply,
 } from "../../e2e-kit"
 import { FAKE_MCP_STDIO } from "../../e2e-kit/fakes/mcp-stdio"
+import { recordServerEvents } from "../../e2e-kit/harness/events"
 
 setDefaultTimeout(60_000)
 
@@ -77,7 +80,12 @@ function reply(request: RecordedRequest): Reply | undefined {
     return {
       type: "tool-call",
       name: McpHost.TOOL,
-      input: { command: BUN, args: [FAKE_MCP_STDIO, "lookup", "summarize"] },
+      // A value that is not a secret (a state folder), set for this host as the brief allows; the fixture needs it.
+      input: {
+        command: BUN,
+        args: [FAKE_MCP_STDIO, "lookup", "summarize"],
+        fixed: { TINY_STATE_DIR: "~/.local/state/tiny", FAKE_MCP_REQUIRE: "TINY_STATE_DIR" },
+      },
     }
   return { type: "text", text: "답변" }
 }
@@ -310,7 +318,10 @@ run("MCP servers of this PC on a host (fake SSH, 04 §13)", () => {
     })
     state.hostServer = (installed.servers as Json[]).find((item) => item.name === "tiny")!.id
     expect((await hostServer()).values).toBe("missing")
-    expect(await hostOk("mcp.host.test", { id: state.hostServer })).toMatchObject({ ok: false, failure: "exited" })
+    // The host keeps it off, so its connection test starts nothing either (it once ran it without the value).
+    const without = await host("mcp.host.test", { id: state.hostServer })
+    expect(without.status).not.toBe(200)
+    expect(JSON.stringify(without.body)).toContain("mcp_secret_missing")
     // Off in the host's Locations until the value comes.
     await until(async () => (await status("tiny")) === "disabled", 120_000, 500)
 
@@ -321,10 +332,26 @@ run("MCP servers of this PC on a host (fake SSH, 04 §13)", () => {
       names: ["API_KEY"],
     })
     await until(async () => (await hostServer()).values === "ready", 60_000, 500)
-    expect(await hostOk("mcp.host.test", { id: state.hostServer })).toMatchObject({
-      ok: true,
-      tools: [{ name: "lookup" }],
+    // RL34: the host tells its open pages (own-web's host card reads `mcp.host.view` again on it), also for a test run
+    // in a conversation's Location, as `AI에게 설치 맡기기`'s tool runs it: a remote service dropped this global event
+    // like the PC's copies, and only the leader sends one, so a card read before such a test kept `아직 … 시험을 하지
+    // 않았어요`.
+    const events = await recordServerEvents({
+      url: state.remote.url,
+      authorization: `Basic ${btoa(`opencode:${state.remote.token}`)}`,
     })
+    try {
+      fs.mkdirSync(state.workspace, { recursive: true })
+      const tested = await remote("POST", `/api/rpc/${OwnAccounts.ID}/mcp.host.test`, {
+        body: { input: { id: state.hostServer } },
+        directory: state.workspace,
+      })
+      expect(tested.status).toBe(200)
+      expect(tested.body.output).toMatchObject({ ok: true, tools: [{ name: "lookup" }] })
+      await events.waitFor((event) => event.type === "rpc.own.accounts.mcp.changed", 30_000)
+    } finally {
+      await events.close()
+    }
     await until(async () => (await status("tiny")) === "connected", 120_000, 500)
 
     await pc("mcp.hosts.unsend", { hostId: state.hostId, server: state.hostServer })
@@ -391,7 +418,7 @@ run("MCP servers of this PC on a host (fake SSH, 04 §13)", () => {
       key: `own:${state.pcServer}`,
       name: "tiny",
       origin: "own",
-      transport: { type: "local", command: "bun", args: ["C:\\work\\tiny-mcp.ts"], env: ["API_KEY"] },
+      transport: { type: "local", command: "bun", args: ["C:\\work\\tiny-mcp.ts"], env: ["TINY_STATE_DIR"] },
     }
     const probe = (await hostOk("mcp.host.probe", {})) as McpHostRules.Probe
     const analysis = McpHostRules.analyze(source, { home: "C:\\Users\\demo", probe })
@@ -405,7 +432,8 @@ run("MCP servers of this PC on a host (fake SSH, 04 §13)", () => {
       shown: "bun C:\\work\\tiny-mcp.ts",
       tool: McpHost.TOOL,
     })
-    const job: McpHost.Job = { key: source.key, hash: McpHostRules.hash(source), name: "tiny", env: [] }
+    const job: McpHost.Job = { key: source.key, hash: McpHostRules.hash(source), name: "tiny", env: ["TINY_STATE_DIR"] }
+    expect(brief).toContain("TINY_STATE_DIR (비밀 아님: 이 호스트에 맞게 정해도 됨)")
 
     // An ordinary conversation never sees the tool.
     const plain = await remote("POST", "/api/session", {
@@ -455,7 +483,33 @@ run("MCP servers of this PC on a host (fake SSH, 04 §13)", () => {
     expect(requests[0]!.body).toContain(McpHost.TOOL)
     expect(toolOutputs(requests.at(-1)!).join("\n")).toContain('Registered "tiny"')
     const registered = ((await hostOk("mcp.host.view")).servers as Json[]).find((item) => item.name === "tiny")!
-    expect(registered).toMatchObject({ pc: { key: job.key, hash: job.hash }, check: { ok: true }, values: "none" })
+    // Set on the host, not waiting for the PC: on, and its test is of what the host runs.
+    expect(registered).toMatchObject({
+      pc: { key: job.key, hash: job.hash },
+      check: { ok: true },
+      values: "none",
+      transport: { env: [], fixed: { TINY_STATE_DIR: expect.stringContaining(".local/state/tiny") } },
+    })
+    expect(registered.transport.fixed.TINY_STATE_DIR).not.toStartWith("~")
+    // The card names where it is registered: the host's own list, not an OpenCode config file.
+    expect((await hostOk("mcp.host.view")).file).toEndWith("mcp.json")
+
+    // What a host conversation loads (2.4.1-own.5: the card said connected while a host conversation's catalog had no
+    // llm-router): the folder's Location, open since the first test, connects it, and a conversation created after the
+    // install offers its tools to the model.
+    await until(async () => (await status("tiny")) === "connected", 120_000, 500)
+    const after = await remote("POST", "/api/session", {
+      body: { title: "after", model: CHAT, location: { directory: state.workspace } },
+    })
+    const fromAfter = state.chat.requests.length
+    await remote("POST", `/api/session/${after.body.data.id}/prompt`, { body: { text: "안녕" } })
+    await remote("POST", `/api/experimental/session/${after.body.data.id}/wait`)
+    const offered = state.chat.requests
+      .slice(fromAfter)
+      .map((request) => request.body)
+      .join("\n")
+    expect(offered).toContain("summarize")
+    expect(offered).not.toContain(McpHost.TOOL)
   }, 600_000)
 
   test("secret hygiene: no value on the host, in any answer, in R's logs or a chat request", () => {

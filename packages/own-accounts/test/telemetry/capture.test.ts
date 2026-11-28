@@ -358,7 +358,7 @@ describe("filters", () => {
     await using t = await offline()
     const other = Modules.create(t.deps, {
       slots: fakeSlots(registry(DEFAULT_SEEDS.map((seed) => ({ ...seed, pollBalance: false })))),
-      logins: fakeLogins({ unauthorized: [], headers: [], rejected: [] }),
+      logins: fakeLogins({ unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }),
       plugins: fakePlugins(false),
     })
     await other.slots.start()
@@ -442,7 +442,7 @@ describe("window end", () => {
     await using t = await offline()
     const other = Modules.create(t.deps, {
       slots: fakeSlots(registry(DEFAULT_SEEDS.map((seed) => ({ ...seed, pollBalance: false })))),
-      logins: fakeLogins({ unauthorized: [], headers: [], rejected: [] }),
+      logins: fakeLogins({ unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }),
       plugins: fakePlugins(false),
     })
     await ok(t.telemetry.capture.start, { mode: "hash" })

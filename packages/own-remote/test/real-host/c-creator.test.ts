@@ -3,8 +3,8 @@
 // tunnel. Opt-in: OWN_REAL_HOST=dev-host. Written for the next release chain (run after c-team, before d-claude);
 // not run when written (no SSH in that session).
 //
-// Everything the items make on the host lives in one temp root /tmp/own-<uid>-creator-<rand> (the scope's host folder)
-// or in the install's OWN_HOME (`creator/`, the read-only mirror; z-cleanup removes the install). This PC's store gets
+// Everything the items make on the host lives in one temp root <run root>/tmp/creator-<rand> (the scope's host folder)
+// or in the install's OWN_HOME (`creator/`, the read-only mirror), both in the run's test root (decisions RL35). This PC's store gets
 // its extensions as creator mode writes them (the store and the staging, in this process, on this PC's OWN_HOME), and
 // afterAll removes them so later phases see an empty store. Model traffic only to the fake chat model on this PC (the
 // compat account Alpha through the broker).
@@ -16,17 +16,17 @@
 // version without that host's allowance never reaches it (no files, no config entry, no trust approval); the host
 // cannot change this PC's store (no own.creator there, a copy changed on the host is fetched again); an update and a
 // rollback on this PC follow in the host's conversations.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import fs from "node:fs"
 import { Staging } from "../../../own-creator/src/staging.js"
 import { CreatorStore } from "../../../own-creator/src/store.js"
 import { mcpManifest, pluginManifest } from "../../../own-creator/test/unit/fixtures.js"
 import { afterToolResult, lastUserText, toolOutputs, type RecordedRequest } from "../../../own-accounts/test/e2e-kit"
-import { ALIAS, OWN_HOME, VERSION, enabled, evidence, hostSh, kv } from "./env.js"
+import { ALIAS, OWN_HOME, VERSION, evidence, hostRun, hostSh, kv } from "./env.js"
+import { phase } from "./isolate.js"
 import { MODEL, ensureCompat, startStack, until, type Stack } from "./stack.js"
 import { local, remoteFetch, remoteSession, type Endpoint } from "./team-fixture.js"
 
-const run = enabled ? describe : describe.skip
 const CLIENT = "real-host-c-creator"
 const OP_MS = 240_000
 const FULL = [
@@ -74,7 +74,7 @@ function reply(request: RecordedRequest) {
   }
 }
 
-run(`real host ${ALIAS}: creator extensions (phase C)`, () => {
+phase("c-creator", `real host ${ALIAS}: creator extensions (phase C)`, () => {
   const state = {} as {
     stack: Stack
     hostId: string
@@ -162,8 +162,8 @@ run(`real host ${ALIAS}: creator extensions (phase C)`, () => {
     const resolved = await local(state.stack, "resolve", { hostId: state.hostId })
     if (resolved.url === null) throw new Error(`host not ready: ${resolved.stage}`)
     state.endpoint = { url: resolved.url, token: resolved.token, controlDir: resolved.controlDir }
-    state.ownHome = `${resolved.home}/.local/share/own-open-code`
-    const made = await hostSh(`root=$(mktemp -d "/tmp/own-$(id -u)-creator-XXXXXX") && echo "ROOT=$root"`)
+    state.ownHome = `${hostRun().root}/data/own-open-code`
+    const made = await hostSh(`root=$(mktemp -d "$OWN_RH_ROOT/tmp/creator-XXXXXX") && echo "ROOT=$root"`)
     state.root = kv(made.stdout).get("ROOT")!
     state.store = new CreatorStore.Store(OWN_HOME, { app: VERSION })
     await until(
@@ -184,7 +184,7 @@ run(`real host ${ALIAS}: creator extensions (phase C)`, () => {
   }, 300_000)
 
   test("the managed config names own-creator last in remote mode; the install carries its QuickJS engine", async () => {
-    const config = JSON.parse(await hostFile("$HOME/.config/own-open-code/opencode.json")) as {
+    const config = JSON.parse(await hostFile("$XDG_CONFIG_HOME/own-open-code/opencode.json")) as {
       plugins: Array<{ package: string; options?: Json }>
     }
     expect(config.plugins.at(-1)?.package).toEndWith("/own-creator")
@@ -236,24 +236,26 @@ run(`real host ${ALIAS}: creator extensions (phase C)`, () => {
     evidence("c-creator-words.json", { log: log.split("\n").filter((line) => line.includes("host staging")) })
   }, OP_MS)
 
-  test("C3 without this host's allowance never reaches it", async () => {
-    expect((await state.store.settings({ plugins: true })).ok).toBe(true)
-    const manifest = pluginManifest("rh-brief")
-    const checked = CreatorStore.checkManifest(manifest)
-    if (!checked.ok) throw new Error(JSON.stringify(checked.problems))
-    const staged = await Staging.run(state.store, checked.extension, { bun: process.execPath })
-    if (!staged.ok) throw new Error(JSON.stringify(staged.checks))
-    expect((await state.store.create(manifest, "model", {}, undefined, staged.staged)).ok).toBe(true)
-    const line = await until(async () => {
-      const listed = await creatorList()
-      return ((listed.extensions as Json[]).find((item) => item.id === "rh-brief")?.remote as Json[] | undefined)?.find(
-        (item) => item.host === state.hostId,
-      )
-    }, 60_000)
-    expect(line).toEqual({ host: state.hostId, reach: "pc_only" })
-    const facts = await hostSh(
-      `[ -e '${state.ownHome}/creator/ext/rh-brief' ] && echo EXT=1 || echo EXT=0
-grep -c '/creator/ext/' "$HOME/.config/own-open-code/opencode.jsonc" 2>/dev/null | sed 's/^/ENTRY=/' || echo ENTRY=0
+  test(
+    "C3 without this host's allowance never reaches it",
+    async () => {
+      expect((await state.store.settings({ plugins: true })).ok).toBe(true)
+      const manifest = pluginManifest("rh-brief")
+      const checked = CreatorStore.checkManifest(manifest)
+      if (!checked.ok) throw new Error(JSON.stringify(checked.problems))
+      const staged = await Staging.run(state.store, checked.extension, { bun: process.execPath })
+      if (!staged.ok) throw new Error(JSON.stringify(staged.checks))
+      expect((await state.store.create(manifest, "model", {}, undefined, staged.staged)).ok).toBe(true)
+      const line = await until(async () => {
+        const listed = await creatorList()
+        return (
+          (listed.extensions as Json[]).find((item) => item.id === "rh-brief")?.remote as Json[] | undefined
+        )?.find((item) => item.host === state.hostId)
+      }, 60_000)
+      expect(line).toEqual({ host: state.hostId, reach: "pc_only" })
+      const facts = await hostSh(
+        `[ -e '${state.ownHome}/creator/ext/rh-brief' ] && echo EXT=1 || echo EXT=0
+grep -c '/creator/ext/' "$XDG_CONFIG_HOME/own-open-code/opencode.jsonc" 2>/dev/null | sed 's/^/ENTRY=/' || echo ENTRY=0
 grep -c 'rh-brief' '${state.ownHome}/trust.json' 2>/dev/null | sed 's/^/TRUST=/' || echo TRUST=0`,
     )
     const values = kv(facts.stdout)

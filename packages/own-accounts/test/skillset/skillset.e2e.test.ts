@@ -75,6 +75,17 @@ async function listed(directory: string) {
   return answer?.data?.map((skill) => skill.id)
 }
 
+/** Polls the control Location's catalog (`skillset.view`) until `wanted` holds. */
+async function control(wanted: (ids: ReadonlyArray<string>) => boolean) {
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline) {
+    const ids = (await rpc("skillset.view", {})).catalog.map((skill) => skill.id)
+    if (wanted(ids)) return ids
+    await Bun.sleep(100)
+  }
+  return (await rpc("skillset.view", {})).catalog.map((skill) => skill.id)
+}
+
 /** Polls a project's list until `wanted` holds (a change folds every Location again, a moment later). */
 async function settles(directory: string, wanted: (ids: ReadonlyArray<string>) => boolean) {
   const deadline = Date.now() + 30_000
@@ -107,8 +118,9 @@ describe("skill switches and scopes on a real service", () => {
     const dirs = paths()
     expect(await settles(dirs.a, (ids) => ids.includes(SKILL))).toContain(SKILL)
     expect(await settles(dirs.b, (ids) => ids.includes(SKILL))).toContain(SKILL)
-    const view = await rpc("skillset.view", {})
-    expect(view.catalog.map((skill) => skill.id)).toContain(SKILL)
+    // The control Location's list goes the same way as a project's (empty, built-ins, then the folders' skills): under
+    // load its catalog can still hold the built-ins only when the projects' lists already settled (RS 2026-11-28 tier).
+    expect(await control((ids) => ids.includes(SKILL))).toContain(SKILL)
   })
 
   test("off in A only: gone in A, still in B; the view of A says why", async () => {

@@ -58,7 +58,7 @@ async function rig(
   const tokens = codex.login({ accountID: CHATGPT, plan: "pro" })
   codex.setResetCredits(CHATGPT, CREDITS, 0)
   codex.setUsage(CHATGPT, { primary: 100, secondary: 40 })
-  const calls = { unauthorized: [], headers: [], rejected: [] }
+  const calls = { unauthorized: [], headers: [], rejected: [], accepted: [], refused: [] }
   // The poller's headers (`logins.headers`) are this login's; the reset credit requests read the stored login itself.
   const auth = { authorization: `Bearer ${tokens.accessToken}`, "chatgpt-account-id": CHATGPT }
   const t = await setup({

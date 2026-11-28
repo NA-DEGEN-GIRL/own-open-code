@@ -23,7 +23,10 @@ export interface EventRecorder {
 }
 
 /** Subscribes to `/api/event` and resolves once `server.connected` arrived, so later events are not missed. */
-export async function recordServerEvents(server: OpencodeServer, timeoutMs = 30_000): Promise<EventRecorder> {
+export async function recordServerEvents(
+  server: Pick<OpencodeServer, "url" | "authorization">,
+  timeoutMs = 30_000,
+): Promise<EventRecorder> {
   const controller = new AbortController()
   const response = await fetch(new URL("/api/event", server.url), {
     headers: { authorization: server.authorization, accept: "text/event-stream" },

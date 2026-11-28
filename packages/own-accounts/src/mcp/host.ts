@@ -5,6 +5,7 @@ import { McpHost, McpHostRules, McpRules, OwnMcp } from "@own/protocol"
 import { ProcessTree, Store } from "@own/runtime"
 import type { Deps } from "../deps.js"
 import type { RemoteHost } from "../remote/host.js"
+import { McpFold } from "./fold.js"
 import { McpProbe } from "./probe.js"
 import type { McpServers } from "./register.js"
 import { McpService } from "./service.js"
@@ -90,7 +91,7 @@ export function create(deps: Deps, mcp: RemoteHost.Mcp) {
         }
       }),
     )
-    return { servers, home: os.homedir() }
+    return { servers, home: os.homedir(), file: deps.runtime.layout.mcp }
   }
 
   async function probe(input: McpHost.ProbeInput = {}): Promise<McpHost.Probe> {
@@ -156,29 +157,45 @@ export function create(deps: Deps, mcp: RemoteHost.Mcp) {
     return { ok: true, value: await view() }
   }
 
-  /** The connection test here, with the values the PC sent (none sent: it runs without them and may fail). */
+  /**
+   * The connection test here, of exactly what this host's Locations start: with the values the PC sent. While they are
+   * missing the fold keeps the server off, so the test does not start it either (`mcp_secret_missing`) and drops an
+   * older result: a run without its values once answered `연결됐어요` for a server that was off (MH, 2.4.1-own.5).
+   */
   async function test(id: OwnMcp.ID): Promise<Answer<OwnMcp.Check>> {
     const entry = (await store.read()).servers.find((item) => item.id === id)
     if (!entry) return fail("mcp_not_found", "no such server", { id })
-    const values = (await resolve(mcp, entry, true)) ?? McpStore.NO_VALUES
-    const transport = entry.transport
+    const values = await resolve(mcp, entry, true)
+    if (values === undefined) {
+      await store.update((current) => ({
+        ...current,
+        servers: current.servers.map((item) => {
+          if (item.id !== id) return item
+          const { check: _check, ...rest } = item
+          return rest
+        }),
+      }))
+      changed()
+      const transport = entry.transport
+      return fail("mcp_secret_missing", "the PC has not sent this server's values: it stays off until then", {
+        name: transport.type === "local" ? (transport.env[0] ?? "") : (transport.headers[0] ?? McpHost.ADDRESS),
+      })
+    }
+    // The very config the fold gives core for this server (command, arguments, environment, address, headers), so a
+    // value the PC sent for a name the host set itself never reaches the test either. Only the folder differs: core
+    // starts it in the conversation's folder, the test in the host user's home.
+    const config = McpFold.config({ entry, values })
     const target: McpProbe.Target =
-      transport.type === "local"
+      config.type === "local"
         ? {
             type: "local",
-            command: McpRules.expand(transport.command, values.env),
-            args: transport.args.map((arg) => McpRules.expand(arg, values.env)),
-            cwd: McpProbe.workingFolder(transport.cwd, os.homedir()),
-            env: { ...transport.fixed, ...values.env },
+            command: config.command[0]!,
+            args: config.command.slice(1),
+            cwd: McpProbe.workingFolder(config.cwd, os.homedir()),
+            env: config.environment ?? {},
           }
-        : {
-            type: "remote",
-            url:
-              (transport.hidden ? (values.url ?? transport.url) : transport.url) +
-              (transport.query ? (values.search ?? "") : ""),
-            headers: values.headers,
-          }
-    const check = await McpProbe.probe(target, { now, secrets: McpService.secretsOf(transport, values) })
+        : { type: "remote", url: config.url, headers: config.headers ?? {} }
+    const check = await McpProbe.probe(target, { now, secrets: McpService.secretsOf(entry.transport, values) })
     log.info("mcp_host_tested", {
       id,
       name: entry.name,
@@ -209,9 +226,9 @@ export function create(deps: Deps, mcp: RemoteHost.Mcp) {
     return { ok: true, value: { ok: result.ok, kind: plan.kind, ...(output ? { output } : {}) } }
   }
 
+  /** Every Location folds the list again; the leader tells open pages (`index.ts`, RL34). */
   function changed() {
     deps.runtime.broadcast.emit("mcp.changed", {})
-    void deps.emitter.global("mcp.changed", {})
   }
 
   return { view, probe, save, remove, test, prefetch, changed }
@@ -242,7 +259,7 @@ function hostTransport(transport: McpStore.Entry["transport"]): McpHost.Transpor
   }
 }
 
-/** `~` and `~/…` in the command, arguments and folder as this host's absolute paths. */
+/** `~` and `~/…` in the command, arguments, folder and fixed variables as this host's absolute paths. */
 export function absolute(transport: McpHost.Transport, home: string): McpStore.Entry["transport"] {
   if (transport.type === "remote")
     return {
@@ -262,7 +279,9 @@ export function absolute(transport: McpHost.Transport, home: string): McpStore.E
     ...(transport.cwd === undefined ? {} : { cwd: fix(transport.cwd) }),
     env: [...transport.env],
     ...(transport.codemode === undefined ? {} : { codemode: transport.codemode }),
-    ...(transport.fixed === undefined ? {} : { fixed: { ...transport.fixed } }),
+    ...(transport.fixed === undefined
+      ? {}
+      : { fixed: Object.fromEntries(Object.entries(transport.fixed).map(([name, value]) => [name, fix(value)])) }),
   }
 }
 

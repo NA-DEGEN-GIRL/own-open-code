@@ -6,7 +6,7 @@ import type { ToolContext } from "@opencode/plugin/promise/tool"
 import type { Permission } from "@opencode/schema/permission"
 import { Tool } from "@opencode/schema/tool"
 import { Option, Schema } from "effect"
-import { McpHost, type OwnMcp } from "@own/protocol"
+import { McpHost, McpSecrets, type OwnMcp } from "@own/protocol"
 import type { Deps } from "../deps.js"
 import { Hooks } from "../hooks.js"
 import type { RemoteHost } from "../remote/host.js"
@@ -25,8 +25,11 @@ import { McpHostService } from "./host.js"
  * - **The approval mode decides the write** (the `evaluate` hook, tighten only): `전체 허용` writes, `묻기` asks first,
  *   `읽기 전용` refuses.
  * - **It writes what the PC defined**: the job's name and value names; the AI gives only the command, its arguments, a
- *   folder and plain variables (never a value of the PC: those come from the PC after the user sends them). It then
- *   runs the connection test and answers with its result, so the AI can finish with one line.
+ *   folder and plain variables. A secret of the PC (the job's `secrets`, or a name that looks like one) is never one of
+ *   them: it comes from the PC after the user sends it. A value of the job that is not a secret (a state folder, a
+ *   mode) the AI may set for this host in `fixed`: the server is then the host's own for that name and no longer waits
+ *   for the PC's copy, which would be this PC's path (MH, 2.4.1-own.5: `LLM_ROUTER_MCP_STATE_DIR`). It then runs the
+ *   connection test of what the host starts and answers with its result, so the AI can finish with one line.
  */
 
 const decodeJob = Schema.decodeUnknownOption(McpHost.Job)
@@ -45,7 +48,7 @@ export const MESSAGE = {
 
 export const DESCRIPTION = [
   "Registers the MCP server of this install conversation in this SSH host's own MCP settings, then runs its connection test and returns the result.",
-  "Call it once the command works on this host (installed in user space). Give the command, its arguments and an optional working folder; `fixed` holds plain environment variables the command needs (never a secret: the server's secret values come from the PC separately, by name).",
+  "Call it once the command works on this host (installed in user space). Give the command, its arguments and an optional working folder; `fixed` holds plain environment variables the command needs, including the server's values that are not secrets (e.g. a state folder) set to what fits this host. Never a secret: the server's secret values come from the PC separately, by name, and until they do the server stays off and its connection test does not run.",
   "Calling it again replaces the registration. Do not edit own or OpenCode settings files from the shell.",
 ].join("\n")
 
@@ -66,7 +69,8 @@ const INPUT = {
     fixed: {
       type: "object",
       additionalProperties: { type: "string" },
-      description: "Optional plain environment variables (not secrets), e.g. a cache folder.",
+      description:
+        "Optional plain environment variables (not secrets), e.g. a cache folder, and the server's non-secret values set for this host.",
     },
   },
   required: ["command", "args"],
@@ -120,10 +124,12 @@ export async function register(deps: Deps, mcp: RemoteHost.Mcp) {
     const info = await deps.ctx.session.get({ sessionID: context.sessionID }).catch(() => undefined)
     const job = jobOf(info?.metadata)
     if (!job) throw new Tool.Error({ message: MESSAGE.noJob })
-    const leaked = Object.keys(input.fixed ?? {}).find((name) => job.env.includes(name))
+    // The job's values set here for this host; a secret never is.
+    const set = Object.keys(input.fixed ?? {}).filter((name) => job.env.includes(name))
+    const leaked = set.find((name) => McpSecrets.secretName(name) || (job.secrets ?? []).includes(name))
     if (leaked !== undefined)
       throw new Tool.Error({
-        message: `${leaked} is one of the server's values from the PC; leave it out of \`fixed\` (the PC sends it by name).`,
+        message: `${leaked} is a secret value of the server from the PC; leave it out of \`fixed\` (the PC sends it by name).`,
       })
     await deps.ctx.permission.assert({
       sessionID: context.sessionID,
@@ -145,7 +151,7 @@ export async function register(deps: Deps, mcp: RemoteHost.Mcp) {
         command: input.command,
         args: input.args,
         ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
-        env: job.env,
+        env: job.env.filter((name) => !set.includes(name)),
         ...(job.codemode === undefined ? {} : { codemode: job.codemode }),
         ...(input.fixed === undefined || Object.keys(input.fixed).length === 0 ? {} : { fixed: input.fixed }),
       },
@@ -157,8 +163,8 @@ export async function register(deps: Deps, mcp: RemoteHost.Mcp) {
       })
     const server = saved.value.servers.find((item) => item.name === job.name)!
     const tested = await service.test(server.id)
-    log.info("mcp_install_tool", { name: job.name, ok: tested.ok && tested.value.ok })
-    return { content: report(job, server, tested.ok ? tested.value : undefined) }
+    log.info("mcp_install_tool", { name: job.name, ok: tested.ok && tested.value.ok, set: set.length })
+    return { content: report(job, server, set, tested.ok ? tested.value : undefined) }
   }
 
   return {
@@ -207,14 +213,24 @@ export function deny(editor: AgentEditor) {
     })
 }
 
-function report(job: McpHost.Job, server: McpHost.Server, check: OwnMcp.Check | undefined) {
-  const values =
-    job.env.length === 0
-      ? "It needs no values."
+function report(job: McpHost.Job, server: McpHost.Server, set: ReadonlyArray<string>, check: OwnMcp.Check | undefined) {
+  const pc = job.env.filter((name) => !set.includes(name))
+  const values = [
+    set.length > 0 ? `Set on this host: ${set.join(", ")}.` : "",
+    pc.length === 0
+      ? set.length === 0
+        ? "It needs no values."
+        : "It needs no values from the PC."
       : server.values === "ready"
-        ? `Its values (${job.env.join(", ")}) came from the PC.`
-        : `Its values (${job.env.join(", ")}) have not been sent from the PC yet: the server stays off until the user sends them (own Settings > MCP 서버 on the PC).`
-  if (!check) return `Registered "${job.name}" on this host. The connection test could not run. ${values}`
+        ? `Its values from the PC (${pc.join(", ")}) came.`
+        : `Its values from the PC (${pc.join(", ")}) have not been sent yet: the server stays off until the user sends them (own Settings > MCP 서버 on the PC), and its connection test runs then.`,
+  ]
+    .filter(Boolean)
+    .join(" ")
+  if (!check)
+    return server.values === "missing"
+      ? `Registered "${job.name}" on this host. ${values}`
+      : `Registered "${job.name}" on this host. The connection test could not run. ${values}`
   if (check.ok)
     return [
       `Registered "${job.name}" on this host. Connection test: OK${check.server ? ` (${check.server})` : ""}, ${check.tools.length} tool(s): ${check.tools

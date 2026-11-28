@@ -158,7 +158,8 @@ describe("own.accounts RPC routing (02 §9.1)", () => {
   })
 
   test("a session Location still loading own.accounts is asked again; a global method is not (upstream #63814)", async () => {
-    const unavailable = () => Object.assign(new Error("RPC is unavailable"), { _tag: "RpcError", type: "rpc.unavailable" })
+    const unavailable = () =>
+      Object.assign(new Error("RPC is unavailable"), { _tag: "RpcError", type: "rpc.unavailable" })
     const left = { approval: 2 }
     const { calls, client } = transport({
       "session.approval.set": async () => (left.approval-- > 0 ? unavailable() : { mode: "ask" }),
@@ -1064,6 +1065,49 @@ describe("OwnStore", () => {
     await tick()
     expect(lists()).toBe(before + 1)
     expect(own.state.accountOrder).toEqual(["acc_1", "acc_claude_slot", "acc_cl2"])
+    dispose()
+  })
+
+  // RS (2026-11-28): AC-01's `다시 로그인` wrote a new login but no registry revision moved, so the card kept the expired
+  // line. The service announces such a card change as `accounts.changed` of the revision the window already holds (as
+  // Claude Agent's login check does): the list is read again. An older revision (out of order) is not.
+  test("accounts.changed of the held revision reads the list again: a login written again shows at once", async () => {
+    const server = { refresh: { state: "due" } as { state: string } | undefined }
+    const { own, bus, calls, dispose } = setup({
+      "accounts.list": () => ({
+        revision: 7,
+        accounts: [
+          {
+            id: "acc_claude_slot",
+            providerID: "anthropic",
+            kind: "claude-sub",
+            label: "AC-01",
+            status: "ready",
+            claude: {
+              managed: true,
+              default: true,
+              folder: "C:\\fake",
+              loaded: true,
+              ...(server.refresh ? { refresh: server.refresh } : {}),
+            },
+          },
+        ],
+      }),
+    })
+    await own.resync()
+    expect(own.state.accounts["acc_claude_slot"]?.claude?.refresh?.state).toBe("due")
+    const lists = () => calls.filter((call) => call.method === "accounts.list").length
+    const before = lists()
+    server.refresh = undefined
+    bus.publish(ownFrame("accounts.changed", { eventId: "a1", origin: "global", revision: 7 }))
+    bus.flush()
+    await tick()
+    expect(lists()).toBe(before + 1)
+    expect(own.state.accounts["acc_claude_slot"]?.claude?.refresh).toBeUndefined()
+    bus.publish(ownFrame("accounts.changed", { eventId: "a2", origin: "global", revision: 6 }))
+    bus.flush()
+    await tick()
+    expect(lists()).toBe(before + 1)
     dispose()
   })
 

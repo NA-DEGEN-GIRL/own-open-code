@@ -848,8 +848,15 @@ export function brief(input: BriefInput): string {
   const analysis = input.analysis
   const transport = input.source.transport
   const values = analysis.values.map((value) =>
-    value.secret ? (ko ? `${value.name} (비밀)` : `${value.name} (secret)`) : value.name,
+    value.secret
+      ? ko
+        ? `${value.name} (비밀)`
+        : `${value.name} (secret)`
+      : ko
+        ? `${value.name} (비밀 아님: 이 호스트에 맞게 정해도 됨)`
+        : `${value.name} (not a secret: may be set for this host)`,
   )
+  const secrets = analysis.values.some((value) => value.secret)
   const probe = input.probe
   const runtimes = probe
     ? Object.entries(probe.runtimes)
@@ -868,7 +875,7 @@ export function brief(input: BriefInput): string {
         `- 종류: ${transport.type === "local" ? "명령(stdio)" : "원격 주소(HTTP)"}`,
         `- 명령: \`${input.shown}\``,
         ...(cwd ? [`- 작업 폴더: \`${cwd}\``] : []),
-        `- 값: ${values.length > 0 ? values.join(", ") : "없음"}. 값은 이 대화에 없어요. 사용자가 PC에서 따로 보내야 서버가 켜져요.`,
+        `- 값: ${values.length > 0 ? values.join(", ") : "없음"}. 값은 이 대화에 없어요.${secrets ? " 비밀 값은 사용자가 PC에서 따로 보내야 서버가 켜져요." : ""}`,
         "",
         "## 분석",
         `- 결과: ${RESULT_TEXT.ko[analysis.result]}`,
@@ -885,8 +892,10 @@ export function brief(input: BriefInput): string {
         "",
         "## 할 일",
         "1. 필요한 것을 사용자 공간에만 설치해요(sudo 없이). 예: uv는 `~/.local/bin`, npm 전역 설치는 `--prefix ~/.local`.",
-        `2. 동작하는 명령이 정해지면 \`${input.tool}\` 도구로 등록해요(command, args, cwd). 이 도구가 호스트의 own MCP 설정에 쓰고 연결 시험을 돌려요. 셸로 설정 파일을 직접 고치지 않아요.`,
-        "3. 연결 시험 결과를 확인하고, 마지막 줄에 결과를 한 줄로 적어요: `결과: 설치됨 — …` 또는 `결과: 못 함 — 이유`. 값을 아직 보내지 않아 실패하면 그렇다고 적어요.",
+        `2. 동작하는 명령이 정해지면 \`${input.tool}\` 도구로 등록해요(command, args, cwd, fixed). 이 도구가 호스트의 own MCP 설정에 쓰고 연결 시험을 돌려요. 셸로 설정 파일을 직접 고치지 않아요.`,
+        "   - 비밀이 아닌 값(예: 상태·캐시 폴더, 모드)은 이 호스트에 맞는 값으로 `fixed`에 넣어요. 그 값은 PC에서 보낼 필요가 없어져요(PC의 값은 이 PC의 경로라 호스트에서 맞지 않아요).",
+        "   - 비밀 값은 `fixed`나 명령에 넣지 않아요. PC에서 보내기 전에는 서버가 꺼져 있고 연결 시험도 돌지 않아요.",
+        "3. 연결 시험 결과를 확인하고, 마지막 줄에 결과를 한 줄로 적어요: `결과: 설치됨 — …` 또는 `결과: 못 함 — 이유`. 비밀 값을 아직 보내지 않아 시험이 돌지 않았으면 그렇다고 적어요.",
         "",
         "## 하지 말 것",
         "- 시스템 패키지 설치(apt, dnf, yum, brew 등)와 sudo는 먼저 묻지 않고 하지 않아요.",
@@ -901,7 +910,7 @@ export function brief(input: BriefInput): string {
         `- Kind: ${transport.type === "local" ? "command (stdio)" : "remote address (HTTP)"}`,
         `- Command: \`${input.shown}\``,
         ...(cwd ? [`- Working folder: \`${cwd}\``] : []),
-        `- Values: ${values.length > 0 ? values.join(", ") : "none"}. They are not in this conversation; the user sends them from the PC, and the server stays off until then.`,
+        `- Values: ${values.length > 0 ? values.join(", ") : "none"}. They are not in this conversation.${secrets ? " The user sends the secret ones from the PC, and the server stays off until then." : ""}`,
         "",
         "## Analysis",
         `- Result: ${RESULT_TEXT.en[analysis.result]}`,
@@ -916,8 +925,10 @@ export function brief(input: BriefInput): string {
         "",
         "## Goal",
         "1. Install what is needed in user space only (no sudo), e.g. uv in `~/.local/bin`, global npm installs with `--prefix ~/.local`.",
-        `2. Once a command works, register it with the \`${input.tool}\` tool (command, args, cwd). The tool writes the host's own MCP settings and runs the connection test. Do not edit settings files from the shell.`,
-        "3. Check the connection test and end with one line: `Result: installed — …` or `Result: not done — reason`. If it failed only because the values were not sent yet, say so.",
+        `2. Once a command works, register it with the \`${input.tool}\` tool (command, args, cwd, fixed). The tool writes the host's own MCP settings and runs the connection test. Do not edit settings files from the shell.`,
+        "   - Set the values that are not secrets (e.g. a state or cache folder, a mode) in `fixed` with what fits this host. The PC then need not send them (the PC's value is a path or setting of the PC, which does not fit the host).",
+        "   - Never put a secret value into `fixed` or a command. Until the PC sends it the server stays off and the connection test does not run.",
+        "3. Check the connection test and end with one line: `Result: installed — …` or `Result: not done — reason`. If the test did not run because a secret value was not sent yet, say so.",
         "",
         "## Do not",
         "- Install system packages (apt, dnf, yum, brew …) or use sudo without asking first.",

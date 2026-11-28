@@ -122,7 +122,7 @@ C를 고른다(GH-D2). 도구 정의는 서버가 준 JSON Schema를 그대로 �
 
 ### 4.2 브라우저 로그인(device flow)
 
-`settings.clientID`(사용자가 등록한 OAuth 앱·GitHub 앱, Device Flow 켬)가 있을 때만. `github.device.start` → 코드와 확인 주소(own-web이 브라우저로 연다) → `github.device.status{nonce}`가 간격을 지켜 묻는다(`slow_down`이면 늘림, 15분 상한) → 토큰을 받으면 4.1과 같이 연결. 범위는 `repo read:org`(OAuth 앱; GitHub 앱은 범위를 무시). 갱신 토큰이 있으면 만료 1분 전부터 요청 때 갱신한다(client secret 없이, 동시에 한 번만).
+`settings.clientID`(사용자가 등록한 OAuth 앱·GitHub 앱, Device Flow 켬)가 있을 때만. `github.device.start` → 코드와 확인 주소(own-web이 브라우저로 연다) → `github.device.status{nonce}`가 간격을 지켜 묻는다(`slow_down`이면 늘림, 15분 상한) → 토큰을 받으면 4.1과 같이 연결. 범위는 `repo read:org`(OAuth 앱; GitHub 앱은 범위를 무시). 갱신 토큰이 있으면 만료 1분 전부터 요청 때 갱신한다(client secret 없이, 동시에 한 번만). 갱신하면 계정의 `expiresAt`도 새 토큰의 만료로 적어 카드의 `만료` 표시가 바로 따라간다(RS 2026-11-28; 전에는 다음 연결 확인까지 지난 토큰의 날짜였다).
 
 ### 4.3 비교
 

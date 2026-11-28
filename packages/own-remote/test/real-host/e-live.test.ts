@@ -15,7 +15,7 @@
 // leaves their machines. OWN_REAL_HOST_E_STANDIN=deepseek names the API again, on purpose only: with the local server
 // off the phase fails at its start and never falls back by itself.
 //
-// Everything on the host lives in one temp root /tmp/own-<uid>-team-<rand> (makeRoot), removed in afterAll.
+// Everything on the host lives in one temp root <run root>/tmp/team-<rand> (makeRoot, decisions RL35), removed in afterAll.
 //   1. each harness (codex, pi, opencode, omo) fixes the seeded bugs of a JavaScript repository (`node --test`) on
 //      the stand-in model. omo runs the host's own-omo (15 §1): the host offers it in that folder, omo's log on the host shows its
 //      plugin starting, and the check waits until nothing runs in that folder (omo continues open todos)
@@ -25,17 +25,17 @@
 //      one `fresh` request to an owner pinned to another harness than the default whose switch notice still waits in its
 //      queue (RH-15, RH-20, RH-36; `e-team-fresh-before.json`): its rotation must end, the new owner keeps the pinned
 //      model and harness, and the request reaches it (`e-team-fresh.json`).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import fs from "node:fs"
 import path from "node:path"
 import { OwnHarness } from "@own/protocol/rpc-harness"
 import { OwnTeam } from "@own/protocol"
 import { startForwarder, type Forwarder } from "../../../own-harness/script/live/forwarder.js"
 import { ALIAS, evidence, forwardProcess, freeLocalPort, heavyHost, hostSh, kv } from "./env.js"
+import { phaseIf } from "./isolate.js"
 import { startStack, until, type Stack } from "./stack.js"
 import { local, makeRoot, remoteFetch, remoteSession, remoteTeam, removeRoot, type Endpoint } from "./team-fixture.js"
 
-const run = heavyHost && process.env.OWN_REAL_HOST_LIVE === "1" ? describe : describe.skip
 const CLIENT = "real-host-e"
 const FIXTURE = path.join(import.meta.dir, "live", "bugfix")
 /** Runs on real models: a step may take minutes. */
@@ -100,7 +100,10 @@ const DESTRUCTIVE =
   /\bgit\b[^\n]*\b(push|reset\s+--hard|clean|restore|stash|worktree|branch\s+-D|checkout\s+(--|-f|\.))/
 type Ref = { readonly providerID: string; readonly id: string }
 
-run(`real host ${ALIAS}: live harnesses and team (phase E)`, () => {
+/** Phase E needs build-host and the second opt-in (`OWN_REAL_HOST_LIVE=1`): it reaches real models. */
+const LIVE = heavyHost && process.env.OWN_REAL_HOST_LIVE === "1"
+
+phaseIf(LIVE)("e-live", `real host ${ALIAS}: live harnesses and team (phase E)`, () => {
   const state = {} as {
     stack: Stack
     hostId: string
@@ -252,7 +255,7 @@ run(`real host ${ALIAS}: live harnesses and team (phase E)`, () => {
   /** The starts of omo's plugin entry in omo's log on the host (`<OWN_HOME>/thirdparty/omo/logs/omo.log`, 15 §3.2). */
   const omoStarts = async () => {
     const ran = await hostSh(
-      `f="$HOME/.local/share/own-open-code/thirdparty/omo/logs/omo.log"; echo "STARTS=$(grep -c 'ENTRY - plugin loading' "$f" 2>/dev/null)"`,
+      `f="$XDG_DATA_HOME/own-open-code/thirdparty/omo/logs/omo.log"; echo "STARTS=$(grep -c 'ENTRY - plugin loading' "$f" 2>/dev/null)"`,
     )
     return Number(kv(ran.stdout).get("STARTS") ?? 0)
   }
@@ -322,10 +325,10 @@ run(`real host ${ALIAS}: live harnesses and team (phase E)`, () => {
     // A failed team test still leaves the main's and the owners' conversations (the host's copy goes with z-cleanup).
     const kept = state.team
     // The host service's logs go with z-cleanup too (RH-10: the second round's stop could only be inferred): the
-    // server's (`~/.local/share/opencode/log`) and own's plugin logs, read only, as `e-host-logs.tgz`.
+    // server's (`<run root>/data/opencode/log`) and own's plugin logs, read only, as `e-host-logs.tgz`.
     if (kept && !kept.done)
       await hostSh(
-        `cd "$HOME/.local/share" && tar -czf - opencode/log own-open-code/logs 2>/dev/null | base64 -w 0`,
+        `cd "$XDG_DATA_HOME" && tar -czf - opencode/log own-open-code/logs 2>/dev/null | base64 -w 0`,
         180_000,
       )
         .then((got) => fs.writeFileSync(path.join(evidenceDir(), "e-host-logs.tgz"), Buffer.from(got.stdout, "base64")))
@@ -333,7 +336,7 @@ run(`real host ${ALIAS}: live harnesses and team (phase E)`, () => {
     // RH-20: own.team's own log (`own-team.log*`, its op steps, waits and warnings) always, a pass included.
     if (kept)
       await hostSh(
-        `cd "$HOME/.local/share/own-open-code/logs" && tar -czf - own-team.log* 2>/dev/null | base64 -w 0`,
+        `cd "$XDG_DATA_HOME/own-open-code/logs" && tar -czf - own-team.log* 2>/dev/null | base64 -w 0`,
         180_000,
       )
         .then((got) =>
@@ -855,7 +858,10 @@ run(`real host ${ALIAS}: live harnesses and team (phase E)`, () => {
   /** textkit for the team, as the local live team test (own-harness script/live/team.ts) but with `node --test`. */
   async function textkit(home: string) {
     await write(home, [
-      { name: "package.json", text: '{ "name": "textkit", "type": "module", "scripts": { "test": "node --test" } }\n' },
+      {
+        name: "package.json",
+        text: '{ "name": "textkit", "type": "module", "scripts": { "test": "node --test" } }\n',
+      },
       {
         name: "README.md",
         text: "# textkit\n\nSmall text utilities in JavaScript (ES modules), no dependencies. Planned modules:\n\n- `src/csv.js`: CSV parsing and writing (RFC 4180)\n- `src/dates.js`: business-day arithmetic on `YYYY-MM-DD` strings\n- `src/stats.js`: statistics over arrays of numbers\n\nEach module has its tests in `test/<module>.test.js` (node:test). `node --test` runs them all.\n",

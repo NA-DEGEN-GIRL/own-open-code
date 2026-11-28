@@ -27,6 +27,13 @@ export const GLOBAL = [
   "github.changed",
 ] as const
 export type GlobalEvent = (typeof GLOBAL)[number]
+/**
+ * Global events a remote service sends after all: they are about the host itself, not a copy of the PC's (04 §13 MH,
+ * RL34 2026-11-28). `mcp.changed`: the host's own MCP list or a test result changed; own-web's host card reads
+ * `mcp.host.view` again on it (it was dropped like the PC's copies, so a card read between an install's save and its
+ * connection test kept `아직 호스트에서 연결 시험을 하지 않았어요` until the page was opened again).
+ */
+export const REMOTE_GLOBAL: ReadonlySet<string> = new Set<GlobalEvent>(["mcp.changed"])
 /** Emitted by the instance of the session's Location. `alert` may be either (a session alert or a global one). */
 export type SessionEvent = Exclude<RpcTypes.EventName, GlobalEvent>
 
@@ -42,8 +49,9 @@ export class Publisher {
   #registration: RpcRegistration<RpcTypes.Definition> | undefined
 
   /**
-   * `remote`: a remote service (04 §9.1) never sends global events; own-web gets them from the local service. Its
-   * session events (`binding.changed`, `cache.state`, `switch.*`, session `alert`, …) go out as usual.
+   * `remote`: a remote service (04 §9.1) sends no global event but {@link REMOTE_GLOBAL}; own-web gets the others from
+   * the local service. Its session events (`binding.changed`, `cache.state`, `switch.*`, session `alert`, …) go out as
+   * usual.
    */
   constructor(options: { readonly isLeader: () => boolean; readonly log: Logger.Logger; readonly remote?: boolean }) {
     this.#isLeader = options.isLeader
@@ -61,7 +69,7 @@ export class Publisher {
 
   /** A process-wide event; only the leader instance sends it. Resolves `false` when skipped or dropped. */
   global<N extends GlobalEvent | "alert">(name: N, body: RpcTypes.EventBody<N>) {
-    if (!this.#isLeader() || this.#remote) return Promise.resolve(false)
+    if (!this.#isLeader() || (this.#remote && !REMOTE_GLOBAL.has(name))) return Promise.resolve(false)
     return this.#emit(name, body, "global")
   }
 

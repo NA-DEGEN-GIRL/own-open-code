@@ -23,7 +23,7 @@
 //       nothing reaches the fake server
 //   G6  ssh.exe killed mid-stream: the relayed request ends, the step fails with its partial output; a turn during the
 //       break never reaches the fake (the sink says `unavailable`); after reconnecting, a turn is answered again
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
@@ -31,9 +31,9 @@ import { OwnAccounts } from "@own/protocol"
 import { OwnHarness } from "@own/protocol/rpc-harness"
 import { hashSecret, startFakeOpenAIChat, type FakeOpenAIChat } from "../../../own-accounts/test/e2e-kit"
 import * as Env from "./env.js"
+import { phaseIf } from "./isolate.js"
 import * as Stack from "./stack.js"
 
-const run = Env.heavyHost ? describe : describe.skip
 const CLIENT = "real-host-g"
 const MODEL = "tf-local-real-host"
 /** FAKE key of the keyed local model (never a real credential); G2 scans the host for it. */
@@ -45,7 +45,7 @@ const PAUSE_MS = 45_000
 
 type Json = Record<string, any>
 
-run("real host G: this PC's local models through this PC", () => {
+phaseIf(Env.heavyHost)("g-local-model", "real host G: this PC's local models through this PC", () => {
   const state = {} as {
     stack: Stack.Stack
     fake: FakeOpenAIChat
@@ -184,7 +184,7 @@ run("real host G: this PC's local models through this PC", () => {
     })
     state.stack = await Stack.startStack()
     const uid = (await Env.hostSh("id -u")).stdout.trim()
-    state.project = `/tmp/own-${uid}-rh-local`
+    state.project = `${Env.hostRun().root}/tmp/rh-local`
     const made = await Env.hostSh(
       `set -u; umask 077; rm -rf "${state.project}"; mkdir -p "${state.project}" && printf '# real-host local model project\\n' > "${state.project}/README.md" && echo OK=1`,
     )
@@ -204,7 +204,11 @@ run("real host G: this PC's local models through this PC", () => {
       1_000,
     )
     state.main = await session("local via pc", state.keyless.providerID)
-    Env.evidence("g-connect.json", { remotes: tunnel()?.remotes, port: state.port, local: (await host()).broker.local })
+    Env.evidence("g-connect.json", {
+      remotes: tunnel()?.remotes,
+      port: state.port,
+      local: (await host()).broker.local,
+    })
   }, 900_000)
 
   afterAll(async () => {
@@ -270,9 +274,9 @@ run("real host G: this PC's local models through this PC", () => {
     await waitIdle(sessionID)
     const seen = chats(from)
     const scan = await Env.hostSh(String.raw`set -u
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
-roots="$HOME/.local/share/own-open-code $HOME/.config/own-open-code $HOME/.local/state/own-open-code $HOME/.config/opencode $HOME/.local/state/opencode $HOME/.local/share/opencode $HOME/.cache/opencode"
-c=$(grep -rlaF -- '${KEY}' $roots /tmp/own-$(id -u)* 2>/dev/null | wc -l)
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
+roots="$XDG_DATA_HOME/own-open-code $XDG_CONFIG_HOME/own-open-code $XDG_STATE_HOME/own-open-code $XDG_CONFIG_HOME/opencode $XDG_STATE_HOME/opencode $XDG_DATA_HOME/opencode $XDG_CACHE_HOME/opencode"
+c=$(grep -rlaF -- '${KEY}' $roots "$OWN_RH_ROOT/tmp" 2>/dev/null | wc -l)
 e=$(tr '\0' '\n' < /proc/$pid/environ 2>/dev/null | grep -cF -- '${KEY}')
 a=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null | grep -cF -- '${KEY}')
 echo "HITS=$c/$e/$a"`)
@@ -354,8 +358,8 @@ r() {
 s="--unix-socket ${egress.socket}"
 echo "NONE=$(r "$s" 'http://localhost${route}')"
 echo "RANDOM=$(r "$s" 'http://localhost${route}' 'x-own-local: v1.${egress.epoch}.${Math.floor(Math.random() * 1e6) + 5000}.${state.keyless.accountID}.${random}')"
-pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
-api=$(sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"http:\/\/127\.0\.0\.1:\([0-9]*\).*/\1/p' "$HOME/.local/state/opencode/service-own.json" | head -n 1)
+pid=$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
+api=$(sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"http:\/\/127\.0\.0\.1:\([0-9]*\).*/\1/p' "$XDG_STATE_HOME/opencode/service-own.json" | head -n 1)
 for port in $(ss -Htlnp 2>/dev/null | grep "pid=$pid," | awk '{print $4}' | sed -n 's/^127\.0\.0\.1:\([0-9]*\)$/\1/p'); do
   [ "$port" = "$api" ] && continue
   echo "STUB_$port=$(r "" "http://127.0.0.1:$port${route}")"
